@@ -1,6 +1,7 @@
 .DS_Store
 .env
 .env*.local
+supabase/seed.local.sql
 .next
 .vercel
 coverage
@@ -10,3 +11,5 @@ playwright-report
 test-results
 tmp
 *.tsbuildinfo
+supabase/.branches
+supabase/.temp

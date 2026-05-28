@@ -22,8 +22,10 @@ Variables requeridas:
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_APP_URL`
+- `NEXT_PUBLIC_APP_URL` (URL canónica, por ejemplo `https://tu-dominio.com`; en Vercel puede omitirse si las variables de sistema están expuestas)
 - `FACTORY_COOKIE_SECRET`
+
+En Vercel, si configuras `NEXT_PUBLIC_APP_URL` manualmente, usa una URL completa con `https://`. Las variables de sistema de Vercel como `VERCEL_URL` no incluyen protocolo; la app las normaliza automáticamente cuando están disponibles.
 
 ## Supabase
 
