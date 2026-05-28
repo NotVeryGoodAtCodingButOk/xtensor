@@ -18,17 +18,26 @@ export function MachineRow({ machine }: { machine: CalculatedMachineView }) {
     : `Entrega est. ${formatDateEs(machine.clientEstimatedDate)}`;
 
   return (
-    <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
+    <div
+      className={[
+        "border shadow-[var(--shadow-sm)]",
+        isShipped
+          ? "border-l-4 border-green-500 bg-green-50"
+          : "border-[var(--xt-black)] bg-[var(--xt-white)]",
+      ].join(" ")}
+    >
       <button
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-center gap-4 px-4 py-3 text-left"
         aria-expanded={open}
       >
+        {/* Machine name */}
         <span className="min-w-0 flex-1 truncate font-semibold">
           {machine.equipmentCode ?? "Personalizado"} · {machine.equipmentName}
         </span>
 
-        <div className="hidden w-40 shrink-0 sm:block">
+        {/* Progress bar — desktop, fills middle */}
+        <div className="hidden flex-1 max-w-[220px] shrink-0 sm:block">
           <div className="mb-1 flex justify-between text-xs text-[var(--xt-steel)]">
             <span>Avance</span>
             <span>{formatPercent(machine.progressPct)}</span>
@@ -36,11 +45,13 @@ export function MachineRow({ machine }: { machine: CalculatedMachineView }) {
           <Progress value={machine.progressPct} className="h-2" />
         </div>
 
-        <span className="[font-family:var(--font-barlow-condensed)] shrink-0 text-base font-bold sm:text-lg">
+        {/* % on mobile only */}
+        <span className="[font-family:var(--font-barlow-condensed)] shrink-0 text-base font-bold sm:hidden">
           {formatPercent(machine.progressPct)}
         </span>
 
-        <span className="[font-family:var(--font-barlow-condensed)] hidden shrink-0 text-base font-bold sm:block sm:text-lg">
+        {/* Date — desktop */}
+        <span className="[font-family:var(--font-barlow-condensed)] hidden shrink-0 text-base font-bold sm:block">
           {dateLabel}
         </span>
 
@@ -51,11 +62,8 @@ export function MachineRow({ machine }: { machine: CalculatedMachineView }) {
         )}
       </button>
 
-      {/* Mobile-only date line */}
+      {/* Mobile: bar + date */}
       <div className="px-4 pb-2 sm:hidden">
-        <div className="mb-1.5 flex items-center justify-between text-xs text-[var(--xt-steel)]">
-          <span>Avance · {formatPercent(machine.progressPct)}</span>
-        </div>
         <Progress value={machine.progressPct} className="mb-2 h-2" />
         <span className="[font-family:var(--font-barlow-condensed)] text-sm font-bold">
           {dateLabel}
@@ -63,12 +71,16 @@ export function MachineRow({ machine }: { machine: CalculatedMachineView }) {
       </div>
 
       {open && (
-        <div className="border-t border-[var(--xt-black)] px-4 py-4">
+        <div
+          className={[
+            "border-t px-4 py-4",
+            isShipped ? "border-green-300" : "border-[var(--xt-black)]",
+          ].join(" ")}
+        >
           <div className="mb-4 flex items-start justify-between gap-4">
-            <div className="grid gap-1 text-sm text-[var(--xt-steel)]">
-              <span>Color: {machine.colorName ?? "Sin color"}</span>
-              <span>Ciudad: {machine.city ?? "Sin ciudad"}</span>
-            </div>
+            <span className="text-sm text-[var(--xt-steel)]">
+              Color: {machine.colorName ?? "Sin color"}
+            </span>
             <Badge variant={isShipped ? "success" : "default"}>
               {isShipped ? "Completada" : "En producción"}
             </Badge>

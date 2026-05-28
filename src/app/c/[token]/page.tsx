@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
-import { MachineRow } from "@/components/client/machine-row";
+import { MachineList } from "@/components/client/machine-list";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { hasSupabaseConfig } from "@/lib/env";
 import { getClientByToken } from "@/services/clients";
@@ -47,13 +47,11 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
         </div>
         <div className="xt-hazard h-2" />
       </header>
-      <div className="mx-auto grid max-w-4xl gap-2 px-4 py-6">
+      <div className="mx-auto max-w-4xl px-4 py-6">
         <header className="sr-only">
           <h2>Seguimiento de producción</h2>
         </header>
-        {machines.map((machine) => (
-          <MachineRow key={machine.id} machine={machine} />
-        ))}
+        <MachineList machines={machines} />
       </div>
     </main>
   );
