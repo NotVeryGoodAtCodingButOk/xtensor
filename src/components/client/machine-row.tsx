@@ -37,7 +37,7 @@ export function MachineRow({ machine }: { machine: CalculatedMachineView }) {
         </span>
 
         {/* Progress bar — desktop, fills middle */}
-        <div className="hidden flex-1 max-w-[220px] shrink-0 sm:block">
+        <div className="hidden w-[220px] shrink-0 sm:block">
           <div className="mb-1 flex justify-between text-xs text-[var(--xt-steel)]">
             <span>Avance</span>
             <span>{formatPercent(machine.progressPct)}</span>
