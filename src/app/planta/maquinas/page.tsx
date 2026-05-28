@@ -1,12 +1,12 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { ChevronRight } from "lucide-react";
 import { changeWorkerAction, lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
@@ -68,27 +68,51 @@ export default async function FactoryMachinesPage() {
         </div>
         <div className="xt-hazard h-2" />
       </header>
-      <div className="grid gap-4 p-5">
+
+      <div className="grid gap-2 p-5">
         {machines.map((machine) => (
-          <Link key={machine.id} href={`/planta/maquinas/${machine.id}`}>
-            <Card className="transition-colors hover:border-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]">
-              <CardContent className="grid gap-3 p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold">
-                      COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"}
-                    </p>
-                    <p className="text-lg">{machine.equipmentName}</p>
-                    <p className="text-[var(--xt-steel)]">
-                      {machine.clientName} · {machine.colorName ?? "Sin color"}
-                    </p>
-                  </div>
-                  <div className="min-w-40 text-right [font-family:var(--font-barlow-condensed)] text-2xl font-bold">{formatPercent(machine.progressPct)}</div>
+          <Link
+            key={machine.id}
+            href={`/planta/maquinas/${machine.id}`}
+            className="block border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
+          >
+            {/* Main row */}
+            <div className="flex items-center gap-4 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-semibold">
+                  COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"} · {machine.equipmentName}
+                </p>
+                <p className="truncate text-sm text-[var(--xt-steel)]">
+                  {machine.clientName} · {machine.colorName ?? "Sin color"}
+                </p>
+              </div>
+
+              {/* Progress bar — fixed width so all bars align */}
+              <div className="hidden w-[220px] shrink-0 sm:block">
+                <div className="mb-1 flex justify-between text-xs text-[var(--xt-steel)]">
+                  <span>Avance</span>
+                  <span>{formatPercent(machine.progressPct)}</span>
                 </div>
-                <Progress value={machine.progressPct} className="h-4" />
-                <StageStrip stages={machine.stages} />
-              </CardContent>
-            </Card>
+                <Progress value={machine.progressPct} className="h-2" />
+              </div>
+
+              {/* % on mobile */}
+              <span className="[font-family:var(--font-barlow-condensed)] shrink-0 text-base font-bold sm:hidden">
+                {formatPercent(machine.progressPct)}
+              </span>
+
+              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--xt-steel)]" />
+            </div>
+
+            {/* Mobile: bar */}
+            <div className="px-4 pb-2 sm:hidden">
+              <Progress value={machine.progressPct} className="h-2" />
+            </div>
+
+            {/* Stage strip — always visible */}
+            <div className="border-t border-[var(--xt-cement)] px-4 py-2">
+              <StageStrip stages={machine.stages} />
+            </div>
           </Link>
         ))}
       </div>
