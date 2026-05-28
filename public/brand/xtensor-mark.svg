@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <pattern id="hatchA2" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(45)">
+      <rect width="14" height="14" fill="transparent"></rect>
+      <rect x="7" width="7" height="14" fill="#0a0a0a"></rect>
+    </pattern>
+    <pattern id="hatchB2" patternUnits="userSpaceOnUse" width="14" height="14" patternTransform="rotate(-45)">
+      <rect width="14" height="14" fill="transparent"></rect>
+      <rect x="7" width="7" height="14" fill="#0a0a0a"></rect>
+    </pattern>
+    <clipPath id="wT2"><polygon points="0,0 200,0 100,100"></polygon></clipPath>
+    <clipPath id="wR2"><polygon points="200,0 200,200 100,100"></polygon></clipPath>
+    <clipPath id="wB2"><polygon points="200,200 0,200 100,100"></polygon></clipPath>
+    <clipPath id="wL2"><polygon points="0,200 0,0 100,100"></polygon></clipPath>
+  </defs>
+  <rect width="200" height="200" fill="url(#hatchA2)" clip-path="url(#wT2)"></rect>
+  <rect width="200" height="200" fill="url(#hatchB2)" clip-path="url(#wR2)"></rect>
+  <rect width="200" height="200" fill="url(#hatchA2)" clip-path="url(#wB2)"></rect>
+  <rect width="200" height="200" fill="url(#hatchB2)" clip-path="url(#wL2)"></rect>
+  <polygon points="100,80 120,100 100,120 80,100" fill="#0a0a0a"></polygon>
+</svg>

@@ -1,0 +1,129 @@
+@import "tailwindcss";
+
+:root {
+  color-scheme: light;
+  --xt-yellow: #ffd400;
+  --xt-yellow-deep: #f2b900;
+  --xt-yellow-soft: #fff1b8;
+  --xt-black: #0a0a0a;
+  --xt-ink: #1a1a1a;
+  --xt-graphite: #2a2a2a;
+  --xt-steel: #5c5c5c;
+  --xt-aluminum: #b4b4b4;
+  --xt-cement: #e5e5e5;
+  --xt-paper: #f5f5f2;
+  --xt-white: #ffffff;
+  --line-pro-red: #c81e1e;
+  --line-bio-green: #2e9e3f;
+  --line-semi-cyan: #1fb6d8;
+  --line-kids-orange: #f26a21;
+  --background: var(--xt-paper);
+  --foreground: var(--xt-black);
+  --muted: var(--xt-cement);
+  --muted-foreground: var(--xt-steel);
+  --border: var(--xt-cement);
+  --primary: var(--xt-yellow);
+  --primary-foreground: var(--xt-black);
+  --danger: var(--line-pro-red);
+  --warning: var(--xt-yellow);
+  --success: var(--line-bio-green);
+  --shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 0 rgba(0, 0, 0, 0.1), 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-stamp: 4px 4px 0 var(--xt-black);
+  --ease-snap: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family:
+    var(--font-barlow),
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+h1,
+h2,
+h3 {
+  font-family:
+    var(--font-barlow-condensed),
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+select {
+  font: inherit;
+}
+
+.xt-display {
+  font-family:
+    var(--font-bebas),
+    var(--font-barlow-condensed),
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  letter-spacing: 0;
+  line-height: 0.96;
+  text-transform: uppercase;
+}
+
+.xt-eyebrow {
+  color: var(--xt-steel);
+  font-family:
+    var(--font-barlow-condensed),
+    "Helvetica Neue",
+    Helvetica,
+    Arial,
+    sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.xt-hazard {
+  background: repeating-linear-gradient(135deg, var(--xt-black) 0 14px, var(--xt-yellow) 14px 28px);
+}
+
+.xt-brand-photo {
+  background-image:
+    linear-gradient(180deg, rgba(10, 10, 10, 0.35), rgba(10, 10, 10, 0.84)),
+    url("/brand/installation-pro-green-night.jpg");
+  background-position: center;
+  background-size: cover;
+}
+
+.xt-container {
+  margin-inline: auto;
+  width: min(100% - 32px, 1280px);
+}

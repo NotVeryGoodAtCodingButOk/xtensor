@@ -1,0 +1,2175 @@
+{
+  "sourceWorkbook": "Plan Prod mayo 2026.xlsx",
+  "generatedAt": "2026-05-28T17:08:45.947805+00:00",
+  "settings": {
+    "laborFactor": 0.3,
+    "hourlyCostPerWorkerCop": 22019.57448559671,
+    "activeWorkersCount": 9,
+    "dailyHoursMonFri": 9,
+    "dailyHoursSat": 6,
+    "dailyHoursSun": 0,
+    "clientBufferDays": 3
+  },
+  "rows": [
+    {
+      "row": 5,
+      "cotiNumber": 3,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM161",
+      "equipmentName": "Rack Sentadilla",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1990000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 27.112240538095115,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 0,
+      "promisedRaw": "4 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 6,
+      "cotiNumber": 10,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM104",
+      "equipmentName": "Banco hombro peso libre",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 650000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 8.85575695967931,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 0,
+      "promisedRaw": "4 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 7,
+      "cotiNumber": 974,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM104",
+      "equipmentName": "Banco hombro peso libre",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 650000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 8.85575695967931,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 0,
+      "promisedRaw": "5 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 8,
+      "cotiNumber": 977,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM165",
+      "equipmentName": "Sentadilla Bulgara",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 490000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 6.675878323450556,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 0,
+      "promisedRaw": "5 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 9,
+      "cotiNumber": 5,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM108",
+      "equipmentName": "banco olimpico plano",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1490000.0,
+      "excelProgressPct": 0.9,
+      "excelTotalHours": 20.300119799880264,
+      "excelRemainingHours": 2.030011979988026,
+      "excelRemainingHumanDays": 0.22555688666533621,
+      "excelAccumulatedHours": 2.030011979988026,
+      "promisedRaw": "5 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 10,
+      "cotiNumber": 1,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM105",
+      "equipmentName": "Banco Multifunción",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1190000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 16.21284735695135,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 2.030011979988026,
+      "promisedRaw": "5 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 11,
+      "cotiNumber": 975,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM105",
+      "equipmentName": "Banco Multifunción",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1190000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 16.21284735695135,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 2.030011979988026,
+      "promisedRaw": "5 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 12,
+      "cotiNumber": 976,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM105",
+      "equipmentName": "Banco Multifunción",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1190000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 16.21284735695135,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 2.030011979988026,
+      "promisedRaw": "6 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 13,
+      "cotiNumber": 13,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM111",
+      "equipmentName": "Banco Predicador Libre",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1250000.0,
+      "excelProgressPct": 0.9,
+      "excelTotalHours": 17.03030184553713,
+      "excelRemainingHours": 1.7030301845537128,
+      "excelRemainingHumanDays": 0.18922557606152365,
+      "excelAccumulatedHours": 3.7330421645417387,
+      "promisedRaw": "6 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 14,
+      "cotiNumber": 12,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM130",
+      "equipmentName": "Hammer remo",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 2100000.0,
+      "excelProgressPct": 0.9,
+      "excelTotalHours": 28.610907100502384,
+      "excelRemainingHours": 2.8610907100502376,
+      "excelRemainingHumanDays": 0.31789896778335974,
+      "excelAccumulatedHours": 6.594132874591976,
+      "promisedRaw": "6 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 15,
+      "cotiNumber": 42,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM162",
+      "equipmentName": "Remo en punta",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1750000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 23.842422583751986,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 6.594132874591976,
+      "promisedRaw": "7 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 16,
+      "cotiNumber": 32,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM140",
+      "equipmentName": "Pantorrillero",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 1390000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 18.93769565223729,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 6.594132874591976,
+      "promisedRaw": "7 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 17,
+      "cotiNumber": 2,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM184",
+      "equipmentName": "Prensa Atletica 3.0 lineal",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 3990000.0,
+      "excelProgressPct": 0.7,
+      "excelTotalHours": 54.36072349095453,
+      "excelRemainingHours": 16.30821704728636,
+      "excelRemainingHumanDays": 1.812024116365151,
+      "excelAccumulatedHours": 22.902349921878333,
+      "promisedRaw": "10 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 18,
+      "cotiNumber": 4,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM100",
+      "equipmentName": "Abductor Aductor",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 4000000.0,
+      "excelProgressPct": 0.9,
+      "excelTotalHours": 54.496965905718824,
+      "excelRemainingHours": 5.4496965905718815,
+      "excelRemainingHumanDays": 0.6055218433968758,
+      "excelAccumulatedHours": 28.352046512450215,
+      "promisedRaw": "10 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 19,
+      "cotiNumber": 978,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XC103",
+      "equipmentName": "PIVOTE DE BARRA PARA JAULA ",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 168067.2268907563,
+      "excelProgressPct": 0.5,
+      "excelTotalHours": 2.289788483433564,
+      "excelRemainingHours": 1.144894241716782,
+      "excelRemainingHumanDays": 0.12721047130186466,
+      "excelAccumulatedHours": 29.496940754166996,
+      "promisedRaw": "10 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 20,
+      "cotiNumber": 979,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XC101",
+      "equipmentName": "Accesorio fondos para jaula",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 136974.7899159664,
+      "excelProgressPct": 0.2,
+      "excelTotalHours": 1.8661776139983548,
+      "excelRemainingHours": 1.492942091198684,
+      "excelRemainingHumanDays": 0.16588245457763154,
+      "excelAccumulatedHours": 30.98988284536568,
+      "promisedRaw": "12 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 21,
+      "cotiNumber": 980,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM181",
+      "equipmentName": "Jaula de Potencia para peso",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 2880000.0,
+      "excelProgressPct": 0.2,
+      "excelTotalHours": 39.23781545211755,
+      "excelRemainingHours": 31.390252361694042,
+      "excelRemainingHumanDays": 3.4878058179660045,
+      "excelAccumulatedHours": 62.38013520705972,
+      "promisedRaw": "12 may",
+      "estimatedRaw": "27 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 22,
+      "cotiNumber": 17,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM148",
+      "equipmentName": "Polea Alta",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 3890000.0,
+      "excelProgressPct": 0.8,
+      "excelTotalHours": 52.99829934331156,
+      "excelRemainingHours": 10.59965986866231,
+      "excelRemainingHumanDays": 1.1777399854069233,
+      "excelAccumulatedHours": 72.97979507572204,
+      "promisedRaw": "13 may",
+      "estimatedRaw": "28 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 23,
+      "cotiNumber": 981,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM185",
+      "equipmentName": "Sentadilla Hack  Up  3.0 Lineal",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 3990000.0,
+      "excelProgressPct": 0.2,
+      "excelTotalHours": 54.36072349095453,
+      "excelRemainingHours": 43.488578792763626,
+      "excelRemainingHumanDays": 4.83206431030707,
+      "excelAccumulatedHours": 116.46837386848566,
+      "promisedRaw": "14 may",
+      "estimatedRaw": "28 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 24,
+      "cotiNumber": 28,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM113",
+      "equipmentName": "Crossover clásica",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 5600000.0,
+      "excelProgressPct": 0.9,
+      "excelTotalHours": 76.29575226800635,
+      "excelRemainingHours": 7.629575226800633,
+      "excelRemainingHumanDays": 0.8477305807556259,
+      "excelAccumulatedHours": 124.0979490952863,
+      "promisedRaw": "15 may",
+      "estimatedRaw": "31 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 25,
+      "cotiNumber": 16,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM145",
+      "equipmentName": "Peck Deck doble función",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 3990000.0,
+      "excelProgressPct": 0.8,
+      "excelTotalHours": 54.36072349095453,
+      "excelRemainingHours": 10.872144698190903,
+      "excelRemainingHumanDays": 1.208016077576767,
+      "excelAccumulatedHours": 134.9700937934772,
+      "promisedRaw": "18 may",
+      "estimatedRaw": "31 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 26,
+      "cotiNumber": 982,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM908",
+      "equipmentName": "rack mancuernas 2 niveles",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 500000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 6.812120738214853,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 134.9700937934772,
+      "promisedRaw": "18 may",
+      "estimatedRaw": "31 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 27,
+      "cotiNumber": 983,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM908",
+      "equipmentName": "rack mancuernas 2 niveles",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 500000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 6.812120738214853,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 134.9700937934772,
+      "promisedRaw": "18 may",
+      "estimatedRaw": "31 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 28,
+      "cotiNumber": 984,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM908",
+      "equipmentName": "rack mancuernas 2 niveles",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 764000.0,
+      "excelProgressPct": 1.0,
+      "excelTotalHours": 10.408920487992296,
+      "excelRemainingHours": 0,
+      "excelRemainingHumanDays": 0,
+      "excelAccumulatedHours": 134.9700937934772,
+      "promisedRaw": "18 may",
+      "estimatedRaw": "31 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 100
+        },
+        {
+          "stageId": 7,
+          "completion": 100
+        }
+      ]
+    },
+    {
+      "row": 29,
+      "cotiNumber": 8,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM121",
+      "equipmentName": "Flexor",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 3600000.0,
+      "excelProgressPct": 0.2,
+      "excelTotalHours": 49.04726931514694,
+      "excelRemainingHours": 39.23781545211756,
+      "excelRemainingHumanDays": 4.359757272457506,
+      "excelAccumulatedHours": 174.20790924559475,
+      "promisedRaw": "19 may",
+      "estimatedRaw": "31 May",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 30,
+      "cotiNumber": 7,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM120",
+      "equipmentName": "Flexo Extensor",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 3990000.0,
+      "excelProgressPct": 0.2,
+      "excelTotalHours": 54.36072349095453,
+      "excelRemainingHours": 43.488578792763626,
+      "excelRemainingHumanDays": 4.83206431030707,
+      "excelAccumulatedHours": 217.69648803835838,
+      "promisedRaw": "19 may",
+      "estimatedRaw": "1 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 31,
+      "cotiNumber": 9,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM170",
+      "equipmentName": "Sentadilla Smith 2.0",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 4450000.0,
+      "excelProgressPct": 0.2,
+      "excelTotalHours": 60.62787457011219,
+      "excelRemainingHours": 48.502299656089754,
+      "excelRemainingHumanDays": 5.3891444062321945,
+      "excelAccumulatedHours": 266.19878769444813,
+      "promisedRaw": "46162",
+      "estimatedRaw": "2 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 32,
+      "cotiNumber": 29,
+      "clientName": "JHON - NICOLAS",
+      "equipmentCode": "XM116",
+      "equipmentName": "Elevador de pelvis",
+      "colorName": "AZUL OSCURO",
+      "city": "Pereira",
+      "line": "musculación",
+      "salePriceCop": 2490000.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 33.924361276309966,
+      "excelRemainingHours": 33.924361276309966,
+      "excelRemainingHumanDays": 3.7693734751455517,
+      "excelAccumulatedHours": 300.1231489707581,
+      "promisedRaw": "46162",
+      "estimatedRaw": "2 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 33,
+      "cotiNumber": 985,
+      "clientName": "Diosivan Paez",
+      "equipmentCode": "XM129",
+      "equipmentName": "Hammer pecho plano",
+      "colorName": "MORADO NEGRO",
+      "city": "Ocaña",
+      "line": "Musculación",
+      "salePriceCop": 2520000.0,
+      "excelProgressPct": 0.4,
+      "excelTotalHours": 34.33308852060286,
+      "excelRemainingHours": 20.599853112361714,
+      "excelRemainingHumanDays": 2.2888725680401905,
+      "excelAccumulatedHours": 320.7230020831198,
+      "promisedRaw": "25 may",
+      "estimatedRaw": "2 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 34,
+      "cotiNumber": 986,
+      "clientName": "Diosivan Paez",
+      "equipmentCode": "XM105",
+      "equipmentName": "Banco Multifunción",
+      "colorName": "MORADO NEGRO",
+      "city": "Ocaña",
+      "line": "Musculación",
+      "salePriceCop": 1190000.0,
+      "excelProgressPct": 0.8,
+      "excelTotalHours": 16.21284735695135,
+      "excelRemainingHours": 3.2425694713902695,
+      "excelRemainingHumanDays": 0.3602854968211411,
+      "excelAccumulatedHours": 323.96557155451006,
+      "promisedRaw": "25 may",
+      "estimatedRaw": "2 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 35,
+      "cotiNumber": 987,
+      "clientName": "Camilo Aristizabal",
+      "equipmentCode": "XB457",
+      "equipmentName": "Pasamanos para parque",
+      "colorName": "negro…parece",
+      "city": "Manizales",
+      "line": "Bioparques",
+      "salePriceCop": 2680000.0,
+      "excelProgressPct": 0.8,
+      "excelTotalHours": 36.512967156831614,
+      "excelRemainingHours": 7.302593431366321,
+      "excelRemainingHumanDays": 0.8113992701518135,
+      "excelAccumulatedHours": 331.2681649858764,
+      "promisedRaw": "25 may",
+      "estimatedRaw": "2 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 100
+        },
+        {
+          "stageId": 2,
+          "completion": 100
+        },
+        {
+          "stageId": 3,
+          "completion": 100
+        },
+        {
+          "stageId": 4,
+          "completion": 100
+        },
+        {
+          "stageId": 5,
+          "completion": 100
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 36,
+      "cotiNumber": 988,
+      "clientName": "PETRA proyectos y construcciones",
+      "equipmentCode": "xb449",
+      "equipmentName": "Halon de espalda con discos",
+      "colorName": "naraja ",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 16809075.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 229.01089679541766,
+      "excelRemainingHours": 229.01089679541766,
+      "excelRemainingHumanDays": 25.44565519949085,
+      "excelAccumulatedHours": 560.2790617812941,
+      "promisedRaw": "28 may",
+      "estimatedRaw": "8 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 37,
+      "cotiNumber": 989,
+      "clientName": "PETRA proyectos y construcciones",
+      "equipmentCode": "xb442",
+      "equipmentName": "Sentadilla con discos",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 3151260.50420168,
+      "excelProgressPct": 0,
+      "excelTotalHours": 42.933534064379316,
+      "excelRemainingHours": 42.933534064379316,
+      "excelRemainingHumanDays": 4.770392673819924,
+      "excelAccumulatedHours": 603.2125958456734,
+      "promisedRaw": "29 may",
+      "estimatedRaw": "9 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 38,
+      "cotiNumber": 990,
+      "clientName": "PETRA proyectos y construcciones",
+      "equipmentCode": "xb437",
+      "equipmentName": "Press de pecho con discos",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 3151260.50420168,
+      "excelProgressPct": 0,
+      "excelTotalHours": 42.933534064379316,
+      "excelRemainingHours": 42.933534064379316,
+      "excelRemainingHumanDays": 4.770392673819924,
+      "excelAccumulatedHours": 646.1461299100527,
+      "promisedRaw": "1 jun",
+      "estimatedRaw": "9 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 39,
+      "cotiNumber": 991,
+      "clientName": "PETRA proyectos y construcciones",
+      "equipmentCode": "xb420",
+      "equipmentName": "Dominadas y Fondos bio",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 1841092.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 25.08348198832292,
+      "excelRemainingHours": 25.08348198832292,
+      "excelRemainingHumanDays": 2.7870535542581023,
+      "excelAccumulatedHours": 671.2296118983755,
+      "promisedRaw": "1 jun",
+      "estimatedRaw": "9 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 40,
+      "cotiNumber": 992,
+      "clientName": "PETRA proyectos y construcciones",
+      "equipmentCode": "xb402",
+      "equipmentName": "Banco Abdominal doble",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 2484790.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 33.85337897821777,
+      "excelRemainingHours": 33.85337897821777,
+      "excelRemainingHumanDays": 3.761486553135308,
+      "excelAccumulatedHours": 705.0829908765933,
+      "promisedRaw": "2 jun",
+      "estimatedRaw": "10 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 41,
+      "cotiNumber": 993,
+      "clientName": "PETRA proyectos y construcciones",
+      "equipmentCode": "xb440",
+      "equipmentName": "Press de Pierna con discos",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 3163386.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 43.09873474715706,
+      "excelRemainingHours": 43.09873474715706,
+      "excelRemainingHumanDays": 4.7887483052396735,
+      "excelAccumulatedHours": 748.1817256237504,
+      "promisedRaw": "2 jun",
+      "estimatedRaw": "11 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 42,
+      "cotiNumber": 994,
+      "clientName": "Inversiones aguas BARBOSA SAS",
+      "equipmentCode": "xm171",
+      "equipmentName": "Sentadilla Smith con Poleas 2.0",
+      "colorName": "",
+      "city": "CARTAGENA",
+      "line": "Musculación",
+      "salePriceCop": 9600000.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 130.79271817372518,
+      "excelRemainingHours": 130.79271817372518,
+      "excelRemainingHumanDays": 14.532524241525019,
+      "excelAccumulatedHours": 878.9744437974755,
+      "promisedRaw": "4 jun",
+      "estimatedRaw": "15 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 43,
+      "cotiNumber": 995,
+      "clientName": "Consorcio del sol",
+      "equipmentCode": "xb456",
+      "equipmentName": "Circuito de calistenia #2",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 11008403.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 149.9811407418532,
+      "excelRemainingHours": 149.9811407418532,
+      "excelRemainingHumanDays": 16.664571193539246,
+      "excelAccumulatedHours": 1028.9555845393288,
+      "promisedRaw": "9 jun",
+      "estimatedRaw": "17 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 44,
+      "cotiNumber": 996,
+      "clientName": "Consorcio del sol",
+      "equipmentCode": "xb449",
+      "equipmentName": "Halon de espalda con discos",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 3151260.50420168,
+      "excelProgressPct": 0,
+      "excelTotalHours": 42.933534064379316,
+      "excelRemainingHours": 42.933534064379316,
+      "excelRemainingHumanDays": 4.770392673819924,
+      "excelAccumulatedHours": 1071.889118603708,
+      "promisedRaw": "9 jun",
+      "estimatedRaw": "17 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 45,
+      "cotiNumber": 997,
+      "clientName": "Consorcio del sol",
+      "equipmentCode": "xb442",
+      "equipmentName": "Sentadilla con discos",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 3151260.50420168,
+      "excelProgressPct": 0,
+      "excelTotalHours": 42.933534064379316,
+      "excelRemainingHours": 42.933534064379316,
+      "excelRemainingHumanDays": 4.770392673819924,
+      "excelAccumulatedHours": 1114.8226526680874,
+      "promisedRaw": "10 jun",
+      "estimatedRaw": "18 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 46,
+      "cotiNumber": 998,
+      "clientName": "Consorcio del sol",
+      "equipmentCode": "xb437",
+      "equipmentName": "Press de pecho con discos",
+      "colorName": "",
+      "city": "Pereira",
+      "line": "Bioparques",
+      "salePriceCop": 3151260.50420168,
+      "excelProgressPct": 0,
+      "excelTotalHours": 42.933534064379316,
+      "excelRemainingHours": 42.933534064379316,
+      "excelRemainingHumanDays": 4.770392673819924,
+      "excelAccumulatedHours": 1157.7561867324666,
+      "promisedRaw": "10 jun",
+      "estimatedRaw": "21 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 47,
+      "cotiNumber": 999,
+      "clientName": "Martha",
+      "equipmentCode": "xm165",
+      "equipmentName": "Sentadilla Bulgara",
+      "colorName": "Blanco y rojo",
+      "city": "Manizales",
+      "line": "musculación",
+      "salePriceCop": 490000.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 6.675878323450556,
+      "excelRemainingHours": 6.675878323450556,
+      "excelRemainingHumanDays": 0.7417642581611729,
+      "excelAccumulatedHours": 1164.4320650559173,
+      "promisedRaw": "46190",
+      "estimatedRaw": "21 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 48,
+      "cotiNumber": 500,
+      "clientName": "Martha",
+      "equipmentCode": "xm148",
+      "equipmentName": "Polea Alta",
+      "colorName": "Blanco y rojo",
+      "city": "Manizales",
+      "line": "musculación",
+      "salePriceCop": 3890000.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 52.99829934331156,
+      "excelRemainingHours": 52.99829934331156,
+      "excelRemainingHumanDays": 5.888699927034618,
+      "excelAccumulatedHours": 1217.430364399229,
+      "promisedRaw": "46191",
+      "estimatedRaw": "22 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    },
+    {
+      "row": 49,
+      "cotiNumber": 501,
+      "clientName": "Martha",
+      "equipmentCode": "xm145",
+      "equipmentName": "Peck Deck doble función",
+      "colorName": "Blanco y rojo",
+      "city": "Manizales",
+      "line": "musculación",
+      "salePriceCop": 3990000.0,
+      "excelProgressPct": 0,
+      "excelTotalHours": 54.36072349095453,
+      "excelRemainingHours": 54.36072349095453,
+      "excelRemainingHumanDays": 6.040080387883837,
+      "excelAccumulatedHours": 1271.7910878901835,
+      "promisedRaw": "46194",
+      "estimatedRaw": "22 Jun",
+      "stages": [
+        {
+          "stageId": 1,
+          "completion": 0
+        },
+        {
+          "stageId": 2,
+          "completion": 0
+        },
+        {
+          "stageId": 3,
+          "completion": 0
+        },
+        {
+          "stageId": 4,
+          "completion": 0
+        },
+        {
+          "stageId": 5,
+          "completion": 0
+        },
+        {
+          "stageId": 6,
+          "completion": 0
+        },
+        {
+          "stageId": 7,
+          "completion": 0
+        }
+      ]
+    }
+  ]
+}
