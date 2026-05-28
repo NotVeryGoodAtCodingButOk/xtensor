@@ -1,7 +1,8 @@
 .DS_Store
 .env
 .env*.local
-supabase/seed.local.sql
+.env.production
+.env.production.local
 .next
 .vercel
 coverage
