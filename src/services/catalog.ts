@@ -1,17 +1,30 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import type { Database } from "@/types/database";
 
-export async function listCatalog() {
+type CatalogRow = Database["public"]["Tables"]["equipment_catalog"]["Row"];
+
+export async function listCatalog(): Promise<CatalogRow[]> {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("equipment_catalog")
-    .select("*")
-    .order("code", { ascending: true });
 
-  if (error) {
-    throw new Error(`No se pudo cargar el catálogo: ${error.message}`);
+  // Paginate to work around any PostgREST max-rows project-level setting.
+  const PAGE = 500;
+  const rows: CatalogRow[] = [];
+  let from = 0;
+  while (true) {
+    const { data, error } = await supabase
+      .from("equipment_catalog")
+      .select("*")
+      .order("code", { ascending: true })
+      .range(from, from + PAGE - 1);
+
+    if (error) throw new Error(`No se pudo cargar el catálogo: ${error.message}`);
+    if (!data || data.length === 0) break;
+    rows.push(...data);
+    if (data.length < PAGE) break;
+    from += PAGE;
   }
 
-  return data;
+  return rows;
 }
 
 export async function createCustomEquipment(input: {
