@@ -13,6 +13,7 @@ import {
   unmarkMachineShipped,
 } from "@/services/machines";
 import { regenerateClientToken } from "@/services/clients";
+import { updateFactoryPassword } from "@/services/settings";
 
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -102,6 +103,21 @@ export async function reorderMachinesAction(formData: FormData) {
 
   await reorderMachines(orderedIds);
   redirect("/admin");
+}
+
+export async function updateFactoryPasswordAction(formData: FormData) {
+  const password = String(formData.get("password") ?? "");
+  const confirm = String(formData.get("confirm") ?? "");
+
+  if (password.length < 6) {
+    redirect("/admin/configuracion?password=corta");
+  }
+  if (password !== confirm) {
+    redirect("/admin/configuracion?password=nocoincide");
+  }
+
+  await updateFactoryPassword(password);
+  redirect("/admin/configuracion?password=ok");
 }
 
 export async function regenerateClientTokenAction(formData: FormData) {
