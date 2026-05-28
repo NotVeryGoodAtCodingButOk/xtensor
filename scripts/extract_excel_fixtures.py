@@ -72,6 +72,7 @@ def main():
 
         plan = sheet_rows(zip_file, workbook_root, relmap, shared, "plan de producción")
         labor = sheet_rows(zip_file, workbook_root, relmap, shared, "Mano de obra")
+        prices = sheet_rows(zip_file, workbook_root, relmap, shared, "Precios y materiales ")
 
     settings = {
         "laborFactor": number(plan[3].get("AA")),
@@ -82,6 +83,23 @@ def main():
         "dailyHoursSun": 0,
         "clientBufferDays": 3,
     }
+
+    workers = []
+    for row_index in range(9, 18):
+        row = labor.get(row_index, {})
+        name = (row.get("E") or "").strip()
+        role = (row.get("F") or "").strip()
+        hourly = number(row.get("K"))
+        if not name:
+            continue
+        workers.append(
+            {
+                "displayOrder": int(number(row.get("D")) or 0),
+                "fullName": name,
+                "role": role or "Operario",
+                "hourlyCostCop": hourly or 0,
+            }
+        )
 
     rows = []
     for row_index in range(5, 50):
@@ -120,16 +138,42 @@ def main():
             }
         )
 
+    catalog = []
+    seen_codes = set()
+    for row_index in sorted(prices.keys()):
+        if row_index < 3:
+            continue
+        row = prices[row_index]
+        code = (row.get("A") or "").strip().upper()
+        name = (row.get("B") or "").strip()
+        if not code or not name:
+            continue
+        if code in seen_codes:
+            continue
+        seen_codes.add(code)
+        catalog.append(
+            {
+                "code": code,
+                "name": name,
+                "defaultPriceCop": number(row.get("C")),
+            }
+        )
+
     payload = {
         "sourceWorkbook": WORKBOOK.name,
         "generatedAt": datetime.now(timezone.utc).isoformat(),
         "settings": settings,
+        "workers": workers,
+        "catalog": catalog,
         "rows": rows,
     }
 
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Wrote {OUTPUT.relative_to(ROOT)} with {len(rows)} rows")
+    print(
+        f"Wrote {OUTPUT.relative_to(ROOT)} with {len(rows)} rows, "
+        f"{len(catalog)} catalog entries"
+    )
 
 
 if __name__ == "__main__":

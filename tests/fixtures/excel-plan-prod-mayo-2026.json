@@ -1,6 +1,6 @@
 {
   "sourceWorkbook": "Plan Prod mayo 2026.xlsx",
-  "generatedAt": "2026-05-28T17:08:45.947805+00:00",
+  "generatedAt": "2026-05-28T20:06:44.669483+00:00",
   "settings": {
     "laborFactor": 0.3,
     "hourlyCostPerWorkerCop": 22019.57448559671,
@@ -10,6 +10,774 @@
     "dailyHoursSun": 0,
     "clientBufferDays": 3
   },
+  "workers": [
+    {
+      "displayOrder": 1,
+      "fullName": "Juan Felipe Martinez Aristizabal",
+      "role": "Armador",
+      "hourlyCostCop": 25034.691005291003
+    },
+    {
+      "displayOrder": 2,
+      "fullName": "Cristian Camilo Rodriguez Giraldo",
+      "role": "Tornero",
+      "hourlyCostCop": 21758.50052910053
+    },
+    {
+      "displayOrder": 3,
+      "fullName": "Luis Alfonso Betancurth Osorio",
+      "role": "Pintor",
+      "hourlyCostCop": 19392.362962962965
+    },
+    {
+      "displayOrder": 4,
+      "fullName": "Ariel Valencia Mina",
+      "role": "Varios",
+      "hourlyCostCop": 17754.267724867725
+    },
+    {
+      "displayOrder": 5,
+      "fullName": "Daniel Garcia Zaray",
+      "role": "Ensamblador",
+      "hourlyCostCop": 18664.320634920634
+    },
+    {
+      "displayOrder": 6,
+      "fullName": "Daniel Rodrigo Duque Zapata",
+      "role": "asist ensamble",
+      "hourlyCostCop": 17754.267724867725
+    },
+    {
+      "displayOrder": 7,
+      "fullName": "Jose Fernando Gaviria",
+      "role": "Armador",
+      "hourlyCostCop": 31851.85185185185
+    },
+    {
+      "displayOrder": 8,
+      "fullName": "Germán",
+      "role": "Armador",
+      "hourlyCostCop": 18664.320634920634
+    },
+    {
+      "displayOrder": 9,
+      "fullName": "Santiago Cardenas",
+      "role": "Armador",
+      "hourlyCostCop": 27301.5873015873
+    }
+  ],
+  "catalog": [
+    {
+      "code": "XM105",
+      "name": "Banco Multifunción",
+      "defaultPriceCop": 1190000.0
+    },
+    {
+      "code": "XM184",
+      "name": "Prensa Atletica 3.0 lineal",
+      "defaultPriceCop": 3990000.0
+    },
+    {
+      "code": "XM161",
+      "name": "Rack Sentadilla",
+      "defaultPriceCop": 1990000.0
+    },
+    {
+      "code": "XM100",
+      "name": "Abductor Aductor",
+      "defaultPriceCop": 4000000.0
+    },
+    {
+      "code": "XM108",
+      "name": "Banco olímpico plano",
+      "defaultPriceCop": 1490000.0
+    },
+    {
+      "code": "XM114",
+      "name": "Crossover Compacta",
+      "defaultPriceCop": 5600000.0
+    },
+    {
+      "code": "XM120",
+      "name": "Flexo Extensor",
+      "defaultPriceCop": 3990000.0
+    },
+    {
+      "code": "XM121",
+      "name": "Flexor Acostado",
+      "defaultPriceCop": 3600000.0
+    },
+    {
+      "code": "XM170",
+      "name": "Sentadilla Smith 2.0",
+      "defaultPriceCop": 4450000.0
+    },
+    {
+      "code": "XM104",
+      "name": "Banco hombro peso libre",
+      "defaultPriceCop": 650000.0
+    },
+    {
+      "code": "XM109",
+      "name": "Banco plano peso libre",
+      "defaultPriceCop": 590000.0
+    },
+    {
+      "code": "XM130",
+      "name": "Hammer remo",
+      "defaultPriceCop": 2100000.0
+    },
+    {
+      "code": "XM111",
+      "name": "Banco Predicador Libre",
+      "defaultPriceCop": 1250000.0
+    },
+    {
+      "code": "XM119",
+      "name": "Extensor",
+      "defaultPriceCop": 3900000.0
+    },
+    {
+      "code": "XM125",
+      "name": "Hammer de Espalda",
+      "defaultPriceCop": 2520000.0
+    },
+    {
+      "code": "XM145",
+      "name": "Peck Deck doble función",
+      "defaultPriceCop": 3990000.0
+    },
+    {
+      "code": "XM148",
+      "name": "Polea Alta",
+      "defaultPriceCop": 3890000.0
+    },
+    {
+      "code": "XM151",
+      "name": "Polea Baja 2.0",
+      "defaultPriceCop": 3890000.0
+    },
+    {
+      "code": "XM153",
+      "name": "Portadiscos",
+      "defaultPriceCop": 450000.0
+    },
+    {
+      "code": "XM107",
+      "name": "Banco olímpico inclinado",
+      "defaultPriceCop": 1790000.0
+    },
+    {
+      "code": "XM112",
+      "name": "Constructor glúteo",
+      "defaultPriceCop": 2190000.0
+    },
+    {
+      "code": "XM122",
+      "name": "Flexor de pie",
+      "defaultPriceCop": 2360000.0
+    },
+    {
+      "code": "XM128",
+      "name": "Hammer Pecho Inclinada",
+      "defaultPriceCop": 2520000.0
+    },
+    {
+      "code": "XM143",
+      "name": "Patada glúteo peso libre",
+      "defaultPriceCop": 1650000.0
+    },
+    {
+      "code": "XM168",
+      "name": "Sentadilla hack up 2.0",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XM169",
+      "name": "Sentadilla Sissy",
+      "defaultPriceCop": 590000.0
+    },
+    {
+      "code": "XM106",
+      "name": "Banco olímpico declinado",
+      "defaultPriceCop": 1790000.0
+    },
+    {
+      "code": "XM113",
+      "name": "Crossover clásica",
+      "defaultPriceCop": 5600000.0
+    },
+    {
+      "code": "XM116",
+      "name": "Elevador de pelvis",
+      "defaultPriceCop": 2490000.0
+    },
+    {
+      "code": "XM126",
+      "name": "Hammer de Hombro",
+      "defaultPriceCop": 2520000.0
+    },
+    {
+      "code": "XM129",
+      "name": "Hammer Pecho Plana",
+      "defaultPriceCop": 2520000.0
+    },
+    {
+      "code": "XM140",
+      "name": "Pantorrillero",
+      "defaultPriceCop": 1390000.0
+    },
+    {
+      "code": "XM160",
+      "name": "Prensa pendular",
+      "defaultPriceCop": 4055462.1848739497
+    },
+    {
+      "code": "XM166",
+      "name": "Sentadilla combinada",
+      "defaultPriceCop": 3350000.0
+    },
+    {
+      "code": "XM172",
+      "name": "Torre auxiliar",
+      "defaultPriceCop": 3990000.0
+    },
+    {
+      "code": "XM175",
+      "name": "Jaula de potencia",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XM176",
+      "name": "Sentadilla con pantorrillero",
+      "defaultPriceCop": 2700000.0
+    },
+    {
+      "code": "XM186",
+      "name": "Dominadas y fondos asistido",
+      "defaultPriceCop": 4650000.0
+    },
+    {
+      "code": "XM103",
+      "name": "Banco abdominal",
+      "defaultPriceCop": 1090000.0
+    },
+    {
+      "code": "XM110",
+      "name": "Banco predicador con placas",
+      "defaultPriceCop": 4180000.0
+    },
+    {
+      "code": "XM156",
+      "name": "Prensa 90",
+      "defaultPriceCop": 2990000.0
+    },
+    {
+      "code": "XM162",
+      "name": "Remo en punta",
+      "defaultPriceCop": 1750000.0
+    },
+    {
+      "code": "XM167",
+      "name": "Sentadilla Hack Up",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XM171",
+      "name": "Sentadilla Smith con Poleas 2.0",
+      "defaultPriceCop": 9600000.0
+    },
+    {
+      "code": "XM193",
+      "name": "Hammer isolateral vuelos con placas",
+      "defaultPriceCop": 4016806.722689076
+    },
+    {
+      "code": "XB438",
+      "name": "Press de Pecho Doble",
+      "defaultPriceCop": 2968824.0
+    },
+    {
+      "code": "XB400",
+      "name": "Banco Abdominal inclinado",
+      "defaultPriceCop": 1952017.0
+    },
+    {
+      "code": "XB401",
+      "name": "Banco Abdominal Calistenia",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB402",
+      "name": "Banco Abdominal doble",
+      "defaultPriceCop": 2484790.0
+    },
+    {
+      "code": "XB403",
+      "name": "Banco Plano Abdominal",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB404",
+      "name": "Banco Press de Hombro",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB405",
+      "name": "Barra Lineal al aire libre",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB406",
+      "name": "Barra paralela calistenia",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB407",
+      "name": "Barra Polea Alta",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB408",
+      "name": "Barras asimétricas o dominadas dobles",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB409",
+      "name": "Barras Asimétricas Sencilla",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB410",
+      "name": "Barras Combinadas",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB411",
+      "name": "Barras Combinadas con Abdominales",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB412",
+      "name": "Barras Dominadas Triangulares",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB413",
+      "name": "Barras Mini Combinadas",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB414",
+      "name": "Barras Paralelas",
+      "defaultPriceCop": 1672268.90756303
+    },
+    {
+      "code": "XB415",
+      "name": "Base Estiramiento",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB416",
+      "name": "Bicicleta",
+      "defaultPriceCop": 2088991.59663866
+    },
+    {
+      "code": "XM191",
+      "name": "Abductor",
+      "defaultPriceCop": 4000000.0
+    },
+    {
+      "code": "XM909",
+      "name": "accesorio fondos para jaula",
+      "defaultPriceCop": 139411.76470588235
+    },
+    {
+      "code": "XM192",
+      "name": "Aductor",
+      "defaultPriceCop": 4000000.0
+    },
+    {
+      "code": "XM195",
+      "name": "BANCO OLIMPICO MULTIPÓSICIÓN.",
+      "defaultPriceCop": 2243697.478991597
+    },
+    {
+      "code": "XH700",
+      "name": "Bancos planos linea hogar",
+      "defaultPriceCop": 252100.84033613445
+    },
+    {
+      "code": "_",
+      "name": "CAMPO VACIO",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XJ505",
+      "name": "Carrusel",
+      "defaultPriceCop": 4477731.092436975
+    },
+    {
+      "code": "XB455",
+      "name": "CIRCUITO DE CALISTENIA #1",
+      "defaultPriceCop": 10534453.781512605
+    },
+    {
+      "code": "XJ504",
+      "name": "Columpio doble",
+      "defaultPriceCop": 3445798.319327731
+    },
+    {
+      "code": "XJ506",
+      "name": "Deslizadero sencillo",
+      "defaultPriceCop": 3327731.092436975
+    },
+    {
+      "code": "XM115",
+      "name": "Dominadas y fondos",
+      "defaultPriceCop": 1690000.0
+    },
+    {
+      "code": "XB425",
+      "name": "ESQUI",
+      "defaultPriceCop": 2354537.8151260507
+    },
+    {
+      "code": "XB426",
+      "name": "EXTENSOR",
+      "defaultPriceCop": 2412521.0084033613
+    },
+    {
+      "code": "XM188",
+      "name": "fondos triceps peso libre",
+      "defaultPriceCop": 1900000.0
+    },
+    {
+      "code": "GA018",
+      "name": "GARANTIA 18 HORAS",
+      "defaultPriceCop": 1152000.0
+    },
+    {
+      "code": "GA009",
+      "name": "GARANTIA 9 HORAS",
+      "defaultPriceCop": 576000.0
+    },
+    {
+      "code": "XM179",
+      "name": "hammer isolateral vuelos",
+      "defaultPriceCop": 1700000.0
+    },
+    {
+      "code": "XM127",
+      "name": "Hammer pecho declinada",
+      "defaultPriceCop": 2520000.0
+    },
+    {
+      "code": "XM131",
+      "name": "Hammer tibia",
+      "defaultPriceCop": 690000.0
+    },
+    {
+      "code": "XM132",
+      "name": "Hiperextensor  Horizontal",
+      "defaultPriceCop": 1390000.0
+    },
+    {
+      "code": "XM133",
+      "name": "Hiperextensor  Inclinado",
+      "defaultPriceCop": 1390000.0
+    },
+    {
+      "code": "XM",
+      "name": "INSTALACIÓN",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XM134",
+      "name": "Jaula de Crossfit (Solo funcional, sin polea)",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XM181",
+      "name": "Jaula de Potencia para peso",
+      "defaultPriceCop": 2880000.0
+    },
+    {
+      "code": "XM138",
+      "name": "Multifuerza 4 estaciones (Precio variable según equipos)",
+      "defaultPriceCop": 15000000.0
+    },
+    {
+      "code": "XM139",
+      "name": "Multifuerza 8 estaciones (Precio variable según equipos)",
+      "defaultPriceCop": 32000000.0
+    },
+    {
+      "code": "XJ507",
+      "name": "PARQUE INFANTIL #2",
+      "defaultPriceCop": 10863865.546218488
+    },
+    {
+      "code": "XM911",
+      "name": "PIVOTE DE BARRA PARA JAULA",
+      "defaultPriceCop": 168067.2268907563
+    },
+    {
+      "code": "ACCE",
+      "name": "Portapesos en maquina",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "PE",
+      "name": "PROYECTO ESPECIAL",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XA908",
+      "name": "Rack para mancuernas 2 NIVELES",
+      "defaultPriceCop": 600000.0
+    },
+    {
+      "code": "XM908",
+      "name": "Rack para mancuernas 2 niveles",
+      "defaultPriceCop": 600000.0
+    },
+    {
+      "code": "XM906",
+      "name": "Rack para mancuernas 3niveles",
+      "defaultPriceCop": 700000.0
+    },
+    {
+      "code": "XM165",
+      "name": "Sentadilla Bulgara",
+      "defaultPriceCop": 490000.0
+    },
+    {
+      "code": "XM185",
+      "name": "Sentadilla Hack Up 3.0 Lineal",
+      "defaultPriceCop": 3990000.0
+    },
+    {
+      "code": "XM187",
+      "name": "Sentadilla Smith con poleas 3.0",
+      "defaultPriceCop": 10020168.06722689
+    },
+    {
+      "code": "XM194",
+      "name": "sentadilla Sumo",
+      "defaultPriceCop": 2519000.0
+    },
+    {
+      "code": "XB553",
+      "name": "Sube y baja Doble",
+      "defaultPriceCop": 3306722.6890756306
+    },
+    {
+      "code": "XB417",
+      "name": "Brida Antivandalismo",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB418",
+      "name": "Circuito de Calistenia",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB419",
+      "name": "COLLARIN (PAR)",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB420",
+      "name": "Dominadas y Fondos bio",
+      "defaultPriceCop": 1841092.0
+    },
+    {
+      "code": "XB421",
+      "name": "Elevación hombro con discos",
+      "defaultPriceCop": 3000000.0
+    },
+    {
+      "code": "XB422",
+      "name": "Eliptica",
+      "defaultPriceCop": 2311681.0
+    },
+    {
+      "code": "XB423",
+      "name": "Escalador Doble",
+      "defaultPriceCop": 1841092.0
+    },
+    {
+      "code": "XB424",
+      "name": "Escalador Doble",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB427",
+      "name": "Pasamanos",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB428",
+      "name": "Patada Gluteo con discos",
+      "defaultPriceCop": 3200000.0
+    },
+    {
+      "code": "XB429",
+      "name": "Placa Informativa Individual",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB430",
+      "name": "Polea Alta con discos",
+      "defaultPriceCop": 3200000.0
+    },
+    {
+      "code": "XB431",
+      "name": "Pony",
+      "defaultPriceCop": 2191513.0
+    },
+    {
+      "code": "XB432",
+      "name": "Prensa de pierna doble",
+      "defaultPriceCop": 2885882.0
+    },
+    {
+      "code": "XB433",
+      "name": "Prensa de pierna sencilla",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB434",
+      "name": "Press de espalda doble",
+      "defaultPriceCop": 2968824.0
+    },
+    {
+      "code": "XB435",
+      "name": "Press de espalda sencillo",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB436",
+      "name": "Press de hombro Sencillo",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB437",
+      "name": "Press de pecho con discos",
+      "defaultPriceCop": 3151260.50420168
+    },
+    {
+      "code": "XB439",
+      "name": "Press de pecho sencillo",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB440",
+      "name": "Press de Pierna con discos",
+      "defaultPriceCop": 3163386.0
+    },
+    {
+      "code": "XB441",
+      "name": "Remo",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB442",
+      "name": "Sentadilla con discos",
+      "defaultPriceCop": 3151260.50420168
+    },
+    {
+      "code": "XB443",
+      "name": "Timón",
+      "defaultPriceCop": 2004958.0
+    },
+    {
+      "code": "XB444",
+      "name": "Twister",
+      "defaultPriceCop": 2274706.0
+    },
+    {
+      "code": "XB445",
+      "name": "Vai Ven",
+      "defaultPriceCop": 2241933.0
+    },
+    {
+      "code": "XB446",
+      "name": "Valla Informativa",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB447",
+      "name": "Volante de Mano",
+      "defaultPriceCop": 1867143.0
+    },
+    {
+      "code": "XB448",
+      "name": "Barras asimétricas",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB449",
+      "name": "Halon de espalda con discos",
+      "defaultPriceCop": 3151260.50420168
+    },
+    {
+      "code": "XB450",
+      "name": "Balancín para niños",
+      "defaultPriceCop": 3344538.0
+    },
+    {
+      "code": "XB451",
+      "name": "Columpio mixto",
+      "defaultPriceCop": 6705882.0
+    },
+    {
+      "code": "XB452",
+      "name": "Carrusel Mixto",
+      "defaultPriceCop": 10907563.0
+    },
+    {
+      "code": "XB453",
+      "name": "Sube y baja",
+      "defaultPriceCop": 3344538.0
+    },
+    {
+      "code": "XB454",
+      "name": "Volante de Mano",
+      "defaultPriceCop": 1411765.0
+    },
+    {
+      "code": "XS846",
+      "name": "MANTENIMIENTO EMAS",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XS847",
+      "name": "MANTENIMIENTO SEMAYOR",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XC100",
+      "name": "OBJETIVO DE BOLA PARED",
+      "defaultPriceCop": 237731.0
+    },
+    {
+      "code": "XM189",
+      "name": "Sentadilla Smith con Poleas 2.0 Peso Libre",
+      "defaultPriceCop": 6600000.0
+    },
+    {
+      "code": "XB456",
+      "name": "Circuito de calistenia #2",
+      "defaultPriceCop": null
+    },
+    {
+      "code": "XB457",
+      "name": "pasamanos sencillo",
+      "defaultPriceCop": 2680000.0
+    }
+  ],
   "rows": [
     {
       "row": 5,

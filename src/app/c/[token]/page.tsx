@@ -64,7 +64,7 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
                   {machine.equipmentCode ?? "Personalizado"} · {machine.equipmentName}
                 </CardTitle>
                 <Badge variant={machine.status === "shipped" ? "success" : "default"}>
-                  {machine.status === "shipped" ? "Despachada" : "En producción"}
+                  {machine.status === "shipped" ? "Máquina completada" : "En producción"}
                 </Badge>
               </div>
             </CardHeader>
@@ -83,7 +83,7 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
               <StageStrip stages={machine.stages} />
               <p className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold">
                 {machine.status === "shipped" && machine.shippedAt
-                  ? `Despachada el ${formatDateEs(machine.shippedAt.slice(0, 10))}`
+                  ? `Completada el ${formatDateEs(machine.shippedAt.slice(0, 10))}`
                   : `Entrega estimada: ${formatDateEs(machine.clientEstimatedDate)}`}
               </p>
             </CardContent>

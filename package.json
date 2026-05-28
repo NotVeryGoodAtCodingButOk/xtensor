@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "excel:fixtures": "python3 scripts/extract_excel_fixtures.py"
+    "excel:fixtures": "python3 scripts/extract_excel_fixtures.py",
+    "seed:excel": "tsx scripts/seed_from_excel.ts"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
