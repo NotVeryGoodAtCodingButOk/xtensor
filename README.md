@@ -13,28 +13,27 @@ Aplicación web para seguimiento de producción de fábrica, basada en `PRD_XTEN
 
 ```bash
 corepack pnpm install
-cp .env.example .env.local
+# Configura .env.local con las credenciales del proyecto Supabase online
 corepack pnpm dev
 ```
 
-Variables requeridas:
+Variables requeridas en `.env.local`:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `NEXT_PUBLIC_APP_URL` (URL canónica, por ejemplo `https://tu-dominio.com`; en Vercel puede omitirse si las variables de sistema están expuestas)
+- `NEXT_PUBLIC_APP_URL` (e.g. `http://localhost:3000`)
 - `FACTORY_COOKIE_SECRET`
 
 En Vercel, si configuras `NEXT_PUBLIC_APP_URL` manualmente, usa una URL completa con `https://`. Las variables de sistema de Vercel como `VERCEL_URL` no incluyen protocolo; la app las normaliza automáticamente cuando están disponibles.
 
 ## Supabase
 
-1. Crear un proyecto Supabase.
-2. Ejecutar `supabase/migrations/0001_initial_schema.sql`.
-3. Ejecutar `supabase/seed.sql` solo para bootstrap local o inicial.
-4. Crear usuarios admin en Supabase Auth.
-5. Insertar sus registros en `profiles` con `role = 'admin'`.
-6. Cambiar la contraseña de planta antes de producción.
+El proyecto usa exclusivamente la base de datos online en Supabase. No se usa instancia local.
+
+- Esquema: `supabase/migrations/`
+- Para aplicar migraciones: `supabase db push --linked`
+- Crear usuarios admin en Supabase Auth y registrar en `profiles` con `role = 'admin'`.
 
 ## Verificación
 
