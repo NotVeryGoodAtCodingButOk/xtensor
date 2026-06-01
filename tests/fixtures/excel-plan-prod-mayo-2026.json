@@ -1,6 +1,6 @@
 {
   "sourceWorkbook": "Plan Prod mayo 2026.xlsx",
-  "generatedAt": "2026-05-28T20:06:44.669483+00:00",
+  "generatedAt": "2026-06-01T16:17:13.220079+00:00",
   "settings": {
     "laborFactor": 0.3,
     "hourlyCostPerWorkerCop": 22019.57448559671,
@@ -794,6 +794,7 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 0,
+      "previos": [],
       "promisedRaw": "4 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -842,6 +843,9 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 0,
+      "previos": [
+        "Cojines"
+      ],
       "promisedRaw": "4 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -890,6 +894,9 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 0,
+      "previos": [
+        "Cojines"
+      ],
       "promisedRaw": "5 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -938,6 +945,9 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 0,
+      "previos": [
+        "Cojines"
+      ],
       "promisedRaw": "5 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -986,6 +996,9 @@
       "excelRemainingHours": 2.030011979988026,
       "excelRemainingHumanDays": 0.22555688666533621,
       "excelAccumulatedHours": 2.030011979988026,
+      "previos": [
+        "Cojines"
+      ],
       "promisedRaw": "5 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1034,6 +1047,10 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 2.030011979988026,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "5 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1082,6 +1099,10 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 2.030011979988026,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "5 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1130,6 +1151,10 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 2.030011979988026,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "6 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1178,6 +1203,9 @@
       "excelRemainingHours": 1.7030301845537128,
       "excelRemainingHumanDays": 0.18922557606152365,
       "excelAccumulatedHours": 3.7330421645417387,
+      "previos": [
+        "Cojines"
+      ],
       "promisedRaw": "6 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1226,6 +1254,10 @@
       "excelRemainingHours": 2.8610907100502376,
       "excelRemainingHumanDays": 0.31789896778335974,
       "excelAccumulatedHours": 6.594132874591976,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "6 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1274,6 +1306,10 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 6.594132874591976,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "7 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1322,6 +1358,10 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 6.594132874591976,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "7 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1370,6 +1410,10 @@
       "excelRemainingHours": 16.30821704728636,
       "excelRemainingHumanDays": 1.812024116365151,
       "excelAccumulatedHours": 22.902349921878333,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "10 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1418,6 +1462,10 @@
       "excelRemainingHours": 5.4496965905718815,
       "excelRemainingHumanDays": 0.6055218433968758,
       "excelAccumulatedHours": 28.352046512450215,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "10 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1466,6 +1514,7 @@
       "excelRemainingHours": 1.144894241716782,
       "excelRemainingHumanDays": 0.12721047130186466,
       "excelAccumulatedHours": 29.496940754166996,
+      "previos": [],
       "promisedRaw": "10 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1514,6 +1563,9 @@
       "excelRemainingHours": 1.492942091198684,
       "excelRemainingHumanDays": 0.16588245457763154,
       "excelAccumulatedHours": 30.98988284536568,
+      "previos": [
+        "Torno A."
+      ],
       "promisedRaw": "12 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1562,6 +1614,11 @@
       "excelRemainingHours": 31.390252361694042,
       "excelRemainingHumanDays": 3.4878058179660045,
       "excelAccumulatedHours": 62.38013520705972,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "12 may",
       "estimatedRaw": "27 May",
       "stages": [
@@ -1610,6 +1667,11 @@
       "excelRemainingHours": 10.59965986866231,
       "excelRemainingHumanDays": 1.1777399854069233,
       "excelAccumulatedHours": 72.97979507572204,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "13 may",
       "estimatedRaw": "28 May",
       "stages": [
@@ -1658,6 +1720,10 @@
       "excelRemainingHours": 43.488578792763626,
       "excelRemainingHumanDays": 4.83206431030707,
       "excelAccumulatedHours": 116.46837386848566,
+      "previos": [
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "14 may",
       "estimatedRaw": "28 May",
       "stages": [
@@ -1706,6 +1772,10 @@
       "excelRemainingHours": 7.629575226800633,
       "excelRemainingHumanDays": 0.8477305807556259,
       "excelAccumulatedHours": 124.0979490952863,
+      "previos": [
+        "Torno A.",
+        "Torno E."
+      ],
       "promisedRaw": "15 may",
       "estimatedRaw": "31 May",
       "stages": [
@@ -1754,6 +1824,11 @@
       "excelRemainingHours": 10.872144698190903,
       "excelRemainingHumanDays": 1.208016077576767,
       "excelAccumulatedHours": 134.9700937934772,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "18 may",
       "estimatedRaw": "31 May",
       "stages": [
@@ -1802,6 +1877,7 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 134.9700937934772,
+      "previos": [],
       "promisedRaw": "18 may",
       "estimatedRaw": "31 May",
       "stages": [
@@ -1850,6 +1926,7 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 134.9700937934772,
+      "previos": [],
       "promisedRaw": "18 may",
       "estimatedRaw": "31 May",
       "stages": [
@@ -1898,6 +1975,9 @@
       "excelRemainingHours": 0,
       "excelRemainingHumanDays": 0,
       "excelAccumulatedHours": 134.9700937934772,
+      "previos": [
+        "Laser"
+      ],
       "promisedRaw": "18 may",
       "estimatedRaw": "31 May",
       "stages": [
@@ -1946,6 +2026,11 @@
       "excelRemainingHours": 39.23781545211756,
       "excelRemainingHumanDays": 4.359757272457506,
       "excelAccumulatedHours": 174.20790924559475,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "19 may",
       "estimatedRaw": "31 May",
       "stages": [
@@ -1994,6 +2079,11 @@
       "excelRemainingHours": 43.488578792763626,
       "excelRemainingHumanDays": 4.83206431030707,
       "excelAccumulatedHours": 217.69648803835838,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Cojines"
+      ],
       "promisedRaw": "19 may",
       "estimatedRaw": "1 Jun",
       "stages": [
@@ -2042,6 +2132,11 @@
       "excelRemainingHours": 48.502299656089754,
       "excelRemainingHumanDays": 5.3891444062321945,
       "excelAccumulatedHours": 266.19878769444813,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Zinc"
+      ],
       "promisedRaw": "46162",
       "estimatedRaw": "2 Jun",
       "stages": [
@@ -2090,6 +2185,13 @@
       "excelRemainingHours": 33.924361276309966,
       "excelRemainingHumanDays": 3.7693734751455517,
       "excelAccumulatedHours": 300.1231489707581,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Zinc",
+        "Cojines"
+      ],
       "promisedRaw": "46162",
       "estimatedRaw": "2 Jun",
       "stages": [
@@ -2138,6 +2240,14 @@
       "excelRemainingHours": 20.599853112361714,
       "excelRemainingHumanDays": 2.2888725680401905,
       "excelAccumulatedHours": 320.7230020831198,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Tubos",
+        "Cojines"
+      ],
       "promisedRaw": "25 may",
       "estimatedRaw": "2 Jun",
       "stages": [
@@ -2186,6 +2296,13 @@
       "excelRemainingHours": 3.2425694713902695,
       "excelRemainingHumanDays": 0.3602854968211411,
       "excelAccumulatedHours": 323.96557155451006,
+      "previos": [
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Tubos",
+        "Cojines"
+      ],
       "promisedRaw": "25 may",
       "estimatedRaw": "2 Jun",
       "stages": [
@@ -2234,6 +2351,20 @@
       "excelRemainingHours": 7.302593431366321,
       "excelRemainingHumanDays": 0.8113992701518135,
       "excelAccumulatedHours": 331.2681649858764,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam.",
+        "Cojines"
+      ],
       "promisedRaw": "25 may",
       "estimatedRaw": "2 Jun",
       "stages": [
@@ -2282,6 +2413,19 @@
       "excelRemainingHours": 229.01089679541766,
       "excelRemainingHumanDays": 25.44565519949085,
       "excelAccumulatedHours": 560.2790617812941,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "28 may",
       "estimatedRaw": "8 Jun",
       "stages": [
@@ -2330,6 +2474,19 @@
       "excelRemainingHours": 42.933534064379316,
       "excelRemainingHumanDays": 4.770392673819924,
       "excelAccumulatedHours": 603.2125958456734,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "29 may",
       "estimatedRaw": "9 Jun",
       "stages": [
@@ -2378,6 +2535,19 @@
       "excelRemainingHours": 42.933534064379316,
       "excelRemainingHumanDays": 4.770392673819924,
       "excelAccumulatedHours": 646.1461299100527,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "1 jun",
       "estimatedRaw": "9 Jun",
       "stages": [
@@ -2426,6 +2596,19 @@
       "excelRemainingHours": 25.08348198832292,
       "excelRemainingHumanDays": 2.7870535542581023,
       "excelAccumulatedHours": 671.2296118983755,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "1 jun",
       "estimatedRaw": "9 Jun",
       "stages": [
@@ -2474,6 +2657,19 @@
       "excelRemainingHours": 33.85337897821777,
       "excelRemainingHumanDays": 3.761486553135308,
       "excelAccumulatedHours": 705.0829908765933,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "2 jun",
       "estimatedRaw": "10 Jun",
       "stages": [
@@ -2522,6 +2718,19 @@
       "excelRemainingHours": 43.09873474715706,
       "excelRemainingHumanDays": 4.7887483052396735,
       "excelAccumulatedHours": 748.1817256237504,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "2 jun",
       "estimatedRaw": "11 Jun",
       "stages": [
@@ -2570,6 +2779,18 @@
       "excelRemainingHours": 130.79271817372518,
       "excelRemainingHumanDays": 14.532524241525019,
       "excelAccumulatedHours": 878.9744437974755,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "4 jun",
       "estimatedRaw": "15 Jun",
       "stages": [
@@ -2618,6 +2839,19 @@
       "excelRemainingHours": 149.9811407418532,
       "excelRemainingHumanDays": 16.664571193539246,
       "excelAccumulatedHours": 1028.9555845393288,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "9 jun",
       "estimatedRaw": "17 Jun",
       "stages": [
@@ -2666,6 +2900,18 @@
       "excelRemainingHours": 42.933534064379316,
       "excelRemainingHumanDays": 4.770392673819924,
       "excelAccumulatedHours": 1071.889118603708,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "9 jun",
       "estimatedRaw": "17 Jun",
       "stages": [
@@ -2714,6 +2960,19 @@
       "excelRemainingHours": 42.933534064379316,
       "excelRemainingHumanDays": 4.770392673819924,
       "excelAccumulatedHours": 1114.8226526680874,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "10 jun",
       "estimatedRaw": "18 Jun",
       "stages": [
@@ -2762,6 +3021,18 @@
       "excelRemainingHours": 42.933534064379316,
       "excelRemainingHumanDays": 4.770392673819924,
       "excelAccumulatedHours": 1157.7561867324666,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "10 jun",
       "estimatedRaw": "21 Jun",
       "stages": [
@@ -2810,6 +3081,19 @@
       "excelRemainingHours": 6.675878323450556,
       "excelRemainingHumanDays": 0.7417642581611729,
       "excelAccumulatedHours": 1164.4320650559173,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "46190",
       "estimatedRaw": "21 Jun",
       "stages": [
@@ -2858,6 +3142,18 @@
       "excelRemainingHours": 52.99829934331156,
       "excelRemainingHumanDays": 5.888699927034618,
       "excelAccumulatedHours": 1217.430364399229,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "46191",
       "estimatedRaw": "22 Jun",
       "stages": [
@@ -2906,6 +3202,19 @@
       "excelRemainingHours": 54.36072349095453,
       "excelRemainingHumanDays": 6.040080387883837,
       "excelAccumulatedHours": 1271.7910878901835,
+      "previos": [
+        "Torno A.",
+        "Torno E.",
+        "Laser",
+        "Carenaje",
+        "Placas",
+        "Tubos",
+        "Inox.",
+        "Pintu.",
+        "Zinc",
+        "Tornillos",
+        "Rodam."
+      ],
       "promisedRaw": "46194",
       "estimatedRaw": "22 Jun",
       "stages": [

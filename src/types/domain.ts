@@ -37,3 +37,44 @@ export type CalculatedMachineView = MachineView & {
   estimatedDate: string;
   clientEstimatedDate: string;
 };
+
+export type PrevioCatalogView = {
+  id: string;
+  name: string;
+  createdAt: string;
+};
+
+export type MachinePrevioView = {
+  id: string;
+  previoCatalogId: string;
+  name: string;
+  ordered: boolean;
+  orderedAt: string | null;
+  orderedBy: string | null;
+  received: boolean;
+  receivedAt: string | null;
+  receivedBy: string | null;
+  createdAt: string;
+};
+
+export type MachinePrevioSummary = {
+  total: number;
+  orderedCount: number;
+  receivedCount: number;
+  missingPrevios: boolean;
+  pendingOrdered: boolean;
+  pendingReceived: boolean;
+  incompleteWhileInProduction: boolean;
+};
+
+export type MachinePrevioListRow = {
+  machineId: string;
+  cotiNumber: number;
+  clientName: string;
+  equipmentName: string;
+  equipmentCode: string | null;
+  promisedDate: string;
+  status: MachineStatus;
+  previos: MachinePrevioView[];
+  summary: MachinePrevioSummary;
+};

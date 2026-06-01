@@ -23,6 +23,15 @@ import {
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
+import {
+  addMachinePrevio,
+  bootstrapPreviosFromFixture,
+  bulkApplyPrevioToMachines,
+  createPrevioCatalogItem,
+  deletePrevioCatalogItem,
+  removeMachinePrevio,
+  toggleMachinePrevio,
+} from "@/services/previos";
 import { updateFactoryPassword, updateSettings } from "@/services/settings";
 
 export async function signInAction(formData: FormData) {
@@ -199,6 +208,28 @@ export async function addCatalogItemAction(formData: FormData) {
   redirect("/admin/catalogo");
 }
 
+export async function addPrevioCatalogItemAction(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (name) await createPrevioCatalogItem(name);
+  redirect("/admin/catalogo");
+}
+
+export async function deletePrevioCatalogItemAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "").trim();
+  if (id) await deletePrevioCatalogItem(id);
+  redirect("/admin/catalogo");
+}
+
+export async function bulkApplyCatalogPrevioAction(formData: FormData) {
+  const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
+  const mode = String(formData.get("mode") ?? "add") === "remove" ? "remove" : "add";
+  const machineIds = formData.getAll("machineIds").map((value) => String(value)).filter(Boolean);
+  if (previoCatalogId && machineIds.length > 0) {
+    await bulkApplyPrevioToMachines({ previoCatalogId, machineIds, mode });
+  }
+  redirect("/admin/catalogo");
+}
+
 export async function updateCatalogItemAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const code = String(formData.get("code") ?? "").trim();
@@ -208,6 +239,39 @@ export async function updateCatalogItemAction(formData: FormData) {
   const is_active = formData.get("is_active") !== "false";
   if (id) await updateCatalogItem(id, { code, name, line, default_price_cop, is_active });
   redirect("/admin/catalogo");
+}
+
+export async function addMachinePrevioAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "").trim();
+  const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
+  if (machineId && previoCatalogId) {
+    await addMachinePrevio(machineId, previoCatalogId);
+  }
+  redirect("/admin/previos");
+}
+
+export async function removeMachinePrevioAction(formData: FormData) {
+  const machinePrevioId = String(formData.get("machinePrevioId") ?? "").trim();
+  if (machinePrevioId) {
+    await removeMachinePrevio(machinePrevioId);
+  }
+  redirect("/admin/previos");
+}
+
+export async function toggleMachinePrevioAction(formData: FormData) {
+  const machinePrevioId = String(formData.get("machinePrevioId") ?? "").trim();
+  const field = String(formData.get("field") ?? "") === "received" ? "received" : "ordered";
+  const checked = String(formData.get("checked") ?? "") === "true";
+  const actorProfileId = await requireActorProfileId();
+  if (machinePrevioId) {
+    await toggleMachinePrevio({ machinePrevioId, field, checked, actorProfileId });
+  }
+  redirect("/admin/previos");
+}
+
+export async function bootstrapPreviosAction() {
+  const result = await bootstrapPreviosFromFixture();
+  redirect(`/admin/previos?seed=ok&machines=${result.machinesTouched}&previos=${result.previosCreated}`);
 }
 
 export async function updateSettingsAction(formData: FormData) {
@@ -234,4 +298,18 @@ export async function deleteHolidayAction(formData: FormData) {
   const date = String(formData.get("date") ?? "").trim();
   if (date) await deleteHoliday(date);
   redirect("/admin/configuracion");
+}
+
+async function requireActorProfileId() {
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser();
+
+  if (error || !user) {
+    throw new Error("No se pudo identificar al usuario actual.");
+  }
+
+  return user.id;
 }

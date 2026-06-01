@@ -1,11 +1,15 @@
+"use client";
+
 import Link from "next/link";
-import { ClipboardList, Factory, LogOut, Palette, Settings, Truck, UserRound, Users } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { ClipboardList, Factory, ListChecks, LogOut, Palette, Settings, Truck, UserRound, Users } from "lucide-react";
 import { signOutAction } from "@/app/admin/actions";
 import { BrandLogo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
-  { href: "/admin", label: "Producción", icon: ClipboardList },
+  { href: "/admin", label: "Producción", icon: ClipboardList, exact: true },
+  { href: "/admin/previos", label: "Previos", icon: ListChecks },
   { href: "/admin/catalogo", label: "Catálogo", icon: Factory },
   { href: "/admin/operarios", label: "Operarios", icon: Users },
   { href: "/admin/clientes", label: "Clientes", icon: UserRound },
@@ -15,6 +19,8 @@ const navItems = [
 ];
 
 export function AdminShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+
   return (
     <div className="min-h-screen bg-[var(--xt-paper)]">
       <header className="sticky top-0 z-30 border-b border-[var(--xt-graphite)] bg-[var(--xt-black)] text-[var(--xt-white)]">
@@ -25,11 +31,12 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
           <nav className="flex flex-1 items-center gap-0.5 overflow-x-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
+              const isActive = item.exact ? pathname === item.href : pathname.startsWith(item.href);
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className="flex shrink-0 items-center gap-1.5 rounded-[2px] px-3 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-bold uppercase tracking-[0.12em] text-[var(--xt-white)]/78 transition-colors hover:bg-[var(--xt-yellow)] hover:text-[var(--xt-black)]"
+                  className={`flex shrink-0 items-center gap-1.5 rounded-[2px] px-3 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-bold uppercase tracking-[0.12em] transition-colors hover:bg-[var(--xt-yellow)] hover:text-[var(--xt-black)] ${isActive ? "bg-[var(--xt-yellow)] text-[var(--xt-black)]" : "text-[var(--xt-white)]/78"}`}
                 >
                   <Icon className="h-4 w-4" />
                   {item.label}

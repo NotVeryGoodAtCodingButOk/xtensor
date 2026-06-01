@@ -125,6 +125,75 @@ export type Database = {
         };
         Relationships: [];
       };
+      machine_previo_events: {
+        Row: {
+          id: string;
+          machine_previo_id: string | null;
+          machine_id: string;
+          previo_catalog_id: string;
+          event_type: "ordered_checked" | "ordered_unchecked" | "received_checked" | "received_unchecked";
+          actor_profile_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          machine_previo_id?: string | null;
+          machine_id: string;
+          previo_catalog_id: string;
+          event_type: "ordered_checked" | "ordered_unchecked" | "received_checked" | "received_unchecked";
+          actor_profile_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          machine_previo_id?: string | null;
+          machine_id?: string;
+          previo_catalog_id?: string;
+          event_type?: "ordered_checked" | "ordered_unchecked" | "received_checked" | "received_unchecked";
+          actor_profile_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      machine_previos: {
+        Row: {
+          id: string;
+          machine_id: string;
+          previo_catalog_id: string;
+          ordered: boolean;
+          ordered_at: string | null;
+          ordered_by: string | null;
+          received: boolean;
+          received_at: string | null;
+          received_by: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          machine_id: string;
+          previo_catalog_id: string;
+          ordered?: boolean;
+          ordered_at?: string | null;
+          ordered_by?: string | null;
+          received?: boolean;
+          received_at?: string | null;
+          received_by?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          machine_id?: string;
+          previo_catalog_id?: string;
+          ordered?: boolean;
+          ordered_at?: string | null;
+          ordered_by?: string | null;
+          received?: boolean;
+          received_at?: string | null;
+          received_by?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       machines: {
         Row: {
           id: string;
@@ -179,6 +248,24 @@ export type Database = {
           shipped_at?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      previo_catalog: {
+        Row: {
+          id: string;
+          name: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          created_at?: string;
         };
         Relationships: [];
       };

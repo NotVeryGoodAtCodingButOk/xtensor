@@ -124,6 +124,11 @@ def main():
                 "excelRemainingHours": number(row.get("AB")) or 0,
                 "excelRemainingHumanDays": number(row.get("AC")) or 0,
                 "excelAccumulatedHours": number(row.get("AD")) or 0,
+                "previos": [
+                    row.get(column)
+                    for column in ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"]
+                    if (row.get(column) or "").strip()
+                ],
                 "promisedRaw": row.get("AF") or "",
                 "estimatedRaw": row.get("AG") or "",
                 "stages": [
