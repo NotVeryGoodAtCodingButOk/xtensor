@@ -60,7 +60,7 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
             <p className="[font-family:var(--font-barlow-condensed)] text-base font-medium text-[var(--xt-white)]/70">
               {completionPct}% completado
               {!allDone && lastDespachoDate && (
-                <> · Despacho est. {formatDateEs(lastDespachoDate)}</>
+                <> · Construcción est. {formatDateEs(lastDespachoDate)}</>
               )}
               {allDone && <> · Pedido listo para despacho</>}
             </p>

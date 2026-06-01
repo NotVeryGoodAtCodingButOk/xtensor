@@ -4,6 +4,8 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { formatPercent } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -26,7 +28,7 @@ export function MachineCard({ machine }: { machine: CalculatedMachineView }) {
 
   const dateLabel = isComplete && completionDate
     ? `Terminada · ${formatDateEs(completionDate)}`
-    : `Despacho est. ${formatDateEs(machine.clientEstimatedDate)}`;
+    : `Construcción est. ${formatDateEs(machine.clientEstimatedDate)}`;
 
   const badgeVariant = isComplete || isShipped ? "success" : "default";
   const badgeLabel = isShipped ? "Despachada" : isComplete ? "Completada" : "En producción";
@@ -61,10 +63,16 @@ export function MachineCard({ machine }: { machine: CalculatedMachineView }) {
       {stagesOpen && (
         <div
           className={[
-            "border-t px-3 py-2",
+            "border-t px-3 py-2 space-y-2",
             isComplete || isShipped ? "border-green-200" : "border-[var(--xt-black)]/10",
           ].join(" ")}
         >
+          <div className="flex items-center gap-2">
+            <Progress value={machine.progressPct * 100} className="h-1.5 flex-1" />
+            <span className="[font-family:var(--font-barlow-condensed)] text-xs font-bold shrink-0">
+              {formatPercent(machine.progressPct)}
+            </span>
+          </div>
           <StageStrip stages={machine.stages} />
         </div>
       )}
