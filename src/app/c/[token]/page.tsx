@@ -8,6 +8,7 @@ import { getClientByToken } from "@/services/clients";
 import { listHolidays } from "@/services/catalog";
 import { calculateMachines, listClientVisibleMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
+import { formatDateEs } from "@/services/schedule";
 
 export default async function ClientPortalPage({ params }: { params: Promise<{ token: string }> }) {
   if (!hasSupabaseConfig()) {
@@ -31,6 +32,15 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
   ]);
   const machines = calculateMachines(rawMachines, mapSettings(settingsRow), holidays);
 
+  const totalCount = machines.length;
+  const shippedCount = machines.filter((m) => m.status === "shipped").length;
+  const completionPct = totalCount > 0 ? Math.round((shippedCount / totalCount) * 100) : 0;
+  const lastDispatchDate = machines
+    .filter((m) => m.status !== "shipped")
+    .map((m) => m.clientEstimatedDate)
+    .sort()
+    .at(-1);
+
   return (
     <main className="min-h-screen bg-[var(--xt-paper)]">
       <RealtimeRefresh channelName={`client-${client.id}`} tables={["machines", "machine_stages"]} />
@@ -41,9 +51,20 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
             <p className="xt-eyebrow text-[var(--xt-yellow)]">Portal de cliente</p>
             <h1 className="text-4xl font-bold">Hola, {client.name}</h1>
           </div>
-          <p className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold text-[var(--xt-yellow)]">
-            {machines.filter((machine) => machine.status === "in_production").length} máquinas en producción
-          </p>
+          <div className="text-right">
+            <p className="[font-family:var(--font-barlow-condensed)] text-3xl font-bold text-[var(--xt-yellow)]">
+              {shippedCount}/{totalCount} despachadas
+            </p>
+            <p className="[font-family:var(--font-barlow-condensed)] text-base font-medium text-[var(--xt-white)]/70">
+              {completionPct}% completado
+              {lastDispatchDate && (
+                <> · Último despacho est. {formatDateEs(lastDispatchDate)}</>
+              )}
+              {shippedCount === totalCount && totalCount > 0 && (
+                <> · Pedido completo</>
+              )}
+            </p>
+          </div>
         </div>
         <div className="xt-hazard h-2" />
       </header>

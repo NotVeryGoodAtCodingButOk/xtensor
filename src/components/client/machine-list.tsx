@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowDownUp } from "lucide-react";
-import { MachineRow } from "@/components/client/machine-row";
+import { MachineCard } from "@/components/client/machine-card";
 import type { CalculatedMachineView } from "@/types/domain";
 
 export function MachineList({ machines }: { machines: CalculatedMachineView[] }) {
@@ -23,9 +23,9 @@ export function MachineList({ machines }: { machines: CalculatedMachineView[] })
           {asc ? "Menos → Más completo" : "Más → Menos completo"}
         </button>
       </div>
-      <div className="grid gap-2">
+      <div className="grid gap-3 sm:grid-cols-2">
         {sorted.map((machine) => (
-          <MachineRow key={machine.id} machine={machine} />
+          <MachineCard key={machine.id} machine={machine} />
         ))}
       </div>
     </div>
