@@ -2,8 +2,19 @@
 
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createCustomEquipment } from "@/services/catalog";
-import { ensureClientByName } from "@/services/clients";
+import {
+  createCustomEquipment,
+  createColor,
+  updateColor,
+  deleteColor,
+  createWorker,
+  updateWorker,
+  createCatalogItem,
+  updateCatalogItem,
+  createHoliday,
+  deleteHoliday,
+} from "@/services/catalog";
+import { ensureClientByName, regenerateClientToken, updateClient, deleteClient } from "@/services/clients";
 import {
   createMachine,
   deleteMachine,
@@ -12,8 +23,7 @@ import {
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
-import { regenerateClientToken } from "@/services/clients";
-import { updateFactoryPassword } from "@/services/settings";
+import { updateFactoryPassword, updateSettings } from "@/services/settings";
 
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -123,4 +133,105 @@ export async function updateFactoryPasswordAction(formData: FormData) {
 export async function regenerateClientTokenAction(formData: FormData) {
   await regenerateClientToken(String(formData.get("clientId") ?? ""));
   redirect("/admin/clientes");
+}
+
+export async function updateClientAction(formData: FormData) {
+  const id = String(formData.get("clientId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (id && name) await updateClient(id, name);
+  redirect("/admin/clientes");
+}
+
+export async function deleteClientAction(formData: FormData) {
+  const id = String(formData.get("clientId") ?? "");
+  if (id) await deleteClient(id);
+  redirect("/admin/clientes");
+}
+
+export async function addColorAction(formData: FormData) {
+  const name = String(formData.get("name") ?? "").trim();
+  if (name) await createColor(name);
+  redirect("/admin/colores");
+}
+
+export async function updateColorAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (id && name) await updateColor(id, name);
+  redirect("/admin/colores");
+}
+
+export async function deleteColorAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (id) await deleteColor(id);
+  redirect("/admin/colores");
+}
+
+export async function addWorkerAction(formData: FormData) {
+  const full_name = String(formData.get("full_name") ?? "").trim();
+  const role = String(formData.get("role") ?? "").trim();
+  const raw_cost = formData.get("hourly_cost_cop");
+  const hourly_cost_cop = raw_cost ? Number(raw_cost) || null : null;
+  const display_color = String(formData.get("display_color") ?? "").trim() || null;
+  const is_active = formData.get("is_active") !== "false";
+  if (full_name && role) await createWorker({ full_name, role, hourly_cost_cop, display_color, is_active });
+  redirect("/admin/operarios");
+}
+
+export async function updateWorkerAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const full_name = String(formData.get("full_name") ?? "").trim();
+  const role = String(formData.get("role") ?? "").trim();
+  const raw_cost = formData.get("hourly_cost_cop");
+  const hourly_cost_cop = raw_cost ? Number(raw_cost) || null : null;
+  const display_color = String(formData.get("display_color") ?? "").trim() || null;
+  const is_active = formData.get("is_active") !== "false";
+  if (id) await updateWorker(id, { full_name, role, hourly_cost_cop, display_color, is_active });
+  redirect("/admin/operarios");
+}
+
+export async function addCatalogItemAction(formData: FormData) {
+  const code = String(formData.get("code") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const line = String(formData.get("line") ?? "").trim() || null;
+  const default_price_cop = Number(formData.get("default_price_cop")) || null;
+  if (code && name) await createCatalogItem({ code, name, line, default_price_cop });
+  redirect("/admin/catalogo");
+}
+
+export async function updateCatalogItemAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  const code = String(formData.get("code") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  const line = String(formData.get("line") ?? "").trim() || null;
+  const default_price_cop = Number(formData.get("default_price_cop")) || null;
+  const is_active = formData.get("is_active") !== "false";
+  if (id) await updateCatalogItem(id, { code, name, line, default_price_cop, is_active });
+  redirect("/admin/catalogo");
+}
+
+export async function updateSettingsAction(formData: FormData) {
+  await updateSettings({
+    hourly_cost_per_worker_cop: Number(formData.get("hourly_cost_per_worker_cop")),
+    labor_factor: Number(formData.get("labor_factor")),
+    active_workers_count: Number(formData.get("active_workers_count")),
+    daily_hours_mon_fri: Number(formData.get("daily_hours_mon_fri")),
+    daily_hours_sat: Number(formData.get("daily_hours_sat")),
+    daily_hours_sun: Number(formData.get("daily_hours_sun") ?? 0),
+    client_buffer_days: Number(formData.get("client_buffer_days")),
+  });
+  redirect("/admin/configuracion?settings=ok");
+}
+
+export async function addHolidayAction(formData: FormData) {
+  const date = String(formData.get("date") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+  if (date && name) await createHoliday(date, name);
+  redirect("/admin/configuracion");
+}
+
+export async function deleteHolidayAction(formData: FormData) {
+  const date = String(formData.get("date") ?? "").trim();
+  if (date) await deleteHoliday(date);
+  redirect("/admin/configuracion");
 }

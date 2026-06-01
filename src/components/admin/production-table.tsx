@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowUpDown, MoreHorizontal, Truck } from "lucide-react";
+import { ArrowUpDown, MoreHorizontal, Pencil, Truck } from "lucide-react";
 import { markShippedAction, unmarkShippedAction } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -86,13 +86,23 @@ export function ProductionTable({
                   </TableCell>
                 ))}
                 <TableCell>
-                  <form action={shipped ? unmarkShippedAction : markShippedAction}>
-                    <input type="hidden" name="machineId" value={machine.id} />
-                    <Button size="sm" variant={shipped ? "outline" : "secondary"} type="submit">
-                      {shipped ? <MoreHorizontal className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
-                      {shipped ? "Reactivar" : "Despachar"}
-                    </Button>
-                  </form>
+                  <div className="flex gap-1">
+                    {!shipped && (
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href={`/admin/maquinas/${machine.id}`}>
+                          <Pencil className="h-3 w-3" />
+                          Editar
+                        </Link>
+                      </Button>
+                    )}
+                    <form action={shipped ? unmarkShippedAction : markShippedAction}>
+                      <input type="hidden" name="machineId" value={machine.id} />
+                      <Button size="sm" variant={shipped ? "outline" : "secondary"} type="submit">
+                        {shipped ? <MoreHorizontal className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
+                        {shipped ? "Reactivar" : "Despachar"}
+                      </Button>
+                    </form>
+                  </div>
                 </TableCell>
               </TableRow>
             );

@@ -106,3 +106,85 @@ export async function listHolidays() {
     isCustom: holiday.is_custom,
   }));
 }
+
+export async function createColor(name: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("colors").insert({ name }).select("*").single();
+  if (error) throw new Error(`No se pudo crear el color: ${error.message}`);
+  return data;
+}
+
+export async function updateColor(id: string, name: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("colors").update({ name }).eq("id", id).select("*").single();
+  if (error) throw new Error(`No se pudo actualizar el color: ${error.message}`);
+  return data;
+}
+
+export async function deleteColor(id: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("colors").delete().eq("id", id);
+  if (error) throw new Error(`No se pudo eliminar el color: ${error.message}`);
+}
+
+export async function createWorker(input: {
+  full_name: string;
+  role: string;
+  hourly_cost_cop: number | null;
+  display_color: string | null;
+  is_active: boolean;
+}) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("workers").insert(input).select("*").single();
+  if (error) throw new Error(`No se pudo crear el operario: ${error.message}`);
+  return data;
+}
+
+export async function updateWorker(
+  id: string,
+  input: { full_name?: string; role?: string; hourly_cost_cop?: number | null; display_color?: string | null; is_active?: boolean },
+) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("workers").update(input).eq("id", id).select("*").single();
+  if (error) throw new Error(`No se pudo actualizar el operario: ${error.message}`);
+  return data;
+}
+
+export async function createCatalogItem(input: {
+  code: string;
+  name: string;
+  line: string | null;
+  default_price_cop: number | null;
+}) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("equipment_catalog")
+    .insert({ ...input, is_custom: false, is_active: true })
+    .select("*")
+    .single();
+  if (error) throw new Error(`No se pudo crear el equipo: ${error.message}`);
+  return data;
+}
+
+export async function updateCatalogItem(
+  id: string,
+  input: { code?: string; name?: string; line?: string | null; default_price_cop?: number | null; is_active?: boolean },
+) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("equipment_catalog").update(input).eq("id", id).select("*").single();
+  if (error) throw new Error(`No se pudo actualizar el equipo: ${error.message}`);
+  return data;
+}
+
+export async function createHoliday(date: string, name: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("holidays").insert({ date, name, is_custom: true }).select("*").single();
+  if (error) throw new Error(`No se pudo crear el festivo: ${error.message}`);
+  return data;
+}
+
+export async function deleteHoliday(date: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("holidays").delete().eq("date", date);
+  if (error) throw new Error(`No se pudo eliminar el festivo: ${error.message}`);
+}

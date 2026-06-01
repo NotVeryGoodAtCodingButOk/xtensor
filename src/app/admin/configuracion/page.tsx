@@ -1,10 +1,11 @@
 import { updateFactoryPasswordAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/app-shell";
+import { HolidaysManager } from "@/components/admin/holidays-manager";
+import { SettingsForm } from "@/components/admin/settings-form";
 import { ConfigWarning } from "@/components/config-warning";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listHolidays } from "@/services/catalog";
 import { getSettings } from "@/services/settings";
@@ -18,7 +19,7 @@ const PASSWORD_MESSAGES: Record<string, { text: string; tone: "ok" | "error" }> 
 export default async function SettingsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ password?: string }>;
+  searchParams: Promise<{ password?: string; settings?: string }>;
 }) {
   if (!hasSupabaseConfig()) {
     return (
@@ -44,34 +45,7 @@ export default async function SettingsPage({
             <CardTitle>Parámetros</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableBody>
-                <TableRow>
-                  <TableCell>Costo hora operario</TableCell>
-                  <TableCell className="text-right">{Number(settings.hourly_cost_per_worker_cop).toFixed(2)}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Factor mano de obra</TableCell>
-                  <TableCell className="text-right">{Number(settings.labor_factor).toFixed(2)}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Operarios activos</TableCell>
-                  <TableCell className="text-right">{settings.active_workers_count}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Horas lunes a viernes</TableCell>
-                  <TableCell className="text-right">{Number(settings.daily_hours_mon_fri).toFixed(2)}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Horas sábado</TableCell>
-                  <TableCell className="text-right">{Number(settings.daily_hours_sat).toFixed(2)}</TableCell>
-                </TableRow>
-                <TableRow>
-                  <TableCell>Buffer cliente</TableCell>
-                  <TableCell className="text-right">{settings.client_buffer_days} días</TableCell>
-                </TableRow>
-              </TableBody>
-            </Table>
+            <SettingsForm settings={settings} savedOk={params.settings === "ok"} />
           </CardContent>
         </Card>
         <Card>
@@ -118,14 +92,7 @@ export default async function SettingsPage({
             <CardTitle>Festivos</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid max-h-[520px] gap-2 overflow-auto">
-              {holidays.map((holiday) => (
-                <div key={holiday.date} className="flex justify-between border border-[var(--xt-cement)] bg-[var(--xt-paper)] p-3 text-sm">
-                  <span>{holiday.name}</span>
-                  <span className="text-[var(--xt-steel)]">{holiday.date}</span>
-                </div>
-              ))}
-            </div>
+            <HolidaysManager holidays={holidays} />
           </CardContent>
         </Card>
       </div>

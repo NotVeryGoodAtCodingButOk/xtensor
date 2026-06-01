@@ -1,10 +1,8 @@
 import { AdminShell } from "@/components/app-shell";
+import { CatalogManager } from "@/components/admin/catalog-manager";
 import { ConfigWarning } from "@/components/config-warning";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { hasSupabaseConfig } from "@/lib/env";
-import { formatCurrencyCop } from "@/lib/utils";
 import { listCatalog } from "@/services/catalog";
 
 export default async function CatalogPage() {
@@ -25,30 +23,7 @@ export default async function CatalogPage() {
           <CardTitle>Catálogo de equipos</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Código</TableHead>
-                <TableHead>Equipo</TableHead>
-                <TableHead>Línea</TableHead>
-                <TableHead className="text-right">Precio</TableHead>
-                <TableHead>Estado</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {catalog.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.code}</TableCell>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>{item.line ?? ""}</TableCell>
-                  <TableCell className="text-right">{formatCurrencyCop(Number(item.default_price_cop ?? 0))}</TableCell>
-                  <TableCell>
-                    <Badge variant={item.is_active ? "success" : "muted"}>{item.is_active ? "Activo" : "Inactivo"}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          <CatalogManager catalog={catalog} />
         </CardContent>
       </Card>
     </AdminShell>

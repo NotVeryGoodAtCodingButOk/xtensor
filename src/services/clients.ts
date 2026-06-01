@@ -67,6 +67,19 @@ export async function ensureClientByName(name: string) {
   return data;
 }
 
+export async function updateClient(id: string, name: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("clients").update({ name }).eq("id", id).select("*").single();
+  if (error) throw new Error(`No se pudo actualizar el cliente: ${error.message}`);
+  return data;
+}
+
+export async function deleteClient(id: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("clients").delete().eq("id", id);
+  if (error) throw new Error(`No se pudo eliminar el cliente: ${error.message}`);
+}
+
 export async function mergeClients(sourceClientId: string, targetClientId: string) {
   if (sourceClientId === targetClientId) {
     throw new Error("Los clientes deben ser diferentes.");
