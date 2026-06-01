@@ -7,13 +7,12 @@ import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
-import { formatPercent } from "@/lib/utils";
 import { listHolidays, listWorkers } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
+import type { CalculatedMachineView } from "@/types/domain";
 
 export default async function FactoryMachinesPage() {
   if (!hasFactoryConfig()) {
@@ -40,16 +39,21 @@ export default async function FactoryMachinesPage() {
     holidays,
     status: "in_production",
   });
+  const orderedMachines = [...machines].sort(sortMachinesForWorkers);
+  const workerColor = worker?.display_color ?? "var(--xt-black)";
 
   return (
     <main className="min-h-screen bg-[var(--xt-paper)]">
       <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages"]} />
-      <header className="sticky top-0 z-10 border-b border-[var(--xt-graphite)] bg-[var(--xt-black)] text-[var(--xt-white)]">
+      <header
+        className="sticky top-0 z-10 border-b border-[var(--xt-graphite)] text-[var(--xt-white)]"
+        style={{ background: workerColor }}
+      >
         <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
           <div className="flex items-center gap-5">
             <BrandLogo inverse />
-            <div className="border-l border-[var(--xt-yellow)] pl-4">
-              <p className="xt-eyebrow text-[var(--xt-yellow)]">Operario activo</p>
+            <div className="border-l border-white/60 pl-4">
+              <p className="xt-eyebrow text-white/80">Operario activo</p>
               <h1 className="text-2xl font-bold">{worker?.full_name ?? "Operario"}</h1>
             </div>
           </div>
@@ -69,53 +73,78 @@ export default async function FactoryMachinesPage() {
         <div className="xt-hazard h-2" />
       </header>
 
-      <div className="grid gap-2 p-5">
-        {machines.map((machine) => (
+      <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+        {orderedMachines.map((machine) => {
+          const completedStages = machine.stages.filter((stage) => stage.completion === 100).length;
+          const totalStages = machine.stages.length;
+          const isComplete = totalStages > 0 && completedStages === totalStages;
+          const isStarted = machine.stages.some((stage) => stage.completion > 0) && !isComplete;
+
+          return (
           <Link
             key={machine.id}
             href={`/planta/maquinas/${machine.id}`}
-            className="block border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
+            className="flex min-h-[230px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
           >
-            {/* Main row */}
-            <div className="flex items-center gap-4 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">
-                  COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"} · {machine.equipmentName}
-                </p>
-                <p className="truncate text-sm text-[var(--xt-steel)]">
+            <div className="flex flex-1 flex-col gap-4 p-5">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="xt-eyebrow">COTI {machine.cotiNumber}</p>
+                  <h2 className="[font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none">
+                    {machine.equipmentName}
+                  </h2>
+                </div>
+                <ChevronRight className="mt-2 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
+              </div>
+
+              <div className="grid gap-1 text-base text-[var(--xt-steel)]">
+                <p className="truncate">
                   {machine.clientName} · {machine.colorName ?? "Sin color"}
                 </p>
+                <p className="truncate">
+                  COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"} · {machine.equipmentName}
+                </p>
               </div>
 
-              {/* Progress bar — fixed width so all bars align */}
-              <div className="hidden w-[220px] shrink-0 sm:block">
-                <div className="mb-1 flex justify-between text-xs text-[var(--xt-steel)]">
-                  <span>Avance</span>
-                  <span>{formatPercent(machine.progressPct)}</span>
-                </div>
-                <Progress value={machine.progressPct} className="h-2" />
+              <div className="[font-family:var(--font-barlow-condensed)] text-xl font-bold">
+                {isComplete ? "Terminada" : isStarted ? `${completedStages} de ${totalStages} tareas listas` : "Sin iniciar"}
               </div>
-
-              {/* % on mobile */}
-              <span className="[font-family:var(--font-barlow-condensed)] shrink-0 text-base font-bold sm:hidden">
-                {formatPercent(machine.progressPct)}
-              </span>
-
-              <ChevronRight className="h-4 w-4 shrink-0 text-[var(--xt-steel)]" />
             </div>
 
-            {/* Mobile: bar */}
-            <div className="px-4 pb-2 sm:hidden">
-              <Progress value={machine.progressPct} className="h-2" />
-            </div>
-
-            {/* Stage strip — always visible */}
-            <div className="border-t border-[var(--xt-cement)] px-4 py-2">
+            <div className="border-t border-[var(--xt-cement)] px-5 py-3">
               <StageStrip stages={machine.stages} />
             </div>
           </Link>
-        ))}
+          );
+        })}
       </div>
     </main>
   );
+}
+
+function sortMachinesForWorkers(a: CalculatedMachineView, b: CalculatedMachineView) {
+  const aGroup = getWorkerSortGroup(a);
+  const bGroup = getWorkerSortGroup(b);
+
+  if (aGroup !== bGroup) {
+    return aGroup - bGroup;
+  }
+
+  if (aGroup === 0 && a.progressPct !== b.progressPct) {
+    return b.progressPct - a.progressPct;
+  }
+
+  return a.orderPosition - b.orderPosition;
+}
+
+function getWorkerSortGroup(machine: CalculatedMachineView) {
+  if (machine.progressPct >= 1) {
+    return 2;
+  }
+
+  if (machine.progressPct > 0) {
+    return 0;
+  }
+
+  return 1;
 }

@@ -127,3 +127,13 @@ select {
   margin-inline: auto;
   width: min(100% - 32px, 1280px);
 }
+
+@keyframes xt-countdown {
+  from {
+    transform: scaleX(1);
+  }
+
+  to {
+    transform: scaleX(0);
+  }
+}

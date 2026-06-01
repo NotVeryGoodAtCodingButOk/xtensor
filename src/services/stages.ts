@@ -1,6 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-const VALID_COMPLETIONS = new Set([0, 25, 50, 75, 100]);
+const VALID_COMPLETIONS = new Set([0, 100]);
 
 export async function updateStageProgress(input: {
   machineId: string;
@@ -9,7 +9,7 @@ export async function updateStageProgress(input: {
   workerId: string;
 }) {
   if (!VALID_COMPLETIONS.has(input.completion)) {
-    throw new Error("El avance debe ser 0, 25, 50, 75 o 100.");
+    throw new Error("La tarea debe estar pendiente o hecha.");
   }
 
   const supabase = createSupabaseAdminClient();

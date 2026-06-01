@@ -54,7 +54,7 @@ export async function updateStageAction(formData: FormData) {
   const workerId = await getActiveWorkerId();
   const machineId = String(formData.get("machineId") ?? "");
   const stageId = Number(formData.get("stageId"));
-  const completion = Number(formData.get("completion"));
+  const completion = Number(formData.get("completion")) === 100 ? 100 : 0;
 
   if (!(await isFactoryUnlocked())) {
     redirect("/planta");
@@ -65,8 +65,8 @@ export async function updateStageAction(formData: FormData) {
   }
 
   const result = await updateStageProgress({ machineId, stageId, completion, workerId });
-  const logId = result.log?.id ? `?log=${result.log.id}` : "";
-  redirect(`/planta/maquinas/${machineId}${logId}`);
+  const logged = result.log?.id ? "?logged=1" : "";
+  redirect(`/planta/maquinas/${machineId}${logged}`);
 }
 
 export async function undoStageAction(formData: FormData) {
