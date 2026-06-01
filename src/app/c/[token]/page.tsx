@@ -33,10 +33,12 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
   const machines = calculateMachines(rawMachines, mapSettings(settingsRow), holidays);
 
   const totalCount = machines.length;
-  const shippedCount = machines.filter((m) => m.status === "shipped").length;
-  const completionPct = totalCount > 0 ? Math.round((shippedCount / totalCount) * 100) : 0;
-  const lastDispatchDate = machines
-    .filter((m) => m.status !== "shipped")
+  const terminadasCount = machines.filter((m) => m.progressPct >= 1 || m.status === "shipped").length;
+  const allDone = terminadasCount === totalCount && totalCount > 0;
+  const completionPct = totalCount > 0 ? Math.round((terminadasCount / totalCount) * 100) : 0;
+  // Date of last pending machine (clientEstimatedDate already includes the 3-day buffer)
+  const lastDespachoDate = machines
+    .filter((m) => m.progressPct < 1 && m.status !== "shipped")
     .map((m) => m.clientEstimatedDate)
     .sort()
     .at(-1);
@@ -53,16 +55,14 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
           </div>
           <div className="text-right">
             <p className="[font-family:var(--font-barlow-condensed)] text-3xl font-bold text-[var(--xt-yellow)]">
-              {shippedCount}/{totalCount} despachadas
+              {terminadasCount}/{totalCount} terminadas
             </p>
             <p className="[font-family:var(--font-barlow-condensed)] text-base font-medium text-[var(--xt-white)]/70">
               {completionPct}% completado
-              {lastDispatchDate && (
-                <> · Último despacho est. {formatDateEs(lastDispatchDate)}</>
+              {!allDone && lastDespachoDate && (
+                <> · Despacho est. {formatDateEs(lastDespachoDate)}</>
               )}
-              {shippedCount === totalCount && totalCount > 0 && (
-                <> · Pedido completo</>
-              )}
+              {allDone && <> · Pedido listo para despacho</>}
             </p>
           </div>
         </div>
