@@ -6,6 +6,7 @@ import {
   DEFAULT_STAGES,
   type ProductionSettings,
 } from "@/services/calculations";
+import { createMachinePreviosFromEquipment } from "@/services/previos";
 import { addClientBuffer, estimateDeliveryDate, type Holiday } from "@/services/schedule";
 
 type MachineInsert = Database["public"]["Tables"]["machines"]["Insert"];
@@ -141,6 +142,22 @@ export async function getMachine(id: string) {
   return mapMachineRow(data as unknown as MachineRow);
 }
 
+export async function getMaxOrderPosition() {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("machines")
+    .select("order_position")
+    .order("order_position", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`No se pudo calcular la posición en cola: ${error.message}`);
+  }
+
+  return data?.order_position ?? 0;
+}
+
 export async function createMachine(input: MachineInsert) {
   const supabase = createSupabaseAdminClient();
   const { data: machine, error: machineError } = await supabase
@@ -163,6 +180,13 @@ export async function createMachine(input: MachineInsert) {
   if (stagesError) {
     await supabase.from("machines").delete().eq("id", machine.id);
     throw new Error(`No se pudieron crear las etapas: ${stagesError.message}`);
+  }
+
+  try {
+    await createMachinePreviosFromEquipment(machine.id, machine.equipment_id);
+  } catch (error) {
+    await supabase.from("machines").delete().eq("id", machine.id);
+    throw error;
   }
 
   return getMachine(machine.id);

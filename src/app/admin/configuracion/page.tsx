@@ -1,4 +1,5 @@
-import { updateFactoryPasswordAction } from "@/app/admin/actions";
+import { LogOut } from "lucide-react";
+import { signOutAction, updateFactoryPasswordAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/app-shell";
 import { HolidaysManager } from "@/components/admin/holidays-manager";
 import { SettingsForm } from "@/components/admin/settings-form";
@@ -84,6 +85,19 @@ export default async function SettingsPage({
                 />
               </label>
               <Button type="submit">Actualizar contraseña</Button>
+            </form>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Sesión administrativa</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form action={signOutAction}>
+              <Button type="submit" variant="outline">
+                <LogOut className="h-4 w-4" />
+                Cerrar sesión
+              </Button>
             </form>
           </CardContent>
         </Card>

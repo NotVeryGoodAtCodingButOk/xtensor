@@ -13,23 +13,29 @@ import {
   updateCatalogItem,
   createHoliday,
   deleteHoliday,
+  listCatalog,
 } from "@/services/catalog";
 import { ensureClientByName, regenerateClientToken, updateClient, deleteClient } from "@/services/clients";
 import {
   createMachine,
   deleteMachine,
+  getMaxOrderPosition,
   markMachineShipped,
   reorderMachines,
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
+import { parseQuoteWorkbook, type ParsedQuoteLine } from "@/services/excel";
 import {
   addMachinePrevio,
+  addEquipmentPrevio,
   bootstrapPreviosFromFixture,
   bulkApplyPrevioToMachines,
   createPrevioCatalogItem,
   deletePrevioCatalogItem,
   removeMachinePrevio,
+  removeEquipmentPrevio,
+  syncMachinePreviosFromEquipment,
   toggleMachinePrevio,
 } from "@/services/previos";
 import { updateFactoryPassword, updateSettings } from "@/services/settings";
@@ -230,6 +236,22 @@ export async function bulkApplyCatalogPrevioAction(formData: FormData) {
   redirect("/admin/catalogo");
 }
 
+export async function addEquipmentPrevioAction(formData: FormData) {
+  const equipmentId = String(formData.get("equipmentId") ?? "").trim();
+  const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
+  if (equipmentId && previoCatalogId) {
+    await addEquipmentPrevio(equipmentId, previoCatalogId);
+    await syncMachinePreviosFromEquipment(equipmentId);
+  }
+  redirect("/admin/catalogo");
+}
+
+export async function removeEquipmentPrevioAction(formData: FormData) {
+  const equipmentPrevioId = String(formData.get("equipmentPrevioId") ?? "").trim();
+  if (equipmentPrevioId) await removeEquipmentPrevio(equipmentPrevioId);
+  redirect("/admin/catalogo");
+}
+
 export async function updateCatalogItemAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const code = String(formData.get("code") ?? "").trim();
@@ -298,6 +320,121 @@ export async function deleteHolidayAction(formData: FormData) {
   const date = String(formData.get("date") ?? "").trim();
   if (date) await deleteHoliday(date);
   redirect("/admin/configuracion");
+}
+
+export type QuotePreviewLine = ParsedQuoteLine & {
+  /** Catalog id matched by exact code ("Clave"), if any. */
+  matchedCatalogId: string | null;
+  matchedCatalogName: string | null;
+};
+
+export type QuotePreview = {
+  reference: string | null;
+  cotiNumber: number | null;
+  fecha: string | null;
+  clientName: string | null;
+  lines: QuotePreviewLine[];
+};
+
+export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePreview> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("Selecciona un archivo de Excel.");
+  }
+
+  const [quote, catalog] = await Promise.all([
+    file.arrayBuffer().then(parseQuoteWorkbook),
+    listCatalog(),
+  ]);
+
+  const byCode = new Map(catalog.map((item) => [item.code.trim().toLowerCase(), item]));
+
+  const referenceDigits = (quote.reference ?? "").replace(/[^0-9]/g, "");
+  const cotiNumber = referenceDigits ? Number(referenceDigits) : null;
+
+  return {
+    reference: quote.reference,
+    cotiNumber: Number.isFinite(cotiNumber) ? cotiNumber : null,
+    fecha: quote.fecha,
+    clientName: quote.clientName,
+    lines: quote.lines.map((line) => {
+      const match = byCode.get(line.clave.trim().toLowerCase()) ?? null;
+      return {
+        ...line,
+        matchedCatalogId: match?.id ?? null,
+        matchedCatalogName: match ? `${match.code} · ${match.name}` : null,
+      };
+    }),
+  };
+}
+
+export type ImportQuoteLineInput = {
+  resolution: "skip" | "catalog" | "custom";
+  catalogId?: string;
+  customName?: string;
+  line?: string | null;
+  producto: string;
+  unidades: number;
+  pUnitCop: number;
+};
+
+export async function importQuoteAction(input: {
+  cotiNumber: number;
+  clientName: string;
+  promisedDate: string;
+  lines: ImportQuoteLineInput[];
+}) {
+  const clientName = input.clientName.trim();
+  if (!clientName) throw new Error("El cliente es requerido.");
+  if (!input.cotiNumber || !Number.isFinite(input.cotiNumber)) {
+    throw new Error("El número de cotización (COTI) es inválido.");
+  }
+  if (!input.promisedDate) throw new Error("La fecha ofrecida es requerida.");
+
+  const importable = input.lines.filter((line) => line.resolution !== "skip");
+  if (importable.length === 0) {
+    throw new Error("No hay líneas seleccionadas para importar.");
+  }
+
+  const client = await ensureClientByName(clientName);
+  let position = await getMaxOrderPosition();
+  let created = 0;
+
+  for (const line of importable) {
+    let equipmentId: string | null = null;
+
+    if (line.resolution === "catalog") {
+      if (!line.catalogId) throw new Error(`Falta el equipo del catálogo para "${line.producto}".`);
+      equipmentId = line.catalogId;
+    } else {
+      const name = (line.customName ?? line.producto).trim();
+      if (!name) throw new Error("El producto personalizado requiere un nombre.");
+      const equipment = await createCustomEquipment({
+        name,
+        line: line.line?.trim() || null,
+        defaultPriceCop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : null,
+      });
+      equipmentId = equipment.id;
+    }
+
+    const units = Math.max(1, Math.round(line.unidades) || 1);
+    for (let i = 0; i < units; i += 1) {
+      position += 1;
+      await createMachine({
+        coti_number: input.cotiNumber,
+        client_id: client.id,
+        equipment_id: equipmentId,
+        custom_equipment_name: null,
+        line_override: line.line?.trim() || null,
+        sale_price_cop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : 0,
+        promised_date: input.promisedDate,
+        order_position: position,
+      });
+      created += 1;
+    }
+  }
+
+  return { created };
 }
 
 async function requireActorProfileId() {

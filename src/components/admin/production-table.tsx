@@ -5,16 +5,18 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatCurrencyCop, formatPercent } from "@/lib/utils";
+import { cn, formatCurrencyCop, formatPercent } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
 export function ProductionTable({
   machines,
   shipped = false,
+  colorRows = false,
 }: {
   machines: CalculatedMachineView[];
   shipped?: boolean;
+  colorRows?: boolean;
 }) {
   return (
     <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
@@ -50,8 +52,13 @@ export function ProductionTable({
           {machines.map((machine) => {
             const isLate = machine.estimatedDate > machine.promisedDate;
             const isReady = machine.progressPct >= 1 && machine.status === "in_production";
+            const rowColor = colorRows ? getMachineRowColor(machine.colorName) : null;
             return (
-              <TableRow key={machine.id} className={isReady ? "bg-[var(--xt-yellow-soft)]" : undefined}>
+              <TableRow
+                key={machine.id}
+                className={cn(isReady && !rowColor ? "bg-[var(--xt-yellow-soft)]" : undefined)}
+                style={rowColor ? { backgroundColor: rowColor } : undefined}
+              >
                 <TableCell className="text-[var(--xt-steel)]">{machine.orderPosition}</TableCell>
                 <TableCell>
                   <div className="grid min-w-28 gap-1">
@@ -112,3 +119,44 @@ export function ProductionTable({
     </div>
   );
 }
+
+function getMachineRowColor(colorName: string | null) {
+  if (!colorName) return null;
+  const normalized = normalizeColorName(colorName);
+  const hex = MACHINE_ROW_COLORS[normalized];
+
+  if (!hex) return null;
+
+  const r = Number.parseInt(hex.slice(0, 2), 16);
+  const g = Number.parseInt(hex.slice(2, 4), 16);
+  const b = Number.parseInt(hex.slice(4, 6), 16);
+
+  return `rgba(${r}, ${g}, ${b}, 0.2)`;
+}
+
+function normalizeColorName(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+}
+
+const MACHINE_ROW_COLORS: Record<string, string> = {
+  amarillo: "facc15",
+  azul: "60a5fa",
+  beige: "d6c2a1",
+  blanco: "e5e7eb",
+  cafe: "b45309",
+  crema: "e7d7b1",
+  dorado: "eab308",
+  fucsia: "ec4899",
+  gris: "9ca3af",
+  naranja: "fb923c",
+  negro: "9ca3af",
+  plateado: "cbd5e1",
+  rojo: "f87171",
+  rosado: "f9a8d4",
+  verde: "4ade80",
+  violeta: "a78bfa",
+};

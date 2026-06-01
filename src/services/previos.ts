@@ -2,7 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
-import type { MachinePrevioListRow, MachinePrevioSummary, MachinePrevioView, PrevioCatalogView } from "@/types/domain";
+import type {
+  EquipmentPrevioView,
+  MachinePrevioListRow,
+  MachinePrevioSummary,
+  MachinePrevioView,
+  PrevioCatalogView,
+} from "@/types/domain";
 
 type PrevioCatalogRow = Database["public"]["Tables"]["previo_catalog"]["Row"];
 type MachinePrevioRow = Database["public"]["Tables"]["machine_previos"]["Row"];
@@ -19,9 +25,11 @@ type MachinePrevioSelectRow = Database["public"]["Tables"]["machines"]["Row"] & 
 };
 
 type CatalogMachineRow = Database["public"]["Tables"]["equipment_catalog"]["Row"] & {
-  machines: Array<Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "coti_number" | "status" | "promised_date"> & {
-    clients: Pick<Database["public"]["Tables"]["clients"]["Row"], "name"> | null;
-  }>;
+  equipment_previos: Array<
+    Database["public"]["Tables"]["equipment_previos"]["Row"] & {
+      previo_catalog: Pick<PrevioCatalogRow, "name"> | null;
+    }
+  >;
 };
 
 type MachineBootstrapRow = Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "coti_number"> & {
@@ -114,12 +122,9 @@ export async function listCatalogWithMachineTargets() {
     .from("equipment_catalog")
     .select(`
       *,
-      machines(
-        id,
-        coti_number,
-        status,
-        promised_date,
-        clients(name)
+      equipment_previos(
+        *,
+        previo_catalog(name)
       )
     `)
     .order("code", { ascending: true });
@@ -130,8 +135,114 @@ export async function listCatalogWithMachineTargets() {
 
   return ((data ?? []) as unknown as CatalogMachineRow[]).map((item) => ({
     ...item,
-    machineCount: item.machines.length,
+    previos: mapEquipmentPrevios(item.equipment_previos ?? []),
   }));
+}
+
+export async function addEquipmentPrevio(equipmentId: string, previoCatalogId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("equipment_previos")
+    .upsert(
+      {
+        equipment_id: equipmentId,
+        previo_catalog_id: previoCatalogId,
+      },
+      { onConflict: "equipment_id,previo_catalog_id" },
+    )
+    .select("*")
+    .single();
+
+  if (error) {
+    throw new Error(`No se pudo asociar el previo al equipo: ${error.message}`);
+  }
+
+  return data;
+}
+
+export async function removeEquipmentPrevio(equipmentPrevioId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("equipment_previos").delete().eq("id", equipmentPrevioId);
+
+  if (error) {
+    throw new Error(`No se pudo quitar el previo del equipo: ${error.message}`);
+  }
+}
+
+export async function syncMachinePreviosFromEquipment(equipmentId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data: equipmentPrevios, error: equipmentPreviosError } = await supabase
+    .from("equipment_previos")
+    .select("previo_catalog_id")
+    .eq("equipment_id", equipmentId);
+
+  if (equipmentPreviosError) {
+    throw new Error(`No se pudieron cargar los previos del equipo: ${equipmentPreviosError.message}`);
+  }
+
+  if (!equipmentPrevios || equipmentPrevios.length === 0) {
+    return { machinesTouched: 0, previosCreated: 0 };
+  }
+
+  const { data: machines, error: machinesError } = await supabase
+    .from("machines")
+    .select("id, machine_previos(previo_catalog_id)")
+    .eq("equipment_id", equipmentId);
+
+  if (machinesError) {
+    throw new Error(`No se pudieron cargar las máquinas del equipo: ${machinesError.message}`);
+  }
+
+  let machinesTouched = 0;
+  let previosCreated = 0;
+  const defaultIds = equipmentPrevios.map((previo) => previo.previo_catalog_id);
+
+  for (const machine of (machines ?? []) as unknown as Array<{ id: string; machine_previos: Array<{ previo_catalog_id: string }> }>) {
+    const existingIds = new Set((machine.machine_previos ?? []).map((previo) => previo.previo_catalog_id));
+    const rowsToInsert = defaultIds
+      .filter((previoCatalogId) => !existingIds.has(previoCatalogId))
+      .map((previoCatalogId) => ({
+        machine_id: machine.id,
+        previo_catalog_id: previoCatalogId,
+      }));
+
+    if (rowsToInsert.length === 0) continue;
+    const { error } = await supabase.from("machine_previos").insert(rowsToInsert);
+    if (error) {
+      throw new Error(`No se pudieron sincronizar los previos del equipo: ${error.message}`);
+    }
+
+    machinesTouched += 1;
+    previosCreated += rowsToInsert.length;
+  }
+
+  return { machinesTouched, previosCreated };
+}
+
+export async function createMachinePreviosFromEquipment(machineId: string, equipmentId: string | null | undefined) {
+  if (!equipmentId) return;
+
+  const supabase = createSupabaseAdminClient();
+  const { data: equipmentPrevios, error } = await supabase
+    .from("equipment_previos")
+    .select("previo_catalog_id")
+    .eq("equipment_id", equipmentId);
+
+  if (error) {
+    throw new Error(`No se pudieron cargar los previos del equipo: ${error.message}`);
+  }
+
+  if (!equipmentPrevios || equipmentPrevios.length === 0) return;
+
+  const rows = equipmentPrevios.map((previo) => ({
+    machine_id: machineId,
+    previo_catalog_id: previo.previo_catalog_id,
+  }));
+  const { error: insertError } = await supabase.from("machine_previos").upsert(rows, { onConflict: "machine_id,previo_catalog_id" });
+
+  if (insertError) {
+    throw new Error(`No se pudieron crear los previos de la máquina: ${insertError.message}`);
+  }
 }
 
 export async function addMachinePrevio(machineId: string, previoCatalogId: string) {
@@ -320,11 +431,40 @@ export async function bootstrapPreviosFromFixture() {
     previosCreated += rowsToInsert.length;
   }
 
+  await syncEquipmentPreviosFromFixture(fixtureMaps, previoIdByName);
+
   return {
     machinesTouched,
     previosCreated,
     catalogCreated: allPrevioNames.length,
   };
+}
+
+async function syncEquipmentPreviosFromFixture(fixtureMaps: FixturePrevioMaps, previoIdByName: Map<string, string>) {
+  const supabase = createSupabaseAdminClient();
+  const { data: equipmentRows, error } = await supabase.from("equipment_catalog").select("id, code");
+  if (error) {
+    throw new Error(`No se pudo cargar el catálogo de equipos para previos: ${error.message}`);
+  }
+
+  const rows = (equipmentRows ?? []).flatMap((equipment) => {
+    const names = fixtureMaps.byEquipmentCode.get(equipment.code) ?? [];
+    return names
+      .map((name) => previoIdByName.get(name))
+      .filter((previoCatalogId): previoCatalogId is string => Boolean(previoCatalogId))
+      .map((previoCatalogId) => ({
+        equipment_id: equipment.id,
+        previo_catalog_id: previoCatalogId,
+      }));
+  });
+
+  if (rows.length === 0) return;
+  const { error: upsertError } = await supabase.from("equipment_previos").upsert(rows, {
+    onConflict: "equipment_id,previo_catalog_id",
+  });
+  if (upsertError) {
+    throw new Error(`No se pudieron asociar previos a los equipos: ${upsertError.message}`);
+  }
 }
 
 function mapMachinePrevioListRow(row: MachinePrevioSelectRow): MachinePrevioListRow {
@@ -370,6 +510,19 @@ export function buildMachinePrevioSummary(previos: MachinePrevioView[], status: 
     pendingReceived: total > 0 && receivedCount < total,
     incompleteWhileInProduction: status === "in_production" && total > 0 && receivedCount < total,
   };
+}
+
+function mapEquipmentPrevios(
+  rows: Array<Database["public"]["Tables"]["equipment_previos"]["Row"] & { previo_catalog: Pick<PrevioCatalogRow, "name"> | null }>,
+): EquipmentPrevioView[] {
+  return rows
+    .map((row) => ({
+      id: row.id,
+      previoCatalogId: row.previo_catalog_id,
+      name: row.previo_catalog?.name ?? "Previo",
+      createdAt: row.created_at,
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "es"));
 }
 
 function buildPrevioEventType(field: "ordered" | "received", checked: boolean): PrevioEventType {

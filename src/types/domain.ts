@@ -44,6 +44,13 @@ export type PrevioCatalogView = {
   createdAt: string;
 };
 
+export type EquipmentPrevioView = {
+  id: string;
+  previoCatalogId: string;
+  name: string;
+  createdAt: string;
+};
+
 export type MachinePrevioView = {
   id: string;
   previoCatalogId: string;

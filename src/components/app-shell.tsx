@@ -2,14 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Factory, ListChecks, LogOut, Palette, Settings, Truck, UserRound, Users } from "lucide-react";
-import { signOutAction } from "@/app/admin/actions";
+import { BarChart3, ClipboardList, Factory, ListChecks, Palette, Settings, Truck, UserRound, Users } from "lucide-react";
 import { BrandLogo } from "@/components/brand";
-import { Button } from "@/components/ui/button";
 
 const navItems = [
   { href: "/admin", label: "Producción", icon: ClipboardList, exact: true },
   { href: "/admin/previos", label: "Previos", icon: ListChecks },
+  { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart3 },
   { href: "/admin/catalogo", label: "Catálogo", icon: Factory },
   { href: "/admin/operarios", label: "Operarios", icon: Users },
   { href: "/admin/clientes", label: "Clientes", icon: UserRound },
@@ -44,12 +43,6 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
               );
             })}
           </nav>
-          <form action={signOutAction} className="shrink-0">
-            <Button type="submit" variant="outline" size="sm">
-              <LogOut className="h-4 w-4" />
-              Cerrar sesión
-            </Button>
-          </form>
         </div>
         <div className="xt-hazard h-2" />
       </header>

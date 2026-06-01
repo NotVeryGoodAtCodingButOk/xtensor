@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Download, Plus, Upload } from "lucide-react";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
-import { ProductionTable } from "@/components/admin/production-table";
+import { ProductionTablePanel } from "@/components/admin/production-table-panel";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
 import { hasSupabaseConfig } from "@/lib/env";
@@ -32,14 +32,28 @@ export default async function AdminDashboardPage() {
           <h1 className="text-3xl font-bold">Plan de producción</h1>
           <p className="text-sm text-[var(--xt-steel)]">Vista densa equivalente a la planilla actual.</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/maquinas/nueva">
-            <Plus className="h-4 w-4" />
-            Agregar máquina
-          </Link>
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button asChild variant="outline">
+            <a href="/admin/export">
+              <Download className="h-4 w-4" />
+              Exportar Excel
+            </a>
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/admin/importar">
+              <Upload className="h-4 w-4" />
+              Importar Excel
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/admin/maquinas/nueva">
+              <Plus className="h-4 w-4" />
+              Agregar máquina
+            </Link>
+          </Button>
+        </div>
       </div>
-      <ProductionTable machines={machines} />
+      <ProductionTablePanel machines={machines} />
     </AdminShell>
   );
 }

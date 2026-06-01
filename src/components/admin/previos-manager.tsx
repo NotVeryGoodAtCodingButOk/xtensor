@@ -2,30 +2,23 @@
 
 import Link from "next/link";
 import { Fragment, useMemo, useState } from "react";
-import { CheckSquare, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
-import {
-  addMachinePrevioAction,
-  bootstrapPreviosAction,
-  removeMachinePrevioAction,
-  toggleMachinePrevioAction,
-} from "@/app/admin/actions";
+import { ChevronDown, ChevronUp } from "lucide-react";
+import { toggleMachinePrevioAction } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateEs } from "@/services/schedule";
-import type { MachinePrevioListRow, PrevioCatalogView } from "@/types/domain";
+import type { MachinePrevioListRow } from "@/types/domain";
 
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
 export function PreviosManager({
   machines,
-  previosCatalog,
   seededMessage,
 }: {
   machines: MachinePrevioListRow[];
-  previosCatalog: PrevioCatalogView[];
   seededMessage?: string | null;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(machines[0]?.machineId ?? null);
@@ -34,7 +27,6 @@ export function PreviosManager({
   const [promisedDate, setPromisedDate] = useState("");
   const [pendingOrdered, setPendingOrdered] = useState(false);
   const [pendingReceived, setPendingReceived] = useState(false);
-  const [productionWarningOnly, setProductionWarningOnly] = useState(false);
 
   const clients = useMemo(
     () => Array.from(new Set(machines.map((machine) => machine.clientName))).sort((a, b) => a.localeCompare(b, "es")),
@@ -48,7 +40,6 @@ export function PreviosManager({
       if (promisedDate && machine.promisedDate !== promisedDate) return false;
       if (pendingOrdered && !machine.summary.pendingOrdered) return false;
       if (pendingReceived && !machine.summary.pendingReceived) return false;
-      if (productionWarningOnly && !machine.summary.incompleteWhileInProduction) return false;
       if (!term) return true;
       return (
         String(machine.cotiNumber).includes(term) ||
@@ -57,7 +48,7 @@ export function PreviosManager({
         (machine.equipmentCode ?? "").toLowerCase().includes(term)
       );
     });
-  }, [clientFilter, machines, pendingOrdered, pendingReceived, productionWarningOnly, promisedDate, search]);
+  }, [clientFilter, machines, pendingOrdered, pendingReceived, promisedDate, search]);
 
   return (
     <div className="grid gap-4">
@@ -89,25 +80,9 @@ export function PreviosManager({
               <input type="checkbox" checked={pendingReceived} onChange={(event) => setPendingReceived(event.target.checked)} />
               Pendiente por recibir
             </label>
-            <label className="inline-flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={productionWarningOnly}
-                onChange={(event) => setProductionWarningOnly(event.target.checked)}
-              />
-              En producción con previos incompletos
-            </label>
           </div>
         </div>
-        <div className="grid justify-items-end gap-2">
-          <form action={bootstrapPreviosAction}>
-            <Button type="submit" size="sm">
-              <CheckSquare className="h-4 w-4" />
-              Cargar previos desde Excel
-            </Button>
-          </form>
-          {seededMessage ? <p className="text-xs text-[var(--xt-steel)]">{seededMessage}</p> : null}
-        </div>
+        {seededMessage ? <p className="text-xs text-[var(--xt-steel)]">{seededMessage}</p> : null}
       </div>
 
       <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
@@ -121,7 +96,6 @@ export function PreviosManager({
               <TableHead>Ofrecido</TableHead>
               <TableHead>Estado producción</TableHead>
               <TableHead>Resumen previos</TableHead>
-              <TableHead>Alertas</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -169,42 +143,15 @@ export function PreviosManager({
                         </div>
                       )}
                     </TableCell>
-                    <TableCell>
-                      <div className="flex flex-wrap gap-1">
-                        {machine.summary.pendingOrdered ? <Badge variant="warning">Falta pedir</Badge> : null}
-                        {machine.summary.pendingReceived ? <Badge variant="warning">Falta recibir</Badge> : null}
-                        {machine.summary.incompleteWhileInProduction ? <Badge variant="danger">Revisar</Badge> : null}
-                      </div>
-                    </TableCell>
                   </TableRow>
                   {expanded ? (
                     <TableRow key={`${machine.machineId}-detail`} className="bg-[var(--xt-yellow-soft)]/45">
-                      <TableCell colSpan={8}>
+                      <TableCell colSpan={7}>
                         <div className="grid gap-4 py-2">
                           <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="flex flex-wrap gap-2">
                               <Badge variant="muted">{machine.summary.total} previos</Badge>
-                              {machine.summary.incompleteWhileInProduction ? (
-                                <Badge variant="danger">Permitir envío a producción con advertencia</Badge>
-                              ) : null}
                             </div>
-                            <form action={addMachinePrevioAction} className="flex flex-wrap items-center gap-2">
-                              <input type="hidden" name="machineId" value={machine.machineId} />
-                              <select name="previoCatalogId" className={selectCls} required defaultValue="">
-                                <option value="" disabled>
-                                  Agregar previo
-                                </option>
-                                {previosCatalog.map((previo) => (
-                                  <option key={previo.id} value={previo.id}>
-                                    {previo.name}
-                                  </option>
-                                ))}
-                              </select>
-                              <Button type="submit" size="sm">
-                                <Plus className="h-3 w-3" />
-                                Agregar
-                              </Button>
-                            </form>
                           </div>
 
                           <div className="grid gap-2">
@@ -214,7 +161,7 @@ export function PreviosManager({
                             {machine.previos.map((previo) => (
                               <div
                                 key={previo.id}
-                                className="grid gap-3 border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 py-2 md:grid-cols-[minmax(0,1fr)_auto_auto_auto]"
+                                className="grid gap-3 border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 py-2 md:grid-cols-[minmax(0,1fr)_auto_auto]"
                               >
                                 <div className="min-w-0">
                                   <p className="font-medium">{previo.name}</p>
@@ -228,13 +175,6 @@ export function PreviosManager({
                                 </div>
                                 <PrevioToggle machinePrevioId={previo.id} field="ordered" checked={previo.ordered} label="Pedido" />
                                 <PrevioToggle machinePrevioId={previo.id} field="received" checked={previo.received} label="Recibido" />
-                                <form action={removeMachinePrevioAction}>
-                                  <input type="hidden" name="machinePrevioId" value={previo.id} />
-                                  <Button type="submit" size="sm" variant="ghost">
-                                    <Trash2 className="h-3 w-3" />
-                                    Quitar
-                                  </Button>
-                                </form>
                               </div>
                             ))}
                           </div>

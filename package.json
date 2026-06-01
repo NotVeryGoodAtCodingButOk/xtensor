@@ -35,6 +35,7 @@
     "date-fns": "^4.1.0",
     "date-fns-tz": "^3.2.0",
     "date-holidays": "^3.26.5",
+    "exceljs": "^4.4.0",
     "lucide-react": "^0.468.0",
     "next": "^15.5.0",
     "react": "^19.0.0",

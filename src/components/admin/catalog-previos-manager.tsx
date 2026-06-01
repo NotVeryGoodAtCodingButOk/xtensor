@@ -4,27 +4,20 @@ import { Fragment, useState } from "react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import {
   addPrevioCatalogItemAction,
-  bulkApplyCatalogPrevioAction,
+  addEquipmentPrevioAction,
   deletePrevioCatalogItemAction,
+  removeEquipmentPrevioAction,
 } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatCurrencyCop } from "@/lib/utils";
-import { formatDateEs } from "@/services/schedule";
 import type { Database } from "@/types/database";
-import type { PrevioCatalogView } from "@/types/domain";
+import type { EquipmentPrevioView, PrevioCatalogView } from "@/types/domain";
 
 type CatalogRow = Database["public"]["Tables"]["equipment_catalog"]["Row"] & {
-  machines: Array<{
-    id: string;
-    coti_number: number;
-    status: Database["public"]["Tables"]["machines"]["Row"]["status"];
-    promised_date: string;
-    clients: { name: string } | null;
-  }>;
-  machineCount: number;
+  previos: EquipmentPrevioView[];
 };
 
 const selectCls =
@@ -44,7 +37,7 @@ export function CatalogPreviosManager({
       <section className="grid gap-3 border border-[var(--xt-black)] bg-[var(--xt-white)] p-4 shadow-[var(--shadow-sm)]">
         <div>
           <h2 className="text-lg font-bold">Lista maestra de previos</h2>
-          <p className="text-sm text-[var(--xt-steel)]">Nombres disponibles para agregar o quitar en las máquinas.</p>
+          <p className="text-sm text-[var(--xt-steel)]">Nombres disponibles para asociar a cada código de equipo.</p>
         </div>
         <div className="flex flex-wrap items-start gap-3">
           <form action={addPrevioCatalogItemAction} className="flex flex-wrap items-center gap-2">
@@ -78,7 +71,7 @@ export function CatalogPreviosManager({
               <TableHead>Línea</TableHead>
               <TableHead className="text-right">Precio</TableHead>
               <TableHead>Estado</TableHead>
-              <TableHead>Máquinas</TableHead>
+              <TableHead>Previos</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -93,7 +86,7 @@ export function CatalogPreviosManager({
                         size="icon"
                         variant="ghost"
                         onClick={() => setExpandedId(expanded ? null : item.id)}
-                        aria-label={expanded ? "Contraer máquinas" : "Expandir máquinas"}
+                        aria-label={expanded ? "Contraer previos" : "Expandir previos"}
                       >
                         {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                       </Button>
@@ -105,14 +98,27 @@ export function CatalogPreviosManager({
                     <TableCell>
                       <Badge variant={item.is_active ? "success" : "muted"}>{item.is_active ? "Activo" : "Inactivo"}</Badge>
                     </TableCell>
-                    <TableCell>{item.machineCount}</TableCell>
+                    <TableCell>
+                      {item.previos.length === 0 ? (
+                        <Badge variant="muted">Sin previos</Badge>
+                      ) : (
+                        <span className="text-sm">{item.previos.length}</span>
+                      )}
+                    </TableCell>
                   </TableRow>
                   {expanded ? (
                     <TableRow key={`${item.id}-detail`} className="bg-[var(--xt-yellow-soft)]/45">
                       <TableCell colSpan={7}>
                         <div className="grid gap-4 py-2">
-                          <form action={bulkApplyCatalogPrevioAction} className="grid gap-3">
-                            <div className="flex flex-wrap items-center gap-2">
+                          <div className="grid gap-3">
+                            <div>
+                              <p className="font-semibold">Previos para {item.code}</p>
+                              <p className="text-sm text-[var(--xt-steel)]">
+                                Las máquinas nuevas de este código reciben estos previos automáticamente.
+                              </p>
+                            </div>
+                            <form action={addEquipmentPrevioAction} className="flex flex-wrap items-center gap-2">
+                              <input type="hidden" name="equipmentId" value={item.id} />
                               <select name="previoCatalogId" className={selectCls} defaultValue="" required>
                                 <option value="" disabled>
                                   Seleccionar previo
@@ -123,39 +129,26 @@ export function CatalogPreviosManager({
                                   </option>
                                 ))}
                               </select>
-                              <select name="mode" className={selectCls} defaultValue="add">
-                                <option value="add">Agregar a seleccionadas</option>
-                                <option value="remove">Quitar de seleccionadas</option>
-                              </select>
                               <Button type="submit" size="sm">
-                                Aplicar
+                                <Plus className="h-3 w-3" />
+                                Agregar al equipo
                               </Button>
+                            </form>
+                            <div className="flex flex-wrap gap-2">
+                              {item.previos.length === 0 ? (
+                                <p className="text-sm text-[var(--xt-steel)]">Este código todavía no tiene previos asociados.</p>
+                              ) : null}
+                              {item.previos.map((previo) => (
+                                <form key={previo.id} action={removeEquipmentPrevioAction}>
+                                  <input type="hidden" name="equipmentPrevioId" value={previo.id} />
+                                  <Button type="submit" size="sm" variant="outline">
+                                    {previo.name}
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                </form>
+                              ))}
                             </div>
-                            {item.machines.length === 0 ? (
-                              <p className="text-sm text-[var(--xt-steel)]">No hay máquinas activas asociadas a este equipo.</p>
-                            ) : (
-                              <div className="grid gap-2 md:grid-cols-2">
-                                {item.machines.map((machine) => (
-                                  <label
-                                    key={machine.id}
-                                    className="flex items-center justify-between gap-3 border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 py-2 text-sm"
-                                  >
-                                    <span className="min-w-0">
-                                      <span className="font-medium">COTI {machine.coti_number}</span>
-                                      <span className="ml-2 text-[var(--xt-steel)]">{machine.clients?.name ?? "Cliente"}</span>
-                                      <span className="ml-2 text-[var(--xt-steel)]">{formatDateEs(machine.promised_date)}</span>
-                                    </span>
-                                    <span className="flex items-center gap-3">
-                                      <Badge variant={machine.status === "shipped" ? "success" : "warning"}>
-                                        {machine.status === "shipped" ? "Despachada" : "En producción"}
-                                      </Badge>
-                                      <input type="checkbox" name="machineIds" value={machine.id} defaultChecked />
-                                    </span>
-                                  </label>
-                                ))}
-                              </div>
-                            )}
-                          </form>
+                          </div>
                         </div>
                       </TableCell>
                     </TableRow>

@@ -4,7 +4,7 @@ import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasSupabaseConfig } from "@/lib/env";
-import { listMachinePrevioRows, listPrevioCatalog } from "@/services/previos";
+import { listMachinePrevioRows } from "@/services/previos";
 
 export default async function PreviosPage({
   searchParams,
@@ -19,9 +19,8 @@ export default async function PreviosPage({
     );
   }
 
-  const [machines, previosCatalog, params] = await Promise.all([
+  const [machines, params] = await Promise.all([
     listMachinePrevioRows(),
-    listPrevioCatalog(),
     searchParams ?? Promise.resolve({ seed: undefined, machines: undefined, previos: undefined }),
   ]);
 
@@ -38,7 +37,7 @@ export default async function PreviosPage({
           <CardTitle>Previos por máquina</CardTitle>
         </CardHeader>
         <CardContent>
-          <PreviosManager machines={machines} previosCatalog={previosCatalog} seededMessage={seededMessage} />
+          <PreviosManager machines={machines} seededMessage={seededMessage} />
         </CardContent>
       </Card>
     </AdminShell>

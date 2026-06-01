@@ -80,6 +80,27 @@ export type Database = {
         };
         Relationships: [];
       };
+      equipment_previos: {
+        Row: {
+          id: string;
+          equipment_id: string;
+          previo_catalog_id: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          equipment_id: string;
+          previo_catalog_id: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          equipment_id?: string;
+          previo_catalog_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       holidays: {
         Row: {
           date: string;
