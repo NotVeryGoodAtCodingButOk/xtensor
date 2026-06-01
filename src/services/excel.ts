@@ -65,15 +65,11 @@ function cellNumber(value: ExcelJS.CellValue): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-export async function parseQuoteWorkbook(buffer: ArrayBuffer | Buffer | Uint8Array): Promise<ParsedQuote> {
+export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuote> {
   const workbook = new ExcelJS.Workbook();
-  // exceljs's typings declare `Buffer extends ArrayBuffer`, so an ArrayBuffer is the
-  // value it actually wants; jszip accepts it at runtime too.
-  const arrayBuffer =
-    buffer instanceof ArrayBuffer
-      ? buffer
-      : buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-  await workbook.xlsx.load(arrayBuffer);
+  // exceljs's typings declare `Buffer extends ArrayBuffer`, so an ArrayBuffer is what
+  // it actually wants; jszip accepts it at runtime too.
+  await workbook.xlsx.load(buffer);
   const sheet = workbook.worksheets[0];
   if (!sheet) {
     throw new Error("El archivo no contiene hojas.");

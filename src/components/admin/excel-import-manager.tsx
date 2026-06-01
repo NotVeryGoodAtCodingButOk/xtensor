@@ -104,7 +104,8 @@ export function ExcelImportManager({
         producto: line.producto || line.clave,
         unidades: state?.unidades ?? line.unidades,
         pUnitCop: line.pUnitCop,
-        line: line.descripcion || null,
+        // Leave línea unset: catalog matches keep their own line; custom items have none.
+        line: null,
       };
       if (resolution === "skip") return { ...base, resolution: "skip" as const };
       if (resolution === "custom") {
