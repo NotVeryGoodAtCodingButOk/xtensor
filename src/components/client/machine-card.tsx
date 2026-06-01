@@ -4,8 +4,6 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { formatPercent } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -42,47 +40,28 @@ export function MachineCard({ machine }: { machine: CalculatedMachineView }) {
           : "border-[var(--xt-black)] bg-[var(--xt-white)]",
       ].join(" ")}
     >
-      <div className="p-4">
-        {/* Header row */}
-        <div className="mb-3 flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate font-semibold leading-tight">{machine.equipmentName}</p>
-            {machine.colorName && (
-              <p className="mt-0.5 text-xs text-[var(--xt-steel)]">{machine.colorName}</p>
-            )}
-          </div>
-          <Badge variant={badgeVariant} className="shrink-0">{badgeLabel}</Badge>
-        </div>
-
-        {/* Progress */}
-        <div className="mb-1 flex items-center justify-between gap-2 text-xs">
-          <span className="text-[var(--xt-steel)]">Avance</span>
-          <span className="[font-family:var(--font-barlow-condensed)] font-bold">
-            {formatPercent(machine.progressPct)}
-          </span>
-        </div>
-        <Progress value={machine.progressPct} className="mb-3 h-1.5" />
-
-        {/* Date + stages toggle */}
-        <div className="flex items-center justify-between gap-2">
-          <p className="[font-family:var(--font-barlow-condensed)] text-sm font-bold">
+      <div className="flex items-center gap-2 px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold leading-tight">{machine.equipmentName}</p>
+          <p className="[font-family:var(--font-barlow-condensed)] text-xs text-[var(--xt-steel)]">
             {dateLabel}
           </p>
-          <button
-            onClick={() => setStagesOpen((v) => !v)}
-            className="flex items-center gap-1 text-xs text-[var(--xt-steel)] hover:text-[var(--xt-ink)]"
-            aria-expanded={stagesOpen}
-          >
-            Etapas
-            {stagesOpen ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-          </button>
         </div>
+        <Badge variant={badgeVariant} className="shrink-0 text-[10px] px-1.5 py-0">{badgeLabel}</Badge>
+        <button
+          onClick={() => setStagesOpen((v) => !v)}
+          className="shrink-0 text-[var(--xt-steel)] hover:text-[var(--xt-ink)]"
+          aria-expanded={stagesOpen}
+          aria-label="Ver etapas"
+        >
+          {stagesOpen ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
+        </button>
       </div>
 
       {stagesOpen && (
         <div
           className={[
-            "border-t px-4 py-3",
+            "border-t px-3 py-2",
             isComplete || isShipped ? "border-green-200" : "border-[var(--xt-black)]/10",
           ].join(" ")}
         >
