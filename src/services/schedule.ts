@@ -82,6 +82,11 @@ export function formatDateEs(date: string | Date) {
   return format(parsed, "d MMM yyyy", { locale: es });
 }
 
+export function formatDateEsNoYear(date: string | Date) {
+  const parsed = typeof date === "string" ? parseISO(date) : date;
+  return format(parsed, "d MMM", { locale: es });
+}
+
 export function seedColombiaHolidays(year: number) {
   const holidays = new Holidays("CO");
 

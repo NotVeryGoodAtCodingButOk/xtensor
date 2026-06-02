@@ -8,7 +8,7 @@ import { isFactoryUnlocked } from "@/lib/factory-session";
 import { cn, formatPercent } from "@/lib/utils";
 import { listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
-import { formatDateEs } from "@/services/schedule";
+import { formatDateEsNoYear } from "@/services/schedule";
 import { getSettings, mapSettings } from "@/services/settings";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -75,15 +75,15 @@ export default async function FactoryBoardPage() {
       <div className="xt-hazard h-2" />
 
       {/* Column labels */}
-      <div className="grid grid-cols-[3.5rem_minmax(0,2.2fr)_minmax(0,3fr)_minmax(0,2fr)_minmax(0,1.6fr)] items-center gap-4 px-8 py-3 text-white/60">
-        <span className="xt-eyebrow text-center">#</span>
+      <div className="grid grid-cols-[5rem_minmax(0,2.2fr)_minmax(0,3fr)_minmax(0,2fr)_minmax(0,1.6fr)] items-center gap-4 px-8 py-2 text-white/60">
+        <span className="xt-eyebrow text-center">COTI</span>
         <span className="xt-eyebrow">Máquina</span>
         <span className="xt-eyebrow">Avance</span>
         <span className="xt-eyebrow">Siguiente tarea</span>
-        <span className="xt-eyebrow text-right">Entrega · estimado</span>
+        <span className="xt-eyebrow text-right">Prometido · Estimado</span>
       </div>
 
-      <div className="flex flex-1 flex-col gap-2 px-6 pb-6">
+      <div className="flex flex-1 flex-col gap-1.5 px-6 pb-6">
         {orderedMachines.length === 0 ? (
           <div className="grid flex-1 place-items-center text-2xl text-white/50">
             No hay máquinas en producción.
@@ -114,38 +114,37 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
     <div
       style={rowStyle}
       className={cn(
-        "grid grid-cols-[3.5rem_minmax(0,2.2fr)_minmax(0,3fr)_minmax(0,2fr)_minmax(0,1.6fr)] items-center gap-4 rounded-[4px] border px-4 py-4",
+        "grid grid-cols-[5rem_minmax(0,2.2fr)_minmax(0,3fr)_minmax(0,2fr)_minmax(0,1.6fr)] items-center gap-4 rounded-[4px] border px-4 py-2",
         status === "late" ? "xt-flash-late border-[var(--line-pro-red)]" : "border-white/10",
       )}
     >
-      {/* Queue position */}
-      <span className="text-center text-2xl font-bold tabular-nums text-white/70">
-        {machine.orderPosition}
+      {/* COTI number */}
+      <span className="text-center text-xl font-bold tabular-nums text-white/70 leading-none">
+        {machine.cotiNumber}
       </span>
 
-      {/* Machine name + COTI + paint color */}
+      {/* Machine name + paint color */}
       <div className="min-w-0">
-        <p className="xt-eyebrow text-white/60">COTI {machine.cotiNumber}</p>
-        <h2 className="[font-family:var(--font-barlow-condensed)] truncate text-4xl font-bold leading-none">
+        <h2 className="[font-family:var(--font-barlow-condensed)] truncate text-3xl font-bold leading-none">
           {machine.equipmentName}
         </h2>
-        <div className="mt-1.5 flex items-center gap-2 text-sm text-white/70">
+        <div className="mt-1 flex items-center gap-1.5 text-xs text-white/60">
           <span
-            className="inline-block h-4 w-4 shrink-0 rounded-full border border-white/40"
+            className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/40"
             style={{ backgroundColor: swatch }}
           />
           <span className="truncate">{machine.colorName ?? "Sin color"}</span>
         </div>
       </div>
 
-      {/* Big progress bar */}
-      <div className="flex items-center gap-4">
+      {/* Progress bar */}
+      <div className="flex items-center gap-3">
         <Progress
           value={machine.progressPct}
-          className="h-7 flex-1 border-white/30 bg-white/10"
+          className="h-4 flex-1 border-white/30 bg-white/10"
           indicatorClassName={status === "done" ? "bg-[var(--line-bio-green)]" : "bg-[var(--xt-yellow)]"}
         />
-        <span className="w-20 shrink-0 text-right text-3xl font-bold tabular-nums">
+        <span className="w-14 shrink-0 text-right text-xl font-bold tabular-nums leading-none">
           {formatPercent(machine.progressPct)}
         </span>
       </div>
@@ -154,7 +153,7 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
       <div className="min-w-0">
         <p
           className={cn(
-            "[font-family:var(--font-barlow-condensed)] truncate text-3xl font-bold leading-none",
+            "[font-family:var(--font-barlow-condensed)] truncate text-2xl font-bold leading-none",
             status === "done" && "text-[var(--line-bio-green)]",
           )}
         >
@@ -163,15 +162,15 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
       </div>
 
       {/* Dates */}
-      <div className="text-right">
-        <p className="text-xl font-bold tabular-nums leading-tight">{formatDateEs(machine.promisedDate)}</p>
+      <div className="text-right leading-none">
+        <p className="text-2xl font-bold tabular-nums">{formatDateEsNoYear(machine.promisedDate)}</p>
         <p
           className={cn(
-            "text-sm tabular-nums leading-tight",
+            "mt-0.5 text-base tabular-nums",
             status === "late" ? "font-bold text-[var(--xt-white)]" : "text-white/55",
           )}
         >
-          est. {formatDateEs(machine.estimatedDate)}
+          est. {formatDateEsNoYear(machine.estimatedDate)}
         </p>
       </div>
     </div>
