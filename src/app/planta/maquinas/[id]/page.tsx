@@ -48,33 +48,36 @@ export default async function FactoryMachineDetailPage({
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages"]} />
       <header className="mb-5 border-b border-[var(--xt-black)] bg-[var(--xt-white)]">
         <div
-          className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--xt-graphite)] px-5 py-4 text-[var(--xt-white)]"
+          className="grid items-center gap-4 border-b border-[var(--xt-graphite)] px-5 py-4 text-[var(--xt-white)] md:grid-cols-[auto_1fr_auto]"
           style={{ background: workerColor }}
         >
-          <div className="flex items-center gap-5">
+          <div className="flex justify-center md:justify-start">
             <BrandLogo inverse />
-            <div className="border-l border-white/60 pl-4">
-              <p className="xt-eyebrow text-white/80">Operario activo</p>
-              <h1 className="text-2xl font-bold">{worker?.full_name ?? "Operario"}</h1>
-            </div>
           </div>
-          <Button asChild variant="outline" size="lg">
+          <div className="text-center">
+            <p className="xt-eyebrow text-white/80">Operario activo</p>
+            <h1 className="text-3xl font-bold leading-none md:text-4xl">{worker?.full_name ?? "Operario"}</h1>
+          </div>
+          <Button
+            asChild
+            variant="outline"
+            size="lg"
+            className="justify-self-center border-[var(--xt-black)] bg-[var(--xt-yellow)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)] md:justify-self-end"
+          >
             <Link href="/planta/maquinas">Volver a máquinas</Link>
           </Button>
         </div>
         <div className="xt-hazard h-2" />
-        <div className="p-5">
-          <div className="mb-3 flex flex-wrap items-start justify-between gap-4">
-            <div>
-              <p className="xt-eyebrow">Detalle de máquina</p>
-              <h1 className="text-3xl font-bold">
-              COTI {machine.cotiNumber} · {machine.equipmentName}
-              </h1>
-              <p className="text-lg text-[var(--xt-steel)]">
-              {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"}
-              </p>
-            </div>
+        <div className="grid gap-4 px-5 py-6 text-center">
+          <div className="grid gap-1">
+            <p className="xt-eyebrow">Detalle de máquina</p>
+            <p className="text-lg text-[var(--xt-steel)]">
+              COTI {machine.cotiNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"}
+            </p>
           </div>
+          <h2 className="[font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none md:text-7xl">
+            {machine.equipmentName}
+          </h2>
           <p className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold">
             {machine.stages.filter((stage) => stage.completion === 100).length} de {machine.stages.length} tareas hechas
           </p>
@@ -86,7 +89,10 @@ export default async function FactoryMachineDetailPage({
           const isDone = stage.completion === 100;
 
           return (
-          <Card key={stage.id} className={isDone ? "border-[var(--xt-cement)] opacity-75" : "border-[var(--xt-black)]"}>
+          <Card
+            key={stage.id}
+            className={isDone ? "border-[#bfd8c0] bg-[#eef8ee]" : "border-[var(--xt-black)] bg-[var(--xt-white)]"}
+          >
             <div className="grid min-h-[210px] gap-4 p-5">
               <div>
                 <p className="xt-eyebrow">{isDone ? "Hecha" : "Pendiente"}</p>

@@ -128,6 +128,27 @@ select {
   width: min(100% - 32px, 1280px);
 }
 
+/* Flashing red for machines that are behind schedule (factory TV board). */
+@keyframes xt-flash-late {
+  0%, 100% {
+    background-color: rgba(200, 30, 30, 0.14);
+  }
+  50% {
+    background-color: rgba(200, 30, 30, 0.55);
+  }
+}
+
+.xt-flash-late {
+  animation: xt-flash-late 1.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .xt-flash-late {
+    animation: none;
+    background-color: rgba(200, 30, 30, 0.32);
+  }
+}
+
 @keyframes xt-countdown {
   from {
     transform: scaleX(1);

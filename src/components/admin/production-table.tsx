@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { Pencil, RotateCcw, Truck } from "lucide-react";
 import { markShippedAction, unmarkShippedAction } from "@/app/admin/actions";
@@ -6,6 +8,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { cn, formatCurrencyCop, formatPercent } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
+
+export type SortKey = keyof CalculatedMachineView;
+export type SortConfig = { key: SortKey; dir: "asc" | "desc" } | null;
 
 function StagePin({ completion }: { completion: number }) {
   if (completion === 100) {
@@ -21,40 +26,81 @@ function StagePin({ completion }: { completion: number }) {
   return <span className="text-[var(--xt-cement)]">·</span>;
 }
 
+function SortIndicator({ active, dir }: { active: boolean; dir?: "asc" | "desc" }) {
+  if (!active) return <span className="text-[var(--xt-aluminum)] text-[10px]">⇅</span>;
+  return <span className="text-[10px]">{dir === "asc" ? "↑" : "↓"}</span>;
+}
+
 const C = "px-2 py-1.5";
 const STAGES_SHORT = ["Mat", "Arm", "Res", "Pul", "Pin", "Ens", "Emp"];
 const STAGES_FULL  = ["Material", "Armar", "Resoldar", "Pulir", "Pintar", "Ensamblar", "Empacar"];
+
+type SortableHeadProps = {
+  sortKey: SortKey;
+  label: string;
+  className?: string;
+  title?: string;
+  sortConfig: SortConfig;
+  onSort: (key: SortKey) => void;
+};
+
+function SortableHead({ sortKey, label, className, title, sortConfig, onSort }: SortableHeadProps) {
+  const active = sortConfig?.key === sortKey;
+  return (
+    <TableHead className={cn(C, className)} title={title}>
+      <button
+        onClick={() => onSort(sortKey)}
+        className="inline-flex items-center gap-1 font-semibold uppercase tracking-wide hover:text-[var(--xt-black)]"
+      >
+        {label}
+        <SortIndicator active={active} dir={sortConfig?.dir} />
+      </button>
+    </TableHead>
+  );
+}
 
 export function ProductionTable({
   machines,
   shipped = false,
   colorRows = false,
+  sortConfig = null,
+  onSort,
 }: {
   machines: CalculatedMachineView[];
   shipped?: boolean;
   colorRows?: boolean;
+  sortConfig?: SortConfig;
+  onSort?: (key: SortKey) => void;
 }) {
+  const sortable = !!onSort;
+  const sh = (key: SortKey, label: string, className?: string, title?: string) =>
+    sortable ? (
+      <SortableHead key={key} sortKey={key} label={label} className={className} title={title} sortConfig={sortConfig} onSort={onSort!} />
+    ) : (
+      <TableHead key={key} className={cn(C, className)} title={title}>{label}</TableHead>
+    );
+
   return (
     <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
       <Table className="min-w-[1200px] text-xs">
         <TableHeader>
           <TableRow>
-            <TableHead className={C}>#</TableHead>
-            <TableHead className={C}>%</TableHead>
-            <TableHead className={C}>COTI</TableHead>
-            <TableHead className={C}>Cliente</TableHead>
-            <TableHead className={C}>Equipo</TableHead>
-            <TableHead className={C}>Color</TableHead>
-            <TableHead className={C}>Ciudad</TableHead>
-            <TableHead className={C}>Línea</TableHead>
-            <TableHead className={`${C} text-right`} title="Venta antes de IVA">Venta</TableHead>
-            <TableHead className={`${C} text-right`} title="Horas totales">H.Tot</TableHead>
-            <TableHead className={`${C} text-right`} title="Horas faltantes">H.Fal</TableHead>
-            <TableHead className={`${C} text-right`} title="Días-hombre restantes">D-H</TableHead>
-            <TableHead className={`${C} text-right`} title="Horas acumuladas en cola">Acum</TableHead>
-            <TableHead className={C}>Quién</TableHead>
-            <TableHead className={C} title="Fecha ofrecida">Ofrec.</TableHead>
-            <TableHead className={C} title="Fecha estimada">Estim.</TableHead>
+            {sh("orderPosition", "#")}
+            {sh("progressPct", "%")}
+            {sh("cotiNumber", "COTI")}
+            {sh("clientName", "Cliente")}
+            {sh("equipmentName", "Equipo")}
+            {sh("colorName", "Color")}
+            {sh("city", "Ciudad")}
+            {sh("line", "Línea")}
+            {sh("salePriceCop", "Venta", `${C} text-right`, "Venta antes de IVA")}
+            {sh("totalHours", "H.Tot", `${C} text-right`, "Horas totales")}
+            {sh("remainingHours", "H.Fal", `${C} text-right`, "Horas faltantes")}
+            {sh("remainingHumanDays", "D-H", `${C} text-right`, "Días-hombre restantes")}
+            {sh("accumulatedHours", "Acum", `${C} text-right`, "Horas acumuladas en cola")}
+            {sh("assignedTo", "Quién")}
+            {sh("promisedDate", "Ofrec.", C, "Fecha ofrecida")}
+            {sh("estimatedDate", "Estim.", C, "Fecha estimada")}
             {STAGES_SHORT.map((s, i) => (
               <TableHead key={s} className={`${C} text-center`} title={STAGES_FULL[i]}>{s}</TableHead>
             ))}

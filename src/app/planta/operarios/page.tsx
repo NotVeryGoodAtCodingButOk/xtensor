@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { lockFactoryAction, selectWorkerAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
@@ -27,11 +28,18 @@ export default async function FactoryWorkersPage() {
       <header className="border-b border-[var(--xt-graphite)] bg-[var(--xt-black)] text-[var(--xt-white)]">
         <div className="flex flex-wrap items-center justify-between gap-4 px-6 py-4">
           <BrandLogo inverse />
-          <form action={lockFactoryAction}>
-            <Button type="submit" variant="outline" size="lg">
-              Bloquear tablero
-            </Button>
-          </form>
+          <div className="flex flex-wrap gap-3">
+            <Link href="/planta/tablero">
+              <Button type="button" variant="secondary" size="lg">
+                Ver tablero
+              </Button>
+            </Link>
+            <form action={lockFactoryAction}>
+              <Button type="submit" variant="outline" size="lg">
+                Bloquear tablero
+              </Button>
+            </form>
+          </div>
         </div>
         <div className="xt-hazard h-2" />
       </header>
