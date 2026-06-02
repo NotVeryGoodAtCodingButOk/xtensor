@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import {
   createCustomEquipment,
   createColor,
@@ -533,5 +534,26 @@ async function requireActorProfileId() {
     throw new Error("No se pudo identificar al usuario actual.");
   }
 
+  // Several columns (machine_previos.ordered_by/received_by,
+  // machine_previo_events.actor_profile_id) reference profiles(id). Admin users
+  // created in Supabase Auth without a matching profile row would otherwise
+  // trigger a foreign-key violation and crash the action. Ensure the profile
+  // exists before attributing any action to this user.
+  await ensureProfile(user.id, user.email ?? null);
+
   return user.id;
+}
+
+async function ensureProfile(userId: string, email: string | null) {
+  const admin = createSupabaseAdminClient();
+  const { error } = await admin
+    .from("profiles")
+    .upsert(
+      { id: userId, full_name: email ?? "Admin", role: "admin" },
+      { onConflict: "id", ignoreDuplicates: true },
+    );
+
+  if (error) {
+    throw new Error(`No se pudo asegurar el perfil del usuario: ${error.message}`);
+  }
 }
