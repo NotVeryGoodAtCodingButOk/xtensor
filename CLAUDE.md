@@ -104,7 +104,7 @@ Required in `.env.local`:
 
 ## RULES
 Always make changes to the online supabase database.
-Use descriptive atomic commits and push after relevant changes. 
+Use descriptive atomic commits and push after changes. 
 Keep everything simple and aligned with the brand asthetic. 
 
 ## Testing approach
