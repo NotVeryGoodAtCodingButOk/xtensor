@@ -169,6 +169,19 @@ export async function removeEquipmentPrevio(equipmentPrevioId: string) {
   }
 }
 
+export async function removeEquipmentPrevioByIds(equipmentId: string, previoCatalogId: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("equipment_previos")
+    .delete()
+    .eq("equipment_id", equipmentId)
+    .eq("previo_catalog_id", previoCatalogId);
+
+  if (error) {
+    throw new Error(`No se pudo quitar el previo del equipo: ${error.message}`);
+  }
+}
+
 export async function syncMachinePreviosFromEquipment(equipmentId: string) {
   const supabase = createSupabaseAdminClient();
   const { data: equipmentPrevios, error: equipmentPreviosError } = await supabase

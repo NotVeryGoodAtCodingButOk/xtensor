@@ -37,6 +37,7 @@ import {
   deletePrevioCatalogItem,
   removeMachinePrevio,
   removeEquipmentPrevio,
+  removeEquipmentPrevioByIds,
   syncMachinePreviosFromEquipment,
   toggleMachinePrevio,
 } from "@/services/previos";
@@ -252,6 +253,30 @@ export async function removeEquipmentPrevioAction(formData: FormData) {
   const equipmentPrevioId = String(formData.get("equipmentPrevioId") ?? "").trim();
   if (equipmentPrevioId) await removeEquipmentPrevio(equipmentPrevioId);
   redirect("/admin/catalogo");
+}
+
+export async function toggleEquipmentPrevioAction(formData: FormData) {
+  const equipmentId = String(formData.get("equipmentId") ?? "").trim();
+  const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
+  const isActive = String(formData.get("isActive") ?? "") === "true";
+  if (equipmentId && previoCatalogId) {
+    if (isActive) {
+      await addEquipmentPrevio(equipmentId, previoCatalogId);
+    } else {
+      await removeEquipmentPrevioByIds(equipmentId, previoCatalogId);
+    }
+  }
+  redirect("/admin/catalogo");
+}
+
+export async function markShippedFromPreviosAction(formData: FormData) {
+  await markMachineShipped(String(formData.get("machineId") ?? ""));
+  redirect("/admin/previos");
+}
+
+export async function unmarkShippedFromPreviosAction(formData: FormData) {
+  await unmarkMachineShipped(String(formData.get("machineId") ?? ""));
+  redirect("/admin/previos");
 }
 
 export async function updateCatalogItemAction(formData: FormData) {

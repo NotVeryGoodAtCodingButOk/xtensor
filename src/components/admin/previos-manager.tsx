@@ -1,18 +1,85 @@
 "use client";
 
 import Link from "next/link";
-import { Fragment, useMemo, useState } from "react";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction } from "@/app/admin/actions";
+import { Fragment, useMemo, useRef, useState } from "react";
+import { Truck } from "lucide-react";
+import {
+  markShippedFromPreviosAction,
+  sendToProductionAction,
+  toggleMachinePrevioAction,
+  unmarkShippedFromPreviosAction,
+} from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
-import type { MachinePrevioListRow } from "@/types/domain";
+import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
 
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
+
+function PrevioChip({ previo }: { previo: MachinePrevioView }) {
+  const orderedRef = useRef<HTMLInputElement>(null);
+  const receivedRef = useRef<HTMLInputElement>(null);
+
+  const bothDone = previo.ordered && previo.received;
+  const neitherDone = !previo.ordered && !previo.received;
+
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center gap-1.5 border px-1.5 py-1 text-[10px] leading-none",
+        bothDone
+          ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/10 text-[var(--line-bio-green)]"
+          : neitherDone
+            ? "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)]"
+            : "border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] text-[var(--xt-black)]",
+      )}
+    >
+      <span className="font-medium">{previo.name}</span>
+
+      {/* Pedido toggle */}
+      <form action={toggleMachinePrevioAction} className="inline">
+        <input type="hidden" name="machinePrevioId" value={previo.id} />
+        <input type="hidden" name="field" value="ordered" />
+        <input ref={orderedRef} type="hidden" name="checked" value={String(!previo.ordered)} />
+        <label className="inline-flex cursor-pointer items-center gap-0.5">
+          <input
+            type="checkbox"
+            defaultChecked={previo.ordered}
+            className="h-2.5 w-2.5 accent-[var(--xt-yellow-deep)]"
+            onChange={(e) => {
+              if (orderedRef.current) orderedRef.current.value = String(e.currentTarget.checked);
+              e.currentTarget.form?.requestSubmit();
+            }}
+          />
+          <span>Ped</span>
+        </label>
+      </form>
+
+      {/* Recibido toggle */}
+      <form action={toggleMachinePrevioAction} className="inline">
+        <input type="hidden" name="machinePrevioId" value={previo.id} />
+        <input type="hidden" name="field" value="received" />
+        <input ref={receivedRef} type="hidden" name="checked" value={String(!previo.received)} />
+        <label className="inline-flex cursor-pointer items-center gap-0.5">
+          <input
+            type="checkbox"
+            defaultChecked={previo.received}
+            className="h-2.5 w-2.5 accent-[var(--xt-yellow-deep)]"
+            onChange={(e) => {
+              if (receivedRef.current) receivedRef.current.value = String(e.currentTarget.checked);
+              e.currentTarget.form?.requestSubmit();
+            }}
+          />
+          <span>Rec</span>
+        </label>
+      </form>
+    </div>
+  );
+}
 
 export function PreviosManager({
   machines,
@@ -23,7 +90,6 @@ export function PreviosManager({
   pendingMachines: MachinePrevioListRow[];
   seededMessage?: string | null;
 }) {
-  const [expandedId, setExpandedId] = useState<string | null>(machines[0]?.machineId ?? null);
   const [clientFilter, setClientFilter] = useState("");
   const [search, setSearch] = useState("");
   const [promisedDate, setPromisedDate] = useState("");
@@ -71,12 +137,15 @@ export function PreviosManager({
 
   return (
     <div className="grid gap-6">
+      {/* Pending import review */}
       {pendingMachines.length > 0 && (
         <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
           <div className="flex items-center justify-between gap-3 border-b border-[var(--xt-aluminum)] px-4 py-3">
             <div>
               <h2 className="font-semibold">Pendientes de revisión</h2>
-              <p className="text-xs text-[var(--xt-steel)]">{pendingMachines.length} máquina{pendingMachines.length === 1 ? "" : "s"} importada{pendingMachines.length === 1 ? "" : "s"}, aún no en producción</p>
+              <p className="text-xs text-[var(--xt-steel)]">
+                {pendingMachines.length} máquina{pendingMachines.length === 1 ? "" : "s"} importada{pendingMachines.length === 1 ? "" : "s"}, aún no en producción
+              </p>
             </div>
             {selectedPending.size > 0 && (
               <form action={sendToProductionAction}>
@@ -110,7 +179,10 @@ export function PreviosManager({
               </TableHeader>
               <TableBody>
                 {pendingMachines.map((machine) => (
-                  <TableRow key={machine.machineId} className={selectedPending.has(machine.machineId) ? "bg-[var(--xt-yellow-soft)]/60" : undefined}>
+                  <TableRow
+                    key={machine.machineId}
+                    className={selectedPending.has(machine.machineId) ? "bg-[var(--xt-yellow-soft)]/60" : undefined}
+                  >
                     <TableCell className="px-3">
                       <input
                         type="checkbox"
@@ -140,6 +212,7 @@ export function PreviosManager({
         </div>
       )}
 
+      {/* In-production / shipped machines with inline previos */}
       <div className="grid gap-4">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="grid gap-2">
@@ -153,12 +226,15 @@ export function PreviosManager({
               <select className={selectCls} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
                 <option value="">Todos los clientes</option>
                 {clients.map((client) => (
-                  <option key={client} value={client}>
-                    {client}
-                  </option>
+                  <option key={client} value={client}>{client}</option>
                 ))}
               </select>
-              <Input type="date" value={promisedDate} onChange={(event) => setPromisedDate(event.target.value)} className="h-9 w-40 text-sm" />
+              <Input
+                type="date"
+                value={promisedDate}
+                onChange={(event) => setPromisedDate(event.target.value)}
+                className="h-9 w-40 text-sm"
+              />
             </div>
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <label className="inline-flex items-center gap-2">
@@ -175,103 +251,77 @@ export function PreviosManager({
         </div>
 
         <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-          <Table className="min-w-[980px]">
+          <Table className="min-w-[1100px] text-xs">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12" />
                 <TableHead>COTI</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Equipo</TableHead>
                 <TableHead>Ofrecido</TableHead>
-                <TableHead>Estado producción</TableHead>
-                <TableHead>Resumen previos</TableHead>
+                <TableHead>Estado</TableHead>
+                <TableHead>Previos</TableHead>
+                <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredMachines.map((machine) => {
-                const expanded = expandedId === machine.machineId;
+                const isShipped = machine.status === "shipped";
                 return (
-                  <Fragment key={machine.machineId}>
-                    <TableRow key={machine.machineId}>
-                      <TableCell>
-                        <Button
-                          type="button"
-                          size="icon"
-                          variant="ghost"
-                          onClick={() => setExpandedId(expanded ? null : machine.machineId)}
-                          aria-label={expanded ? "Contraer previos" : "Expandir previos"}
-                        >
-                          {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                        </Button>
-                      </TableCell>
-                      <TableCell>
-                        <Link href={`/admin/maquinas/${machine.machineId}`} className="font-semibold underline-offset-2 hover:underline">
-                          {machine.cotiNumber}
-                        </Link>
-                      </TableCell>
-                      <TableCell>{machine.clientName}</TableCell>
-                      <TableCell>
-                        <div className="grid gap-1">
-                          <span>{machine.equipmentName}</span>
-                          {machine.equipmentCode ? <span className="text-xs text-[var(--xt-steel)]">{machine.equipmentCode}</span> : null}
+                  <TableRow key={machine.machineId}>
+                    <TableCell>
+                      <Link
+                        href={`/admin/maquinas/${machine.machineId}`}
+                        className="font-semibold underline-offset-2 hover:underline"
+                      >
+                        {machine.cotiNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="max-w-[100px] truncate" title={machine.clientName}>
+                      {machine.clientName}
+                    </TableCell>
+                    <TableCell className="max-w-[160px]">
+                      <div className="grid gap-0.5">
+                        <span className="line-clamp-1">{machine.equipmentName}</span>
+                        {machine.equipmentCode ? (
+                          <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
+                    <TableCell>
+                      <Badge variant={isShipped ? "success" : "warning"}>
+                        {isShipped ? "Despachada" : "En producción"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {machine.previos.length === 0 ? (
+                        <span className="text-[var(--xt-aluminum)]">Sin previos</span>
+                      ) : (
+                        <div className="flex flex-wrap gap-1">
+                          {machine.previos.map((previo) => (
+                            <PrevioChip key={previo.id} previo={previo} />
+                          ))}
                         </div>
-                      </TableCell>
-                      <TableCell>{formatDateEs(machine.promisedDate)}</TableCell>
-                      <TableCell>
-                        <Badge variant={machine.status === "shipped" ? "success" : "warning"}>
-                          {machine.status === "shipped" ? "Despachada" : "En producción"}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {machine.summary.missingPrevios ? (
-                          <Badge variant="muted">Sin previos</Badge>
-                        ) : (
-                          <div className="grid gap-1 text-xs text-[var(--xt-steel)]">
-                            <span>{machine.summary.orderedCount}/{machine.summary.total} pedidos</span>
-                            <span>{machine.summary.receivedCount}/{machine.summary.total} recibidos</span>
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                    {expanded ? (
-                      <TableRow key={`${machine.machineId}-detail`} className="bg-[var(--xt-yellow-soft)]/45">
-                        <TableCell colSpan={7}>
-                          <div className="grid gap-4 py-2">
-                            <div className="flex flex-wrap items-center justify-between gap-3">
-                              <div className="flex flex-wrap gap-2">
-                                <Badge variant="muted">{machine.summary.total} previos</Badge>
-                              </div>
-                            </div>
-
-                            <div className="grid gap-2">
-                              {machine.previos.length === 0 ? (
-                                <p className="text-sm text-[var(--xt-steel)]">Esta máquina no tiene previos cargados.</p>
-                              ) : null}
-                              {machine.previos.map((previo) => (
-                                <div
-                                  key={previo.id}
-                                  className="grid gap-3 border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 py-2 md:grid-cols-[minmax(0,1fr)_auto_auto]"
-                                >
-                                  <div className="min-w-0">
-                                    <p className="font-medium">{previo.name}</p>
-                                    <p className="text-xs text-[var(--xt-steel)]">
-                                      {previo.receivedAt
-                                        ? `Recibido ${formatDateEs(previo.receivedAt.slice(0, 10))}`
-                                        : previo.orderedAt
-                                          ? `Pedido ${formatDateEs(previo.orderedAt.slice(0, 10))}`
-                                          : "Sin registrar"}
-                                    </p>
-                                  </div>
-                                  <PrevioToggle machinePrevioId={previo.id} field="ordered" checked={previo.ordered} label="Pedido" />
-                                  <PrevioToggle machinePrevioId={previo.id} field="received" checked={previo.received} label="Recibido" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ) : null}
-                  </Fragment>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <form action={isShipped ? unmarkShippedFromPreviosAction : markShippedFromPreviosAction}>
+                        <input type="hidden" name="machineId" value={machine.machineId} />
+                        <button
+                          type="submit"
+                          title={isShipped ? "Reactivar" : "Despachar"}
+                          className={cn(
+                            "inline-flex h-6 w-6 items-center justify-center rounded-[2px] border",
+                            isShipped
+                              ? "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)] hover:bg-[var(--xt-yellow-soft)]"
+                              : "border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]",
+                          )}
+                        >
+                          <Truck className="h-3 w-3" />
+                        </button>
+                      </form>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
             </TableBody>
@@ -279,40 +329,5 @@ export function PreviosManager({
         </div>
       </div>
     </div>
-  );
-}
-
-function PrevioToggle({
-  machinePrevioId,
-  field,
-  checked,
-  label,
-}: {
-  machinePrevioId: string;
-  field: "ordered" | "received";
-  checked: boolean;
-  label: string;
-}) {
-  return (
-    <form action={toggleMachinePrevioAction} className="flex items-center gap-2">
-      <input type="hidden" name="machinePrevioId" value={machinePrevioId} />
-      <input type="hidden" name="field" value={field} />
-      <input type="hidden" name="checked" value={String(checked)} />
-      <label className="inline-flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          defaultChecked={checked}
-          onChange={(event) => {
-            const form = event.currentTarget.form;
-            const hidden = form?.elements.namedItem("checked");
-            if (hidden instanceof HTMLInputElement) {
-              hidden.value = String(event.currentTarget.checked);
-            }
-            form?.requestSubmit();
-          }}
-        />
-        {label}
-      </label>
-    </form>
   );
 }
