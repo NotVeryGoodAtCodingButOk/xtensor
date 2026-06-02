@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import {
@@ -266,17 +267,17 @@ export async function toggleEquipmentPrevioAction(formData: FormData) {
       await removeEquipmentPrevioByIds(equipmentId, previoCatalogId);
     }
   }
-  redirect("/admin/catalogo");
+  revalidatePath("/admin/catalogo");
 }
 
 export async function markShippedFromPreviosAction(formData: FormData) {
   await markMachineShipped(String(formData.get("machineId") ?? ""));
-  redirect("/admin/previos");
+  revalidatePath("/admin/previos");
 }
 
 export async function unmarkShippedFromPreviosAction(formData: FormData) {
   await unmarkMachineShipped(String(formData.get("machineId") ?? ""));
-  redirect("/admin/previos");
+  revalidatePath("/admin/previos");
 }
 
 export async function updateCatalogItemAction(formData: FormData) {
@@ -315,7 +316,7 @@ export async function toggleMachinePrevioAction(formData: FormData) {
   if (machinePrevioId) {
     await toggleMachinePrevio({ machinePrevioId, field, checked, actorProfileId });
   }
-  redirect("/admin/previos");
+  revalidatePath("/admin/previos");
 }
 
 export async function bootstrapPreviosAction() {

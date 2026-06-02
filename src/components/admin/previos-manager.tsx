@@ -299,7 +299,7 @@ export function PreviosManager({
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {machine.previos.map((previo) => (
-                            <PrevioChip key={previo.id} previo={previo} />
+                            <PrevioChip key={`${previo.id}-${previo.ordered}-${previo.received}`} previo={previo} />
                           ))}
                         </div>
                       )}

@@ -16,7 +16,9 @@ type PrevioEventType = Database["public"]["Tables"]["machine_previo_events"]["Ro
 
 type MachinePrevioSelectRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Pick<Database["public"]["Tables"]["clients"]["Row"], "name"> | null;
-  equipment_catalog: Pick<Database["public"]["Tables"]["equipment_catalog"]["Row"], "code" | "name"> | null;
+  equipment_catalog: (Pick<Database["public"]["Tables"]["equipment_catalog"]["Row"], "code" | "name"> & {
+    equipment_previos: Array<Pick<Database["public"]["Tables"]["equipment_previos"]["Row"], "previo_catalog_id">>;
+  }) | null;
   machine_previos: Array<
     MachinePrevioRow & {
       previo_catalog: Pick<PrevioCatalogRow, "name"> | null;
@@ -59,7 +61,7 @@ const MACHINE_PREVIOS_SELECT = `
   status,
   custom_equipment_name,
   clients(name),
-  equipment_catalog(code, name),
+  equipment_catalog(code, name, equipment_previos(previo_catalog_id)),
   machine_previos(
     *,
     previo_catalog(name)
@@ -481,7 +483,12 @@ async function syncEquipmentPreviosFromFixture(fixtureMaps: FixturePrevioMaps, p
 }
 
 function mapMachinePrevioListRow(row: MachinePrevioSelectRow): MachinePrevioListRow {
+  const activeEquipmentPrevioIds = new Set(
+    (row.equipment_catalog?.equipment_previos ?? []).map((p) => p.previo_catalog_id),
+  );
+
   const previos = (row.machine_previos ?? [])
+    .filter((previo) => activeEquipmentPrevioIds.has(previo.previo_catalog_id))
     .map<MachinePrevioView>((previo) => ({
       id: previo.id,
       previoCatalogId: previo.previo_catalog_id,
