@@ -3,13 +3,62 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction } from "@/app/admin/actions";
+import { sendToProductionAction, toggleMachinePrevioAction, updateMachineCotiAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
+
+function InlineCotiEdit({ machineId, cotiNumber }: { machineId: string; cotiNumber: number }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(String(cotiNumber));
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    } else if (e.key === "Escape") {
+      setValue(String(cotiNumber));
+      setEditing(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="font-semibold underline-offset-2 hover:underline cursor-text"
+        title="Haz clic para editar el COTI"
+      >
+        {cotiNumber}
+      </button>
+    );
+  }
+
+  return (
+    <form
+      ref={formRef}
+      action={updateMachineCotiAction}
+      onSubmit={() => setEditing(false)}
+    >
+      <input type="hidden" name="machineId" value={machineId} />
+      <input
+        autoFocus
+        type="number"
+        name="cotiNumber"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
+        onKeyDown={handleKeyDown}
+        className="w-20 rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-1 py-0.5 text-xs font-semibold outline-none"
+      />
+    </form>
+  );
+}
 
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
@@ -254,12 +303,16 @@ export function PreviosManager({
                       />
                     </TableCell>
                     <TableCell>
-                      <Link
-                        href={`/admin/maquinas/${machine.machineId}`}
-                        className="font-semibold underline-offset-2 hover:underline"
-                      >
-                        {machine.cotiNumber}
-                      </Link>
+                      <div className="flex items-center gap-1">
+                        <InlineCotiEdit machineId={machine.machineId} cotiNumber={machine.cotiNumber} />
+                        <Link
+                          href={`/admin/maquinas/${machine.machineId}`}
+                          className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
+                          title="Ver máquina"
+                        >
+                          ↗
+                        </Link>
+                      </div>
                     </TableCell>
                     <TableCell className="max-w-[100px] truncate" title={machine.clientName}>
                       {machine.clientName}
@@ -320,12 +373,16 @@ export function PreviosManager({
                 {filteredProduction.map((machine) => (
                   <TableRow key={machine.machineId}>
                     <TableCell>
-                      <Link
-                        href={`/admin/maquinas/${machine.machineId}`}
-                        className="font-semibold underline-offset-2 hover:underline"
-                      >
-                        {machine.cotiNumber}
-                      </Link>
+                      <div className="flex items-center gap-1">
+                        <InlineCotiEdit machineId={machine.machineId} cotiNumber={machine.cotiNumber} />
+                        <Link
+                          href={`/admin/maquinas/${machine.machineId}`}
+                          className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
+                          title="Ver máquina"
+                        >
+                          ↗
+                        </Link>
+                      </div>
                     </TableCell>
                     <TableCell className="max-w-[100px] truncate" title={machine.clientName}>
                       {machine.clientName}

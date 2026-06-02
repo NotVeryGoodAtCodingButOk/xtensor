@@ -476,6 +476,15 @@ export async function importQuoteAction(input: {
   return { created };
 }
 
+export async function updateMachineCotiAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "");
+  const cotiNumber = Number(formData.get("cotiNumber"));
+  if (machineId && Number.isFinite(cotiNumber) && cotiNumber > 0) {
+    await updateMachine(machineId, { coti_number: cotiNumber });
+  }
+  revalidatePath("/admin/previos");
+}
+
 export async function sendToProductionAction(formData: FormData) {
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkSendToProduction(machineIds);
