@@ -65,14 +65,19 @@ export function ProductionTable({
   colorRows = false,
   sortConfig = null,
   onSort,
+  selectedIds,
+  onToggle,
 }: {
   machines: CalculatedMachineView[];
   shipped?: boolean;
   colorRows?: boolean;
   sortConfig?: SortConfig;
   onSort?: (key: SortKey) => void;
+  selectedIds?: Set<string>;
+  onToggle?: (id: string) => void;
 }) {
   const sortable = !!onSort;
+  const selectable = !!onToggle && !!selectedIds;
   const sh = (key: SortKey, label: string, className?: string, title?: string) =>
     sortable ? (
       <SortableHead key={key} sortKey={key} label={label} className={className} title={title} sortConfig={sortConfig} onSort={onSort!} />
@@ -85,6 +90,7 @@ export function ProductionTable({
       <Table className="min-w-[1200px] text-xs">
         <TableHeader>
           <TableRow>
+            {selectable && <TableHead className="w-8 px-2" />}
             {sh("orderPosition", "#")}
             {sh("progressPct", "%")}
             {sh("cotiNumber", "COTI")}
@@ -118,6 +124,16 @@ export function ProductionTable({
                 className={cn(isReady && !rowColor ? "bg-[var(--xt-yellow-soft)]" : undefined)}
                 style={rowColor ? { backgroundColor: rowColor } : undefined}
               >
+                {selectable && (
+                  <TableCell className="px-2">
+                    <input
+                      type="checkbox"
+                      checked={selectedIds!.has(machine.id)}
+                      onChange={() => onToggle!(machine.id)}
+                      aria-label={`Seleccionar COTI ${machine.cotiNumber}`}
+                    />
+                  </TableCell>
+                )}
                 <TableCell className={`${C} tabular-nums text-[var(--xt-steel)]`}>{machine.orderPosition}</TableCell>
 
                 <TableCell className={C}>

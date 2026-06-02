@@ -239,6 +239,26 @@ export async function unmarkMachineShipped(id: string) {
   });
 }
 
+export async function bulkSendToProduction(ids: string[]) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("machines")
+    .update({ status: "in_production" })
+    .in("id", ids)
+    .eq("status", "pending");
+  if (error) throw new Error(`No se pudo enviar a producción: ${error.message}`);
+}
+
+export async function bulkMarkShipped(ids: string[]) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("machines")
+    .update({ status: "shipped", shipped_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("status", "in_production");
+  if (error) throw new Error(`No se pudo despachar: ${error.message}`);
+}
+
 function mapMachineRow(row: MachineRow): MachineView {
   const equipmentName = row.equipment_catalog?.name ?? row.custom_equipment_name ?? "Producto personalizado";
   const stages = row.machine_stages

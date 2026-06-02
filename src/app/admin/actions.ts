@@ -17,6 +17,8 @@ import {
 } from "@/services/catalog";
 import { ensureClientByName, regenerateClientToken, updateClient, deleteClient } from "@/services/clients";
 import {
+  bulkMarkShipped,
+  bulkSendToProduction,
   createMachine,
   deleteMachine,
   getMaxOrderPosition,
@@ -429,12 +431,25 @@ export async function importQuoteAction(input: {
         sale_price_cop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : 0,
         promised_date: input.promisedDate,
         order_position: position,
+        status: "pending",
       });
       created += 1;
     }
   }
 
   return { created };
+}
+
+export async function sendToProductionAction(formData: FormData) {
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (machineIds.length > 0) await bulkSendToProduction(machineIds);
+  redirect("/admin/previos");
+}
+
+export async function bulkMarkShippedAction(formData: FormData) {
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (machineIds.length > 0) await bulkMarkShipped(machineIds);
+  redirect("/admin");
 }
 
 async function requireActorProfileId() {

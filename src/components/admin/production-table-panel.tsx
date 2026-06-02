@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronDown, Palette, Search, X } from "lucide-react";
+import { ChevronDown, Palette, Search, Truck, X } from "lucide-react";
+import { bulkMarkShippedAction } from "@/app/admin/actions";
 import { ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -154,6 +156,16 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
   const [colorRows, setColorRows] = useState(false);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const clientOptions   = useMemo(() => uniqueVals(machines, "clientName"), [machines]);
   const colorOptions    = useMemo(() => uniqueVals(machines, "colorName"), [machines]);
@@ -249,11 +261,29 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
         </p>
       )}
 
+      {selectedIds.size > 0 && (
+        <form action={bulkMarkShippedAction} className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">
+          {Array.from(selectedIds).map((id) => (
+            <input key={id} type="hidden" name="machineIds" value={id} />
+          ))}
+          <span className="text-xs font-medium">{selectedIds.size} seleccionada{selectedIds.size === 1 ? "" : "s"}</span>
+          <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
+            <Truck className="h-3.5 w-3.5" />
+            Despachar seleccionadas
+          </Button>
+          <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </form>
+      )}
+
       <ProductionTable
         machines={displayed}
         colorRows={colorRows}
         sortConfig={sortConfig}
         onSort={handleSort}
+        selectedIds={selectedIds}
+        onToggle={toggleSelected}
       />
     </div>
   );

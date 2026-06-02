@@ -122,7 +122,7 @@ export function ExcelImportManager({
           promisedDate,
           lines,
         });
-        router.push(`/admin?imported=${result.created}`);
+        router.push(`/admin/previos?imported=${result.created}`);
         router.refresh();
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "No se pudo importar la cotización.");

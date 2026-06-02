@@ -1,6 +1,6 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
-export type MachineStatus = "in_production" | "shipped";
+export type MachineStatus = "pending" | "in_production" | "shipped";
 
 export type Database = {
   public: {

@@ -1,15 +1,17 @@
+import Link from "next/link";
+import { Upload } from "lucide-react";
 import { AdminShell } from "@/components/app-shell";
 import { PreviosManager } from "@/components/admin/previos-manager";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listMachinePrevioRows } from "@/services/previos";
 
 export default async function PreviosPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ seed?: string; machines?: string; previos?: string }>;
+  searchParams?: Promise<{ seed?: string; machines?: string; previos?: string; imported?: string }>;
 }) {
   if (!hasSupabaseConfig()) {
     return (
@@ -19,27 +21,38 @@ export default async function PreviosPage({
     );
   }
 
-  const [machines, params] = await Promise.all([
+  const [allMachines, params] = await Promise.all([
     listMachinePrevioRows(),
-    searchParams ?? Promise.resolve({ seed: undefined, machines: undefined, previos: undefined }),
+    searchParams ?? Promise.resolve({ seed: undefined, machines: undefined, previos: undefined, imported: undefined }),
   ]);
+
+  const pendingMachines = allMachines.filter((m) => m.status === "pending");
+  const machines = allMachines.filter((m) => m.status !== "pending");
 
   const seededMessage =
     params.seed === "ok"
       ? `Carga completada: ${params.machines ?? "0"} máquinas actualizadas y ${params.previos ?? "0"} previos agregados.`
-      : null;
+      : params.imported
+        ? `${params.imported} máquina${Number(params.imported) === 1 ? "" : "s"} importada${Number(params.imported) === 1 ? "" : "s"} y en espera de revisión.`
+        : null;
 
   return (
     <AdminShell>
       <RealtimeRefresh channelName="admin-previos" tables={["machines", "machine_previos", "machine_previo_events"]} />
-      <Card>
-        <CardHeader>
-          <CardTitle>Previos por máquina</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <PreviosManager machines={machines} seededMessage={seededMessage} />
-        </CardContent>
-      </Card>
+      <div className="mb-5 flex items-center justify-between gap-4">
+        <div>
+          <p className="xt-eyebrow">Administración</p>
+          <h1 className="text-3xl font-bold">Previos</h1>
+          <p className="text-sm text-[var(--xt-steel)]">Revisión de cotizaciones y seguimiento de materiales.</p>
+        </div>
+        <Button asChild>
+          <Link href="/admin/importar">
+            <Upload className="h-4 w-4" />
+            Importar Excel
+          </Link>
+        </Button>
+      </div>
+      <PreviosManager machines={machines} pendingMachines={pendingMachines} seededMessage={seededMessage} />
     </AdminShell>
   );
 }

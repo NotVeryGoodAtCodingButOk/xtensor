@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Download, Plus, Upload } from "lucide-react";
+import { Download, Plus } from "lucide-react";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { ProductionTablePanel } from "@/components/admin/production-table-panel";
@@ -38,12 +38,6 @@ export default async function AdminDashboardPage() {
               <Download className="h-4 w-4" />
               Exportar Excel
             </a>
-          </Button>
-          <Button asChild variant="outline">
-            <Link href="/admin/importar">
-              <Upload className="h-4 w-4" />
-              Importar Excel
-            </Link>
           </Button>
           <Button asChild>
             <Link href="/admin/maquinas/nueva">
