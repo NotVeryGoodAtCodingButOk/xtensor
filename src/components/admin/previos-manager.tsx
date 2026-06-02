@@ -2,14 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { Truck } from "lucide-react";
-import {
-  markShippedFromPreviosAction,
-  sendToProductionAction,
-  toggleMachinePrevioAction,
-  unmarkShippedFromPreviosAction,
-} from "@/app/admin/actions";
-import { Badge } from "@/components/ui/badge";
+import { ArrowRight } from "lucide-react";
+import { sendToProductionAction, toggleMachinePrevioAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -81,13 +75,26 @@ function PrevioChip({ previo }: { previo: MachinePrevioView }) {
   );
 }
 
+function PreviosCell({ machine }: { machine: MachinePrevioListRow }) {
+  if (machine.previos.length === 0) {
+    return <span className="text-[var(--xt-aluminum)]">Sin previos</span>;
+  }
+  return (
+    <div className="flex flex-wrap gap-1">
+      {machine.previos.map((previo) => (
+        <PrevioChip key={`${previo.id}-${previo.ordered}-${previo.received}`} previo={previo} />
+      ))}
+    </div>
+  );
+}
+
 export function PreviosManager({
-  machines,
   pendingMachines,
+  productionMachines,
   seededMessage,
 }: {
-  machines: MachinePrevioListRow[];
   pendingMachines: MachinePrevioListRow[];
+  productionMachines: MachinePrevioListRow[];
   seededMessage?: string | null;
 }) {
   const [clientFilter, setClientFilter] = useState("");
@@ -95,16 +102,19 @@ export function PreviosManager({
   const [promisedDate, setPromisedDate] = useState("");
   const [pendingOrdered, setPendingOrdered] = useState(false);
   const [pendingReceived, setPendingReceived] = useState(false);
-  const [selectedPending, setSelectedPending] = useState<Set<string>>(new Set());
+  const [selected, setSelected] = useState<Set<string>>(new Set());
 
   const clients = useMemo(
-    () => Array.from(new Set(machines.map((machine) => machine.clientName))).sort((a, b) => a.localeCompare(b, "es")),
-    [machines],
+    () =>
+      Array.from(
+        new Set([...pendingMachines, ...productionMachines].map((machine) => machine.clientName)),
+      ).sort((a, b) => a.localeCompare(b, "es")),
+    [pendingMachines, productionMachines],
   );
 
-  const filteredMachines = useMemo(() => {
+  const matchesFilters = useMemo(() => {
     const term = search.trim().toLowerCase();
-    return machines.filter((machine) => {
+    return (machine: MachinePrevioListRow) => {
       if (clientFilter && machine.clientName !== clientFilter) return false;
       if (promisedDate && machine.promisedDate !== promisedDate) return false;
       if (pendingOrdered && !machine.summary.pendingOrdered) return false;
@@ -116,11 +126,17 @@ export function PreviosManager({
         machine.equipmentName.toLowerCase().includes(term) ||
         (machine.equipmentCode ?? "").toLowerCase().includes(term)
       );
-    });
-  }, [clientFilter, machines, pendingOrdered, pendingReceived, promisedDate, search]);
+    };
+  }, [clientFilter, pendingOrdered, pendingReceived, promisedDate, search]);
 
-  function togglePending(id: string) {
-    setSelectedPending((prev) => {
+  const filteredPending = useMemo(() => pendingMachines.filter(matchesFilters), [pendingMachines, matchesFilters]);
+  const filteredProduction = useMemo(
+    () => productionMachines.filter(matchesFilters),
+    [productionMachines, matchesFilters],
+  );
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -128,145 +144,180 @@ export function PreviosManager({
     });
   }
 
-  function toggleAllPending(checked: boolean) {
-    setSelectedPending(checked ? new Set(pendingMachines.map((m) => m.machineId)) : new Set());
+  function toggleAll(checked: boolean) {
+    setSelected(checked ? new Set(filteredPending.map((m) => m.machineId)) : new Set());
   }
 
-  const allPendingSelected = pendingMachines.length > 0 && selectedPending.size === pendingMachines.length;
-  const somePendingSelected = selectedPending.size > 0 && !allPendingSelected;
+  const allSelected = filteredPending.length > 0 && filteredPending.every((m) => selected.has(m.machineId));
+  const someSelected = selected.size > 0 && !allSelected;
 
   return (
     <div className="grid gap-6">
-      {/* Pending import review */}
-      {pendingMachines.length > 0 && (
-        <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-          <div className="flex items-center justify-between gap-3 border-b border-[var(--xt-aluminum)] px-4 py-3">
-            <div>
-              <h2 className="font-semibold">Pendientes de revisión</h2>
-              <p className="text-xs text-[var(--xt-steel)]">
-                {pendingMachines.length} máquina{pendingMachines.length === 1 ? "" : "s"} importada{pendingMachines.length === 1 ? "" : "s"}, aún no en producción
-              </p>
-            </div>
-            {selectedPending.size > 0 && (
-              <form action={sendToProductionAction}>
-                {Array.from(selectedPending).map((id) => (
-                  <input key={id} type="hidden" name="machineIds" value={id} />
-                ))}
-                <Button type="submit" size="sm">
-                  Enviar a producción ({selectedPending.size})
-                </Button>
-              </form>
-            )}
+      {/* Filters */}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="grid gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Buscar por COTI, cliente o equipo"
+              className="h-9 w-72 text-sm"
+            />
+            <select className={selectCls} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
+              <option value="">Todos los clientes</option>
+              {clients.map((client) => (
+                <option key={client} value={client}>{client}</option>
+              ))}
+            </select>
+            <Input
+              type="date"
+              value={promisedDate}
+              onChange={(event) => setPromisedDate(event.target.value)}
+              className="h-9 w-40 text-sm"
+            />
           </div>
-          <div className="overflow-x-auto">
-            <Table className="min-w-[720px]">
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-10 px-3">
-                    <input
-                      type="checkbox"
-                      checked={allPendingSelected}
-                      ref={(el) => { if (el) el.indeterminate = somePendingSelected; }}
-                      onChange={(e) => toggleAllPending(e.target.checked)}
-                      aria-label="Seleccionar todas"
-                    />
-                  </TableHead>
-                  <TableHead>COTI</TableHead>
-                  <TableHead>Cliente</TableHead>
-                  <TableHead>Equipo</TableHead>
-                  <TableHead>Ofrecido</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pendingMachines.map((machine) => (
-                  <TableRow
-                    key={machine.machineId}
-                    className={selectedPending.has(machine.machineId) ? "bg-[var(--xt-yellow-soft)]/60" : undefined}
-                  >
-                    <TableCell className="px-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedPending.has(machine.machineId)}
-                        onChange={() => togglePending(machine.machineId)}
-                        aria-label={`Seleccionar COTI ${machine.cotiNumber}`}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Link href={`/admin/maquinas/${machine.machineId}`} className="font-semibold underline-offset-2 hover:underline">
-                        {machine.cotiNumber}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{machine.clientName}</TableCell>
-                    <TableCell>
-                      <div className="grid gap-0.5">
-                        <span>{machine.equipmentName}</span>
-                        {machine.equipmentCode ? <span className="text-xs text-[var(--xt-steel)]">{machine.equipmentCode}</span> : null}
-                      </div>
-                    </TableCell>
-                    <TableCell>{formatDateEs(machine.promisedDate)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+          <div className="flex flex-wrap items-center gap-4 text-sm">
+            <label className="inline-flex items-center gap-2">
+              <input type="checkbox" checked={pendingOrdered} onChange={(event) => setPendingOrdered(event.target.checked)} />
+              Pendiente por pedir
+            </label>
+            <label className="inline-flex items-center gap-2">
+              <input type="checkbox" checked={pendingReceived} onChange={(event) => setPendingReceived(event.target.checked)} />
+              Pendiente por recibir
+            </label>
           </div>
         </div>
-      )}
+        {seededMessage ? <p className="text-xs text-[var(--xt-steel)]">{seededMessage}</p> : null}
+      </div>
 
-      {/* In-production / shipped machines with inline previos */}
-      <div className="grid gap-4">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="grid gap-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <Input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Buscar por COTI, cliente o equipo"
-                className="h-9 w-72 text-sm"
-              />
-              <select className={selectCls} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
-                <option value="">Todos los clientes</option>
-                {clients.map((client) => (
-                  <option key={client} value={client}>{client}</option>
-                ))}
-              </select>
-              <Input
-                type="date"
-                value={promisedDate}
-                onChange={(event) => setPromisedDate(event.target.value)}
-                className="h-9 w-40 text-sm"
-              />
-            </div>
-            <div className="flex flex-wrap items-center gap-4 text-sm">
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={pendingOrdered} onChange={(event) => setPendingOrdered(event.target.checked)} />
-                Pendiente por pedir
-              </label>
-              <label className="inline-flex items-center gap-2">
-                <input type="checkbox" checked={pendingReceived} onChange={(event) => setPendingReceived(event.target.checked)} />
-                Pendiente por recibir
-              </label>
-            </div>
+      {/* Previos pending (pre-production) */}
+      <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--xt-aluminum)] px-4 py-3">
+          <div>
+            <h2 className="font-semibold">En previos</h2>
+            <p className="text-xs text-[var(--xt-steel)]">
+              {filteredPending.length} máquina{filteredPending.length === 1 ? "" : "s"} antes de producción
+            </p>
           </div>
-          {seededMessage ? <p className="text-xs text-[var(--xt-steel)]">{seededMessage}</p> : null}
+          {selected.size > 0 && (
+            <form action={sendToProductionAction}>
+              {Array.from(selected).map((id) => (
+                <input key={id} type="hidden" name="machineIds" value={id} />
+              ))}
+              <Button type="submit" size="sm">
+                <ArrowRight className="h-4 w-4" />
+                Enviar a producción ({selected.size})
+              </Button>
+            </form>
+          )}
         </div>
-
-        <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
+        <div className="overflow-x-auto">
           <Table className="min-w-[1100px] text-xs">
             <TableHeader>
               <TableRow>
+                <TableHead className="w-10 px-3">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    ref={(el) => { if (el) el.indeterminate = someSelected; }}
+                    onChange={(e) => toggleAll(e.target.checked)}
+                    aria-label="Seleccionar todas"
+                  />
+                </TableHead>
                 <TableHead>COTI</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Equipo</TableHead>
                 <TableHead>Ofrecido</TableHead>
-                <TableHead>Estado</TableHead>
                 <TableHead>Previos</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredMachines.map((machine) => {
-                const isShipped = machine.status === "shipped";
-                return (
+              {filteredPending.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="py-6 text-center text-[var(--xt-steel)]">
+                    No hay máquinas en previos.
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredPending.map((machine) => (
+                  <TableRow
+                    key={machine.machineId}
+                    className={selected.has(machine.machineId) ? "bg-[var(--xt-yellow-soft)]/60" : undefined}
+                  >
+                    <TableCell className="px-3">
+                      <input
+                        type="checkbox"
+                        checked={selected.has(machine.machineId)}
+                        onChange={() => toggleSelected(machine.machineId)}
+                        aria-label={`Seleccionar COTI ${machine.cotiNumber}`}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Link
+                        href={`/admin/maquinas/${machine.machineId}`}
+                        className="font-semibold underline-offset-2 hover:underline"
+                      >
+                        {machine.cotiNumber}
+                      </Link>
+                    </TableCell>
+                    <TableCell className="max-w-[100px] truncate" title={machine.clientName}>
+                      {machine.clientName}
+                    </TableCell>
+                    <TableCell className="max-w-[160px]">
+                      <div className="grid gap-0.5">
+                        <span className="line-clamp-1">{machine.equipmentName}</span>
+                        {machine.equipmentCode ? (
+                          <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
+                        ) : null}
+                      </div>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
+                    <TableCell>
+                      <PreviosCell machine={machine} />
+                    </TableCell>
+                    <TableCell>
+                      <form action={sendToProductionAction}>
+                        <input type="hidden" name="machineIds" value={machine.machineId} />
+                        <button
+                          type="submit"
+                          title="Enviar a producción"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
+                        >
+                          <ArrowRight className="h-3 w-3" />
+                        </button>
+                      </form>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* In production — previos tracking continues, no send/ship actions */}
+      {filteredProduction.length > 0 && (
+        <div className="border border-[var(--xt-aluminum)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
+          <div className="border-b border-[var(--xt-aluminum)] px-4 py-3">
+            <h2 className="font-semibold">En producción</h2>
+            <p className="text-xs text-[var(--xt-steel)]">
+              {filteredProduction.length} máquina{filteredProduction.length === 1 ? "" : "s"} ya en producción · seguimiento de previos
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <Table className="min-w-[1000px] text-xs">
+              <TableHeader>
+                <TableRow>
+                  <TableHead>COTI</TableHead>
+                  <TableHead>Cliente</TableHead>
+                  <TableHead>Equipo</TableHead>
+                  <TableHead>Ofrecido</TableHead>
+                  <TableHead>Previos</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredProduction.map((machine) => (
                   <TableRow key={machine.machineId}>
                     <TableCell>
                       <Link
@@ -289,45 +340,15 @@ export function PreviosManager({
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
                     <TableCell>
-                      <Badge variant={isShipped ? "success" : "warning"}>
-                        {isShipped ? "Despachada" : "En producción"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {machine.previos.length === 0 ? (
-                        <span className="text-[var(--xt-aluminum)]">Sin previos</span>
-                      ) : (
-                        <div className="flex flex-wrap gap-1">
-                          {machine.previos.map((previo) => (
-                            <PrevioChip key={`${previo.id}-${previo.ordered}-${previo.received}`} previo={previo} />
-                          ))}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <form action={isShipped ? unmarkShippedFromPreviosAction : markShippedFromPreviosAction}>
-                        <input type="hidden" name="machineId" value={machine.machineId} />
-                        <button
-                          type="submit"
-                          title={isShipped ? "Reactivar" : "Despachar"}
-                          className={cn(
-                            "inline-flex h-6 w-6 items-center justify-center rounded-[2px] border",
-                            isShipped
-                              ? "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)] hover:bg-[var(--xt-yellow-soft)]"
-                              : "border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]",
-                          )}
-                        >
-                          <Truck className="h-3 w-3" />
-                        </button>
-                      </form>
+                      <PreviosCell machine={machine} />
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -289,16 +289,6 @@ export async function toggleEquipmentPrevioAction(formData: FormData) {
   revalidatePath("/admin/catalogo");
 }
 
-export async function markShippedFromPreviosAction(formData: FormData) {
-  await markMachineShipped(String(formData.get("machineId") ?? ""));
-  revalidatePath("/admin/previos");
-}
-
-export async function unmarkShippedFromPreviosAction(formData: FormData) {
-  await unmarkMachineShipped(String(formData.get("machineId") ?? ""));
-  revalidatePath("/admin/previos");
-}
-
 export async function updateCatalogItemAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const code = String(formData.get("code") ?? "").trim();

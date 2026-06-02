@@ -28,13 +28,13 @@ export default async function PreviosPage({
   ]);
 
   const pendingMachines = allMachines.filter((m) => m.status === "pending");
-  const machines = allMachines.filter((m) => m.status !== "pending");
+  const productionMachines = allMachines.filter((m) => m.status === "in_production");
 
   const seededMessage =
     params.seed === "ok"
       ? `Carga completada: ${params.machines ?? "0"} máquinas actualizadas y ${params.previos ?? "0"} previos agregados.`
       : params.imported
-        ? `${params.imported} máquina${Number(params.imported) === 1 ? "" : "s"} importada${Number(params.imported) === 1 ? "" : "s"} y en espera de revisión.`
+        ? `${params.imported} máquina${Number(params.imported) === 1 ? "" : "s"} importada${Number(params.imported) === 1 ? "" : "s"} y en previos.`
         : null;
 
   return (
@@ -56,7 +56,11 @@ export default async function PreviosPage({
       <div className="mb-5">
         <ExcelImportGuide templateHref="/admin/importar/plantilla" />
       </div>
-      <PreviosManager machines={machines} pendingMachines={pendingMachines} seededMessage={seededMessage} />
+      <PreviosManager
+        pendingMachines={pendingMachines}
+        productionMachines={productionMachines}
+        seededMessage={seededMessage}
+      />
     </AdminShell>
   );
 }
