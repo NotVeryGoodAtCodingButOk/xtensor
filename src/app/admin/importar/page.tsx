@@ -1,5 +1,6 @@
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
+import { ExcelImportGuide } from "@/components/admin/excel-import-guide";
 import { ExcelImportManager } from "@/components/admin/excel-import-manager";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listCatalog, listHolidays } from "@/services/catalog";
@@ -31,6 +32,7 @@ export default async function ImportQuotePage() {
 
   return (
     <AdminShell>
+      <ExcelImportGuide templateHref="/admin/importar/plantilla" />
       <ExcelImportManager catalog={catalogOptions} queueEndDate={queueEndDate} />
     </AdminShell>
   );

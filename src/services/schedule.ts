@@ -84,7 +84,8 @@ export function formatDateEs(date: string | Date) {
 
 export function formatDateEsNoYear(date: string | Date) {
   const parsed = typeof date === "string" ? parseISO(date) : date;
-  return format(parsed, "d MMM", { locale: es });
+  const str = format(parsed, "d MMM", { locale: es });
+  return str.replace(/\b([a-z])/, (c) => c.toUpperCase());
 }
 
 export function seedColombiaHolidays(year: number) {

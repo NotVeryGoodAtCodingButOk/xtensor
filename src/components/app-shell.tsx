@@ -6,14 +6,14 @@ import { BarChart3, ClipboardList, Factory, ListChecks, Palette, Settings, Truck
 import { BrandLogo } from "@/components/brand";
 
 const navItems = [
-  { href: "/admin", label: "Producción", icon: ClipboardList, exact: true },
   { href: "/admin/previos", label: "Previos", icon: ListChecks },
-  { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart3 },
+  { href: "/admin", label: "Producción", icon: ClipboardList, exact: true },
+  { href: "/admin/despachados", label: "Despachados", icon: Truck },
+  { href: "/admin/clientes", label: "Clientes", icon: UserRound },
   { href: "/admin/catalogo", label: "Catálogo", icon: Factory },
   { href: "/admin/operarios", label: "Operarios", icon: Users },
-  { href: "/admin/clientes", label: "Clientes", icon: UserRound },
+  { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart3 },
   { href: "/admin/colores", label: "Colores", icon: Palette },
-  { href: "/admin/despachados", label: "Despachados", icon: Truck },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
 ];
 

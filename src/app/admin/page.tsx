@@ -25,7 +25,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <AdminShell>
-      <RealtimeRefresh channelName="admin-dashboard" tables={["machines", "machine_stages", "stage_logs"]} />
+      <RealtimeRefresh channelName="admin-dashboard" tables={["machines", "machine_stages", "stage_logs", "colors"]} />
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <p className="xt-eyebrow">Administración</p>

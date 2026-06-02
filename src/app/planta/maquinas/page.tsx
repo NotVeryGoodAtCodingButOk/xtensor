@@ -44,7 +44,7 @@ export default async function FactoryMachinesPage() {
 
   return (
     <main className="min-h-screen bg-[var(--xt-paper)]">
-      <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages"]} />
+      <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages", "colors"]} />
       <header
         className="sticky top-0 z-10 border-b border-[var(--xt-graphite)] text-[var(--xt-white)]"
         style={{ background: workerColor }}

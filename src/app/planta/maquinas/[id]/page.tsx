@@ -45,7 +45,7 @@ export default async function FactoryMachineDetailPage({
 
   return (
     <main className="min-h-screen bg-[var(--xt-paper)] pb-28">
-      <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages"]} />
+      <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
       <header className="mb-5 border-b border-[var(--xt-black)] bg-[var(--xt-white)]">
         <div
           className="grid items-center gap-4 border-b border-[var(--xt-graphite)] px-5 py-4 text-[var(--xt-white)] md:grid-cols-[auto_1fr_auto]"

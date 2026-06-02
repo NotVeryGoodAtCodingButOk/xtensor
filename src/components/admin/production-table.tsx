@@ -5,6 +5,7 @@ import { Pencil, RotateCcw, Truck } from "lucide-react";
 import { markShippedAction, unmarkShippedAction } from "@/app/admin/actions";
 import { Progress } from "@/components/ui/progress";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { cn, formatCurrencyCop, formatPercent } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
@@ -107,6 +108,7 @@ export function ProductionTable({
             {sh("assignedTo", "Quién")}
             {sh("promisedDate", "Ofrec.", C, "Fecha ofrecida")}
             {sh("estimatedDate", "Estim.", C, "Fecha estimada")}
+            <TableHead className={C} title="Fecha de la última etapa completada">Comp.</TableHead>
             {STAGES_SHORT.map((s, i) => (
               <TableHead key={s} className={`${C} text-center`} title={STAGES_FULL[i]}>{s}</TableHead>
             ))}
@@ -186,6 +188,9 @@ export function ProductionTable({
                 >
                   {formatDateEs(machine.estimatedDate)}
                 </TableCell>
+                <TableCell className={`${C} whitespace-nowrap`}>
+                  {machine.lastCompletedStageAt ? formatDateEs(machine.lastCompletedStageAt) : "—"}
+                </TableCell>
 
                 {machine.stages.map((stage) => (
                   <TableCell key={stage.id} className={`${C} text-center`}>
@@ -226,39 +231,10 @@ export function ProductionTable({
 }
 
 function getMachineRowColor(colorName: string | null) {
-  if (!colorName) return null;
-  const normalized = normalizeColorName(colorName);
-  const hex = MACHINE_ROW_COLORS[normalized];
+  const hex = resolveMachineColorHex(colorName);
   if (!hex) return null;
   const r = Number.parseInt(hex.slice(0, 2), 16);
   const g = Number.parseInt(hex.slice(2, 4), 16);
   const b = Number.parseInt(hex.slice(4, 6), 16);
   return `rgba(${r}, ${g}, ${b}, 0.2)`;
 }
-
-function normalizeColorName(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-}
-
-const MACHINE_ROW_COLORS: Record<string, string> = {
-  amarillo: "facc15",
-  azul:     "60a5fa",
-  beige:    "d6c2a1",
-  blanco:   "e5e7eb",
-  cafe:     "b45309",
-  crema:    "e7d7b1",
-  dorado:   "eab308",
-  fucsia:   "ec4899",
-  gris:     "9ca3af",
-  naranja:  "fb923c",
-  negro:    "9ca3af",
-  plateado: "cbd5e1",
-  rojo:     "f87171",
-  rosado:   "f9a8d4",
-  verde:    "4ade80",
-  violeta:  "a78bfa",
-};

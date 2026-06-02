@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Upload } from "lucide-react";
 import { AdminShell } from "@/components/app-shell";
+import { ExcelImportGuide } from "@/components/admin/excel-import-guide";
 import { PreviosManager } from "@/components/admin/previos-manager";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
@@ -51,6 +52,9 @@ export default async function PreviosPage({
             Importar Excel
           </Link>
         </Button>
+      </div>
+      <div className="mb-5">
+        <ExcelImportGuide templateHref="/admin/importar/plantilla" />
       </div>
       <PreviosManager machines={machines} pendingMachines={pendingMachines} seededMessage={seededMessage} />
     </AdminShell>

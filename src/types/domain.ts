@@ -36,6 +36,7 @@ export type CalculatedMachineView = MachineView & {
   accumulatedHours: number;
   estimatedDate: string;
   clientEstimatedDate: string;
+  lastCompletedStageAt: string | null;
 };
 
 export type PrevioCatalogView = {

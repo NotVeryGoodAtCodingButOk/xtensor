@@ -121,12 +121,16 @@ export function calculateMachines(
       machine.status === "shipped" && machine.shippedAt
         ? machine.shippedAt.slice(0, 10)
         : estimateDeliveryDate(calculation.accumulatedHours, startDate, settings, holidays);
+    const lastCompletedStageAt = machine.stages
+      .filter((stage) => stage.completion === 100 && stage.lastUpdatedAt)
+      .sort((a, b) => b.id - a.id)[0]?.lastUpdatedAt ?? null;
 
     return {
       ...machine,
       ...calculation,
       estimatedDate,
       clientEstimatedDate: addClientBuffer(estimatedDate, settings.clientBufferDays),
+      lastCompletedStageAt,
     };
   });
 }

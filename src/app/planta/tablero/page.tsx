@@ -5,6 +5,7 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Progress } from "@/components/ui/progress";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
+import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { cn, formatPercent } from "@/lib/utils";
 import { listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
@@ -41,7 +42,7 @@ export default async function FactoryBoardPage() {
 
   return (
     <main className="flex min-h-screen flex-col bg-[var(--xt-black)] text-[var(--xt-white)]">
-      <RealtimeRefresh channelName="factory-board" tables={["machines", "machine_stages", "settings"]} />
+      <RealtimeRefresh channelName="factory-board" tables={["machines", "machine_stages", "settings", "colors"]} />
 
       <header className="flex items-center justify-between gap-6 border-b border-[var(--xt-steel)] bg-[var(--xt-black)] px-8 py-5">
         <div className="flex items-center gap-6">
@@ -75,13 +76,14 @@ export default async function FactoryBoardPage() {
       <div className="xt-hazard h-2" />
 
       {/* Column labels */}
-      <div className="grid grid-cols-[4.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,2.4fr)_minmax(0,2fr)_minmax(0,2fr)] items-center gap-3 px-6 py-1.5 text-white/50">
+      <div className="grid grid-cols-[4.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,2.4fr)_minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)] items-center gap-3 px-6 py-1.5 text-white/50">
         <span className="xt-eyebrow text-center">COTI</span>
         <span className="xt-eyebrow">Máquina</span>
         <span className="xt-eyebrow">Color</span>
         <span className="xt-eyebrow">Avance</span>
         <span className="xt-eyebrow">Siguiente tarea</span>
-        <span className="xt-eyebrow text-right">Prometido / Estimado</span>
+        <span className="xt-eyebrow text-right">Prometido</span>
+        <span className="xt-eyebrow text-right">Estimado</span>
       </div>
 
       <div className="flex flex-1 flex-col gap-1 px-6 pb-6">
@@ -115,7 +117,7 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
     <div
       style={rowStyle}
       className={cn(
-        "grid grid-cols-[4.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,2.4fr)_minmax(0,2fr)_minmax(0,2fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
+        "grid grid-cols-[4.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,2.4fr)_minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
         status === "late" ? "xt-flash-late border-[var(--line-pro-red)]" : "border-white/10",
       )}
     >
@@ -164,18 +166,20 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
         </p>
       </div>
 
-      {/* Dates — equally prominent */}
-      <div className="text-right leading-none">
-        <p className="text-xl font-bold tabular-nums">{formatDateEsNoYear(machine.promisedDate)}</p>
-        <p
-          className={cn(
-            "mt-0.5 text-xl font-bold tabular-nums",
-            status === "late" ? "text-[var(--xt-yellow)]" : "text-white/55",
-          )}
-        >
-          {formatDateEsNoYear(machine.estimatedDate)}
-        </p>
-      </div>
+      {/* Promised date */}
+      <p className="text-right text-xl font-bold tabular-nums leading-none">
+        {formatDateEsNoYear(machine.promisedDate)}
+      </p>
+
+      {/* Estimated date */}
+      <p
+        className={cn(
+          "text-right text-xl font-bold tabular-nums leading-none",
+          status === "late" ? "text-[var(--xt-yellow)]" : "text-white/55",
+        )}
+      >
+        est. {formatDateEsNoYear(machine.estimatedDate)}
+      </p>
     </div>
   );
 }
@@ -196,31 +200,6 @@ function getNextTask(machine: CalculatedMachineView): string {
 }
 
 function getPaintSwatch(colorName: string | null): string {
-  if (!colorName) return "transparent";
-  const normalized = colorName
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
-  const hex = PAINT_SWATCHES[normalized];
+  const hex = resolveMachineColorHex(colorName);
   return hex ? `#${hex}` : "transparent";
 }
-
-const PAINT_SWATCHES: Record<string, string> = {
-  amarillo: "facc15",
-  azul: "60a5fa",
-  beige: "d6c2a1",
-  blanco: "e5e7eb",
-  cafe: "b45309",
-  crema: "e7d7b1",
-  dorado: "eab308",
-  fucsia: "ec4899",
-  gris: "9ca3af",
-  naranja: "fb923c",
-  negro: "1a1a1a",
-  plateado: "cbd5e1",
-  rojo: "f87171",
-  rosado: "f9a8d4",
-  verde: "4ade80",
-  violeta: "a78bfa",
-};
