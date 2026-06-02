@@ -476,6 +476,16 @@ export async function importQuoteAction(input: {
   return { created };
 }
 
+export async function updateMachineClientAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "");
+  const clientName = String(formData.get("clientName") ?? "").trim();
+  if (machineId && clientName) {
+    const client = await ensureClientByName(clientName);
+    await updateMachine(machineId, { client_id: client.id });
+  }
+  revalidatePath("/admin/previos");
+}
+
 export async function updateMachineCotiAction(formData: FormData) {
   const machineId = String(formData.get("machineId") ?? "");
   const cotiNumber = Number(formData.get("cotiNumber"));

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction, updateMachineCotiAction } from "@/app/admin/actions";
+import { sendToProductionAction, toggleMachinePrevioAction, updateMachineCotiAction, updateMachineClientAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -55,6 +55,55 @@ function InlineCotiEdit({ machineId, cotiNumber }: { machineId: string; cotiNumb
         onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
         onKeyDown={handleKeyDown}
         className="w-20 rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-1 py-0.5 text-xs font-semibold outline-none"
+      />
+    </form>
+  );
+}
+
+function InlineClientEdit({ machineId, clientName }: { machineId: string; clientName: string }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(clientName);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      formRef.current?.requestSubmit();
+    } else if (e.key === "Escape") {
+      setValue(clientName);
+      setEditing(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={() => setEditing(true)}
+        className="max-w-[100px] truncate text-left cursor-text hover:underline underline-offset-2"
+        title={clientName}
+      >
+        {clientName}
+      </button>
+    );
+  }
+
+  return (
+    <form
+      ref={formRef}
+      action={updateMachineClientAction}
+      onSubmit={() => setEditing(false)}
+    >
+      <input type="hidden" name="machineId" value={machineId} />
+      <input
+        autoFocus
+        type="text"
+        name="clientName"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
+        onKeyDown={handleKeyDown}
+        className="w-28 rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-1 py-0.5 text-xs outline-none"
       />
     </form>
   );
@@ -314,8 +363,8 @@ export function PreviosManager({
                         </Link>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[100px] truncate" title={machine.clientName}>
-                      {machine.clientName}
+                    <TableCell>
+                      <InlineClientEdit machineId={machine.machineId} clientName={machine.clientName} />
                     </TableCell>
                     <TableCell className="max-w-[160px]">
                       <div className="grid gap-0.5">
@@ -384,8 +433,8 @@ export function PreviosManager({
                         </Link>
                       </div>
                     </TableCell>
-                    <TableCell className="max-w-[100px] truncate" title={machine.clientName}>
-                      {machine.clientName}
+                    <TableCell>
+                      <InlineClientEdit machineId={machine.machineId} clientName={machine.clientName} />
                     </TableCell>
                     <TableCell className="max-w-[160px]">
                       <div className="grid gap-0.5">
