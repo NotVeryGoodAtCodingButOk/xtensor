@@ -535,25 +535,29 @@ async function requireActorProfileId() {
   }
 
   // Several columns (machine_previos.ordered_by/received_by,
-  // machine_previo_events.actor_profile_id) reference profiles(id). Admin users
-  // created in Supabase Auth without a matching profile row would otherwise
-  // trigger a foreign-key violation and crash the action. Ensure the profile
-  // exists before attributing any action to this user.
-  await ensureProfile(user.id, user.email ?? null);
+  // machine_previo_events.actor_profile_id) reference profiles(id). A profile
+  // row is the admin allow-list (profiles_role_check only permits 'admin'), so
+  // require an existing one rather than minting it here — auto-creating would
+  // let any authenticated Supabase user self-promote to admin. Missing-profile
+  // requests are refused with a clear error instead of a raw FK crash.
+  await requireAdminProfile(user.id);
 
   return user.id;
 }
 
-async function ensureProfile(userId: string, email: string | null) {
+async function requireAdminProfile(userId: string) {
   const admin = createSupabaseAdminClient();
-  const { error } = await admin
+  const { data, error } = await admin
     .from("profiles")
-    .upsert(
-      { id: userId, full_name: email ?? "Admin", role: "admin" },
-      { onConflict: "id", ignoreDuplicates: true },
-    );
+    .select("role")
+    .eq("id", userId)
+    .maybeSingle();
 
   if (error) {
-    throw new Error(`No se pudo asegurar el perfil del usuario: ${error.message}`);
+    throw new Error(`No se pudo verificar el perfil del usuario: ${error.message}`);
+  }
+
+  if (!data || data.role !== "admin") {
+    throw new Error("No autorizado: el usuario no tiene un perfil de administrador.");
   }
 }
