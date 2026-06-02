@@ -1,10 +1,16 @@
 "use client";
 
 import Link from "next/link";
-import { useRef } from "react";
+import type { KeyboardEvent, ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Pencil, Truck } from "lucide-react";
-import { markShippedAction, warrantyMachineAction } from "@/app/admin/actions";
+import {
+  updateMachineInlineAction,
+  markShippedAction,
+  warrantyMachineAction,
+} from "@/app/admin/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Input } from "@/components/ui/input";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { cn, formatCurrencyCop } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
@@ -12,6 +18,7 @@ import type { CalculatedMachineView } from "@/types/domain";
 
 export type SortKey = keyof CalculatedMachineView;
 export type SortConfig = { key: SortKey; dir: "asc" | "desc" } | null;
+type EditableField = "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line";
 
 function StagePin({ completion }: { completion: number }) {
   if (completion === 100) {
@@ -35,6 +42,126 @@ function SortIndicator({ active, dir }: { active: boolean; dir?: "asc" | "desc" 
 const C = "px-2 py-1.5";
 const STAGES_SHORT = ["Mat", "Arm", "Res", "Pul", "Pin", "Ens", "Emp"];
 const STAGES_FULL  = ["Material", "Armar", "Resoldar", "Pulir", "Pintar", "Ensamblar", "Empacar"];
+
+function EditableMachineCell({
+  machine,
+  field,
+  display,
+  value,
+  inputType,
+  className,
+  inputClassName,
+  min,
+  step,
+  title,
+}: {
+  machine: CalculatedMachineView;
+  field: EditableField;
+  display: ReactNode;
+  value: string | number;
+  inputType: "text" | "number" | "date";
+  className?: string;
+  inputClassName?: string;
+  min?: number;
+  step?: number | "any";
+  title?: string;
+}) {
+  const [editing, setEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!editing) return;
+    inputRef.current?.focus();
+    if (inputType !== "date") {
+      inputRef.current?.select();
+    }
+  }, [editing, inputType]);
+
+  function beginEdit() {
+    setEditing(true);
+  }
+
+  function submitEdit() {
+    formRef.current?.requestSubmit();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLInputElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setEditing(false);
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitEdit();
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div
+        className={cn(
+          "cursor-text rounded-[2px] px-1 -mx-1 transition-colors hover:bg-[var(--xt-yellow-soft)]",
+          className,
+        )}
+        onDoubleClick={beginEdit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            beginEdit();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        title={title ?? "Doble clic para editar"}
+      >
+        {display}
+      </div>
+    );
+  }
+
+  return (
+    <form ref={formRef} action={updateMachineInlineAction} className={cn("min-w-0", className)}>
+      <input type="hidden" name="machineId" value={machine.id} />
+      <HiddenMachineFields machine={machine} omit={field} />
+      <Input
+        ref={inputRef}
+        name={field}
+        type={inputType}
+        defaultValue={String(value)}
+        min={min}
+        step={step}
+        onBlur={submitEdit}
+        onKeyDown={handleKeyDown}
+        className={cn(
+          "h-7 rounded-[2px] border-[var(--xt-black)] px-2 text-xs shadow-none focus-visible:ring-1 focus-visible:ring-[var(--xt-yellow)]",
+          inputClassName,
+        )}
+      />
+    </form>
+  );
+}
+
+function HiddenMachineFields({ machine, omit }: { machine: CalculatedMachineView; omit: EditableField }) {
+  const fields: Array<{ name: EditableField; value: string | number }> = [
+    { name: "salePriceCop", value: machine.salePriceCop },
+    { name: "assignedTo", value: machine.assignedTo ?? "" },
+    { name: "promisedDate", value: machine.promisedDate },
+    { name: "orderPosition", value: machine.orderPosition },
+    { name: "city", value: machine.city ?? "" },
+    { name: "line", value: machine.line ?? "" },
+  ];
+
+  return (
+    <>
+      {fields
+        .filter((field) => field.name !== omit)
+        .map((field) => (
+          <input key={field.name} type="hidden" name={field.name} value={field.value} />
+        ))}
+    </>
+  );
+}
 
 type SortableHeadProps = {
   sortKey: SortKey;
@@ -166,7 +293,20 @@ export function ProductionTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className={`${C} tabular-nums text-[var(--xt-steel)]`}>{machine.orderPosition}</TableCell>
+                <TableCell className={`${C} tabular-nums text-[var(--xt-steel)]`}>
+                  <EditableMachineCell
+                    machine={machine}
+                    field="orderPosition"
+                    value={machine.orderPosition}
+                    inputType="number"
+                    min={1}
+                    step={1}
+                    className="w-full"
+                    inputClassName="w-16 text-center tabular-nums"
+                    display={machine.orderPosition}
+                    title="Doble clic para editar la posición en cola"
+                  />
+                </TableCell>
 
                 {!shipped && (
                   <TableCell className={C}>
@@ -207,12 +347,43 @@ export function ProductionTable({
                 </TableCell>
 
                 <TableCell className={`${C} whitespace-nowrap`}>{machine.colorName ?? "—"}</TableCell>
-                <TableCell className={C}>{machine.city ?? "—"}</TableCell>
-                <TableCell className={C}>{machine.line ?? "—"}</TableCell>
+                <TableCell className={C}>
+                  <EditableMachineCell
+                    machine={machine}
+                    field="city"
+                    value={machine.city ?? ""}
+                    inputType="text"
+                    className="w-full"
+                    inputClassName="min-w-24"
+                    display={machine.city ?? "—"}
+                  />
+                </TableCell>
+                <TableCell className={C}>
+                  <EditableMachineCell
+                    machine={machine}
+                    field="line"
+                    value={machine.line ?? ""}
+                    inputType="text"
+                    className="w-full"
+                    inputClassName="min-w-24"
+                    display={machine.line ?? "—"}
+                  />
+                </TableCell>
 
                 {!shipped && (
                   <TableCell className={`${C} text-right tabular-nums whitespace-nowrap`}>
-                    {formatCurrencyCop(machine.salePriceCop)}
+                    <EditableMachineCell
+                      machine={machine}
+                      field="salePriceCop"
+                      value={machine.salePriceCop}
+                      inputType="number"
+                      min={0}
+                      step={1}
+                      className="w-full"
+                      inputClassName="w-28 text-right tabular-nums"
+                      display={formatCurrencyCop(machine.salePriceCop)}
+                      title="Doble clic para editar la venta antes de IVA"
+                    />
                   </TableCell>
                 )}
                 <TableCell className={`${C} text-right tabular-nums`}>{machine.totalHours.toFixed(1)}</TableCell>
@@ -220,8 +391,29 @@ export function ProductionTable({
                 {!shipped && <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHumanDays.toFixed(1)}</TableCell>}
                 <TableCell className={`${C} text-right tabular-nums`}>{machine.accumulatedHours.toFixed(1)}</TableCell>
 
-                <TableCell className={C}>{machine.assignedTo ?? "—"}</TableCell>
-                <TableCell className={`${C} whitespace-nowrap`}>{formatDateEs(machine.promisedDate)}</TableCell>
+                <TableCell className={C}>
+                  <EditableMachineCell
+                    machine={machine}
+                    field="assignedTo"
+                    value={machine.assignedTo ?? ""}
+                    inputType="text"
+                    className="w-full"
+                    inputClassName="min-w-24"
+                    display={machine.assignedTo ?? "—"}
+                  />
+                </TableCell>
+                <TableCell className={`${C} whitespace-nowrap`}>
+                  <EditableMachineCell
+                    machine={machine}
+                    field="promisedDate"
+                    value={machine.promisedDate}
+                    inputType="date"
+                    className="w-full"
+                    inputClassName="w-36"
+                    display={formatDateEs(machine.promisedDate)}
+                    title="Doble clic para editar la fecha ofrecida"
+                  />
+                </TableCell>
                 <TableCell
                   className={cn(`${C} whitespace-nowrap`, isLate && "bg-red-50 text-[var(--line-pro-red)]")}
                 >

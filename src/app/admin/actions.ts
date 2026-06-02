@@ -112,7 +112,24 @@ export async function updateMachineAction(formData: FormData) {
     line_override: String(formData.get("line") ?? "").trim() || null,
   });
 
+  revalidatePath("/admin");
+  revalidatePath(`/admin/maquinas/${machineId}`);
   redirect("/admin");
+}
+
+export async function updateMachineInlineAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "");
+  await updateMachine(machineId, {
+    sale_price_cop: Number(formData.get("salePriceCop")),
+    assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
+    promised_date: String(formData.get("promisedDate") ?? ""),
+    order_position: Number(formData.get("orderPosition")) || 9999,
+    city: String(formData.get("city") ?? "").trim() || null,
+    line_override: String(formData.get("line") ?? "").trim() || null,
+  });
+
+  revalidatePath("/admin");
+  revalidatePath(`/admin/maquinas/${machineId}`);
 }
 
 export async function unmarkShippedAction(formData: FormData) {
@@ -132,6 +149,7 @@ export async function reorderMachinesAction(formData: FormData) {
     .filter(Boolean);
 
   await reorderMachines(orderedIds);
+  revalidatePath("/admin");
   redirect("/admin");
 }
 

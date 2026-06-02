@@ -12,6 +12,7 @@ import { addClientBuffer, estimateDeliveryDate, type Holiday } from "@/services/
 type MachineInsert = Database["public"]["Tables"]["machines"]["Insert"];
 type MachineUpdate = Database["public"]["Tables"]["machines"]["Update"];
 type MachineWarrantyEventInsert = Database["public"]["Tables"]["machine_warranty_events"]["Insert"];
+type MachineQueueRow = Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "order_position" | "status" | "created_at">;
 
 type MachineRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Database["public"]["Tables"]["clients"]["Row"] | null;
@@ -216,6 +217,34 @@ export async function createMachine(input: MachineInsert) {
 
 export async function updateMachine(id: string, patch: MachineUpdate) {
   const supabase = createSupabaseAdminClient();
+  const { order_position, ...rest } = patch;
+
+  if (order_position !== undefined) {
+    const { data: current, error: currentError } = await supabase
+      .from("machines")
+      .select("status")
+      .eq("id", id)
+      .single();
+
+    if (currentError) {
+      throw new Error(`No se pudo cargar la máquina: ${currentError.message}`);
+    }
+
+    const nextStatus = (patch.status ?? current.status) as Database["public"]["Tables"]["machines"]["Row"]["status"];
+
+    if (nextStatus === "in_production") {
+      if (Object.keys(rest).length > 0) {
+        const { error: updateError } = await supabase.from("machines").update(rest).eq("id", id);
+        if (updateError) {
+          throw new Error(`No se pudo actualizar la máquina: ${updateError.message}`);
+        }
+      }
+
+      await reorderProductionQueue(id, order_position);
+      return getMachine(id);
+    }
+  }
+
   const { error } = await supabase.from("machines").update(patch).eq("id", id);
 
   if (error) {
@@ -236,15 +265,37 @@ export async function deleteMachine(id: string) {
 
 export async function reorderMachines(orderedIds: string[]) {
   const supabase = createSupabaseAdminClient();
-  const updates = orderedIds.map((id, index) =>
-    supabase.from("machines").update({ order_position: index + 1 }).eq("id", id),
-  );
-  const results = await Promise.all(updates);
-  const error = results.find((result) => result.error)?.error;
+  const queue = await listProductionQueue(supabase);
+  const queueIds = new Set(queue.map((machine) => machine.id));
+  const nextIds: string[] = [];
+  const seen = new Set<string>();
 
-  if (error) {
-    throw new Error(`No se pudo reordenar la cola: ${error.message}`);
+  for (const id of orderedIds) {
+    if (queueIds.has(id) && !seen.has(id)) {
+      nextIds.push(id);
+      seen.add(id);
+    }
   }
+
+  for (const machine of queue) {
+    if (!seen.has(machine.id)) {
+      nextIds.push(machine.id);
+      seen.add(machine.id);
+    }
+  }
+
+  await persistProductionQueueOrder(supabase, nextIds);
+}
+
+export function buildMovedQueueOrder(
+  queue: MachineQueueRow[],
+  machineId: string,
+  targetPosition: number,
+) {
+  const ordered = sortProductionQueue(queue).map((machine) => machine.id).filter((id) => id !== machineId);
+  const targetIndex = Math.min(Math.max(Math.trunc(targetPosition) - 1, 0), ordered.length);
+  ordered.splice(targetIndex, 0, machineId);
+  return ordered;
 }
 
 export async function markMachineShipped(id: string) {
@@ -367,4 +418,57 @@ function mapMachineRow(row: MachineRow): MachineView {
     shippedAt: row.shipped_at,
     stages,
   };
+}
+
+async function reorderProductionQueue(machineId: string, targetPosition: number) {
+  const supabase = createSupabaseAdminClient();
+  const queue = await listProductionQueue(supabase);
+  const orderedIds = buildMovedQueueOrder(queue, machineId, targetPosition);
+  await persistProductionQueueOrder(supabase, orderedIds);
+}
+
+async function listProductionQueue(supabase = createSupabaseAdminClient()) {
+  const { data, error } = await supabase
+    .from("machines")
+    .select("id, order_position, status, created_at")
+    .eq("status", "in_production")
+    .order("order_position", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    throw new Error(`No se pudo cargar la cola de producción: ${error.message}`);
+  }
+
+  return (data as unknown as MachineQueueRow[]).map((machine) => ({
+    ...machine,
+    order_position: machine.order_position ?? 0,
+  }));
+}
+
+function sortProductionQueue(queue: MachineQueueRow[]) {
+  return [...queue].sort((a, b) => {
+    if (a.order_position !== b.order_position) {
+      return a.order_position - b.order_position;
+    }
+    if (a.created_at !== b.created_at) {
+      return a.created_at.localeCompare(b.created_at);
+    }
+    return a.id.localeCompare(b.id);
+  });
+}
+
+async function persistProductionQueueOrder(supabase = createSupabaseAdminClient(), orderedIds: string[]) {
+  const ordered = orderedIds.filter(Boolean);
+
+  if (ordered.length === 0) {
+    return;
+  }
+
+  const { error } = await supabase.rpc("reorder_in_production_machines", {
+    ordered_machine_ids: ordered,
+  });
+
+  if (error) {
+    throw new Error(`No se pudo reordenar la cola: ${error.message}`);
+  }
 }

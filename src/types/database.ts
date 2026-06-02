@@ -468,6 +468,12 @@ export type Database = {
         Args: Record<string, never>;
         Returns: boolean;
       };
+      reorder_in_production_machines: {
+        Args: {
+          ordered_machine_ids: string[];
+        };
+        Returns: void;
+      };
     };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
