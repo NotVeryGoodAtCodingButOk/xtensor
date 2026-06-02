@@ -17,14 +17,21 @@ export default async function ShippedPage() {
 
   const settings = mapSettings(await getSettings());
   const holidays = await listHolidays();
-  const machines = await listCalculatedMachines({ settings, holidays, status: "shipped" });
+  const machines = await listCalculatedMachines({
+    settings,
+    holidays,
+    status: "shipped",
+    shippedRetentionDays: settings.shippedRetentionDays,
+  });
 
   return (
     <AdminShell>
       <div className="mb-5">
         <p className="xt-eyebrow">Administración</p>
         <h1 className="text-3xl font-bold">Despachados</h1>
-        <p className="text-sm text-[var(--xt-steel)]">Histórico ordenado por despacho.</p>
+        <p className="text-sm text-[var(--xt-steel)]">
+          Histórico de despachos recientes. Se muestran los últimos {settings.shippedRetentionDays} días.
+        </p>
       </div>
       <ProductionTable machines={machines} shipped />
     </AdminShell>

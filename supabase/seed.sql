@@ -11,7 +11,8 @@ insert into public.settings (
   daily_hours_sat,
   daily_hours_sun,
   active_workers_count,
-  client_buffer_days
+  client_buffer_days,
+  shipped_retention_days
 )
 values (
   1,
@@ -22,7 +23,8 @@ values (
   6,
   0,
   9,
-  3
+  3,
+  60
 )
 on conflict (id) do update
 set factory_password_hash = excluded.factory_password_hash,
@@ -32,4 +34,5 @@ set factory_password_hash = excluded.factory_password_hash,
     daily_hours_sat = excluded.daily_hours_sat,
     daily_hours_sun = excluded.daily_hours_sun,
     active_workers_count = excluded.active_workers_count,
-    client_buffer_days = excluded.client_buffer_days;
+    client_buffer_days = excluded.client_buffer_days,
+    shipped_retention_days = excluded.shipped_retention_days;

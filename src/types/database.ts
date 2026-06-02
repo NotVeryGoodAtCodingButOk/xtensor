@@ -272,6 +272,33 @@ export type Database = {
         };
         Relationships: [];
       };
+      machine_warranty_events: {
+        Row: {
+          id: string;
+          machine_id: string;
+          coti_number: number;
+          message: string;
+          actor_profile_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          machine_id: string;
+          coti_number: number;
+          message: string;
+          actor_profile_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          machine_id?: string;
+          coti_number?: number;
+          message?: string;
+          actor_profile_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       previo_catalog: {
         Row: {
           id: string;
@@ -319,6 +346,7 @@ export type Database = {
           daily_hours_sun: number;
           active_workers_count: number;
           client_buffer_days: number;
+          shipped_retention_days: number;
           updated_at: string;
         };
         Insert: {
@@ -331,6 +359,7 @@ export type Database = {
           daily_hours_sun?: number;
           active_workers_count?: number;
           client_buffer_days?: number;
+          shipped_retention_days?: number;
           updated_at?: string;
         };
         Update: {
@@ -343,6 +372,7 @@ export type Database = {
           daily_hours_sun?: number;
           active_workers_count?: number;
           client_buffer_days?: number;
+          shipped_retention_days?: number;
           updated_at?: string;
         };
         Relationships: [];

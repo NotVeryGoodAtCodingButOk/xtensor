@@ -25,6 +25,7 @@ import {
   getMaxOrderPosition,
   markMachineShipped,
   reorderMachines,
+  sendMachineToWarranty,
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
@@ -333,6 +334,7 @@ export async function updateSettingsAction(formData: FormData) {
     daily_hours_sat: Number(formData.get("daily_hours_sat")),
     daily_hours_sun: Number(formData.get("daily_hours_sun") ?? 0),
     client_buffer_days: Number(formData.get("client_buffer_days")),
+    shipped_retention_days: Number(formData.get("shipped_retention_days")),
   });
   redirect("/admin/configuracion?settings=ok");
 }
@@ -476,6 +478,21 @@ export async function bulkMarkShippedAction(formData: FormData) {
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkMarkShipped(machineIds);
   redirect("/admin");
+}
+
+export async function warrantyMachineAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "");
+  const message = String(formData.get("message") ?? "").trim();
+
+  if (!machineId) {
+    throw new Error("Falta la máquina para registrar la garantía.");
+  }
+  if (!message) {
+    throw new Error("Describe brevemente la garantía.");
+  }
+
+  await sendMachineToWarranty(machineId, message);
+  redirect("/admin/despachados");
 }
 
 async function requireActorProfileId() {

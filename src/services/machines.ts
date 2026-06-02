@@ -11,6 +11,7 @@ import { addClientBuffer, estimateDeliveryDate, type Holiday } from "@/services/
 
 type MachineInsert = Database["public"]["Tables"]["machines"]["Insert"];
 type MachineUpdate = Database["public"]["Tables"]["machines"]["Update"];
+type MachineWarrantyEventInsert = Database["public"]["Tables"]["machine_warranty_events"]["Insert"];
 
 type MachineRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Database["public"]["Tables"]["clients"]["Row"] | null;
@@ -36,14 +37,28 @@ const MACHINE_SELECT = `
   )
 `;
 
-export async function listMachines(status?: "in_production" | "shipped") {
+export async function listMachines(
+  status?: "in_production" | "shipped",
+  options?: { shippedRetentionDays?: number; now?: Date },
+) {
   const supabase = createSupabaseAdminClient();
-  let query = supabase.from("machines").select(MACHINE_SELECT).order("order_position", {
-    ascending: true,
-  });
+  let query = supabase.from("machines").select(MACHINE_SELECT);
+
+  if (status === "shipped") {
+    query = query.order("shipped_at", { ascending: false }).order("order_position", { ascending: true });
+  } else {
+    query = query.order("order_position", { ascending: true });
+  }
 
   if (status) {
     query = query.eq("status", status);
+  }
+
+  if (status === "shipped") {
+    const shippedRetentionDays = options?.shippedRetentionDays ?? 60;
+    const shippedSince = new Date(options?.now ?? new Date());
+    shippedSince.setDate(shippedSince.getDate() - Math.max(0, shippedRetentionDays));
+    query = query.gte("shipped_at", shippedSince.toISOString());
   }
 
   const { data, error } = await query;
@@ -79,8 +94,11 @@ export async function listCalculatedMachines(input: {
   holidays: Holiday[];
   startDate?: Date;
   status?: "in_production" | "shipped";
+  shippedRetentionDays?: number;
 }) {
-  const machines = await listMachines(input.status);
+  const machines = await listMachines(input.status, {
+    shippedRetentionDays: input.shippedRetentionDays,
+  });
   return calculateMachines(machines, input.settings, input.holidays, input.startDate);
 }
 
@@ -241,6 +259,58 @@ export async function unmarkMachineShipped(id: string) {
     status: "in_production",
     shipped_at: null,
   });
+}
+
+export async function sendMachineToWarranty(id: string, message: string) {
+  const supabase = createSupabaseAdminClient();
+  const warrantyMessage = message.trim();
+
+  if (!warrantyMessage) {
+    throw new Error("El mensaje de la garantía es obligatorio.");
+  }
+
+  const { data: machine, error: machineError } = await supabase
+    .from("machines")
+    .select("id, coti_number, status")
+    .eq("id", id)
+    .single();
+
+  if (machineError) {
+    throw new Error(`No se pudo cargar la máquina: ${machineError.message}`);
+  }
+  if (machine.status !== "shipped") {
+    throw new Error("La garantía solo se puede registrar desde despachados.");
+  }
+
+  const warrantyEvent: MachineWarrantyEventInsert = {
+    machine_id: machine.id,
+    coti_number: machine.coti_number,
+    message: warrantyMessage,
+  };
+
+  const { data: event, error: eventError } = await supabase
+    .from("machine_warranty_events")
+    .insert(warrantyEvent)
+    .select("id")
+    .single();
+
+  if (eventError) {
+    throw new Error(`No se pudo registrar la garantía: ${eventError.message}`);
+  }
+
+  const { error: updateError } = await supabase
+    .from("machines")
+    .update({ status: "in_production", shipped_at: null })
+    .eq("id", machine.id);
+
+  if (updateError) {
+    if (event?.id) {
+      await supabase.from("machine_warranty_events").delete().eq("id", event.id);
+    }
+    throw new Error(`No se pudo devolver la máquina a producción: ${updateError.message}`);
+  }
+
+  return getMachine(machine.id);
 }
 
 export async function bulkSendToProduction(ids: string[]) {

@@ -53,6 +53,16 @@ export type StageLogTimingInput = {
   createdAt: string;
 };
 
+export type WarrantyEventTimingInput = {
+  id: string;
+  machineId: string;
+  cotiNumber: number;
+  clientName: string;
+  equipmentName: string;
+  message: string;
+  createdAt: string;
+};
+
 export type StageTiming = {
   stageId: number;
   stageName: string;
@@ -150,9 +160,11 @@ export type StatisticsDashboardData = {
     lateShipmentCount: number;
     averageProductionDelayHours: number | null;
     averageShipmentDelayHours: number | null;
+    warrantyCount: number;
   };
   stages: StageTimingStats[];
   currentOpenStages: CurrentOpenStageStats[];
+  warrantyEvents: WarrantyEventTimingInput[];
   breakdowns: {
     byEquipment: BreakdownTimingStats[];
     byLine: BreakdownTimingStats[];
@@ -186,6 +198,9 @@ type MachineStatisticsRow = Database["public"]["Tables"]["machines"]["Row"] & {
   machine_stages: MachineStageRow[];
   stage_logs: StageLogRow[];
 };
+type WarrantyEventRow = Database["public"]["Tables"]["machine_warranty_events"]["Row"] & {
+  machines: Pick<MachineStatisticsRow, "id" | "coti_number" | "clients" | "equipment_catalog"> | null;
+};
 
 const STATISTICS_MACHINE_SELECT = `
   *,
@@ -211,17 +226,24 @@ export async function getStatisticsDashboard(input: {
   now?: Date;
 }) {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("machines")
-    .select(STATISTICS_MACHINE_SELECT)
-    .order("created_at", { ascending: true });
+  const [machinesResult, warrantyResult] = await Promise.all([
+    supabase.from("machines").select(STATISTICS_MACHINE_SELECT).order("created_at", { ascending: true }),
+    supabase
+      .from("machine_warranty_events")
+      .select("*, machines(id, coti_number, clients(*), equipment_catalog(*))")
+      .order("created_at", { ascending: false }),
+  ]);
 
-  if (error) {
-    throw new Error(`No se pudieron cargar las estadísticas: ${error.message}`);
+  if (machinesResult.error) {
+    throw new Error(`No se pudieron cargar las estadísticas: ${machinesResult.error.message}`);
+  }
+  if (warrantyResult.error) {
+    throw new Error(`No se pudieron cargar las garantías: ${warrantyResult.error.message}`);
   }
 
   return buildStatisticsDashboard({
-    machines: (data as unknown as MachineStatisticsRow[]).map(mapStatisticsMachineRow),
+    machines: (machinesResult.data as unknown as MachineStatisticsRow[]).map(mapStatisticsMachineRow),
+    warrantyEvents: (warrantyResult.data as unknown as WarrantyEventRow[]).map(mapWarrantyEventRow),
     range: input.range,
     settings: input.settings,
     holidays: input.holidays,
@@ -275,6 +297,7 @@ export function resolveStatisticsRange(preset: string | undefined, now = new Dat
 
 export function buildStatisticsDashboard(input: {
   machines: MachineTimingInput[];
+  warrantyEvents: WarrantyEventTimingInput[];
   range: StatisticsRange;
   settings: ProductionSettings;
   holidays: Holiday[];
@@ -298,6 +321,7 @@ export function buildStatisticsDashboard(input: {
   const logsInRange = input.machines.flatMap((machine) =>
     machine.logs.filter((log) => isWithinRange(log.createdAt, input.range)),
   );
+  const warrantyEvents = input.warrantyEvents.filter((event) => isWithinRange(event.createdAt, input.range));
   const lateProductionDelays = completedMachines
     .filter((machine) => machine.isProductionLate)
     .map((machine) => machine.productionDelayHours);
@@ -319,6 +343,7 @@ export function buildStatisticsDashboard(input: {
       lateShipmentCount: shippedMachines.filter((machine) => machine.isShipmentLate).length,
       averageProductionDelayHours: average(lateProductionDelays),
       averageShipmentDelayHours: average(lateShipmentDelays),
+      warrantyCount: warrantyEvents.length,
     },
     stages: summarizeStages(stageEntries),
     currentOpenStages: machineTimings
@@ -332,6 +357,7 @@ export function buildStatisticsDashboard(input: {
       }))
       .sort((a, b) => b.agingHours - a.agingHours)
       .slice(0, 12),
+    warrantyEvents,
     breakdowns: {
       byEquipment: summarizeBreakdown(completedMachines, (machine) => machine.equipmentName),
       byLine: summarizeBreakdown(completedMachines, (machine) => machine.line ?? "Sin línea"),
@@ -527,6 +553,18 @@ function mapStatisticsMachineRow(row: MachineStatisticsRow): MachineTimingInput 
       isUndone: log.is_undone,
       createdAt: log.created_at,
     })),
+  };
+}
+
+function mapWarrantyEventRow(row: WarrantyEventRow): WarrantyEventTimingInput {
+  return {
+    id: row.id,
+    machineId: row.machine_id,
+    cotiNumber: row.coti_number,
+    clientName: row.machines?.clients?.name ?? "Cliente sin nombre",
+    equipmentName: row.machines?.equipment_catalog?.name ?? "Producto personalizado",
+    message: row.message,
+    createdAt: row.created_at,
   };
 }
 

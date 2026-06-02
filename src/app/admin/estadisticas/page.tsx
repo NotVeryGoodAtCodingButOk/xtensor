@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Activity, AlertTriangle, BarChart3, Clock, Factory, Timer, Truck, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Clock, Factory, RefreshCcw, Timer, Truck, Users } from "lucide-react";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
@@ -50,7 +50,7 @@ export default async function StatisticsPage({
 
   return (
     <AdminShell>
-      <RealtimeRefresh channelName="admin-statistics" tables={["machines", "machine_stages", "stage_logs"]} />
+      <RealtimeRefresh channelName="admin-statistics" tables={["machines", "machine_stages", "stage_logs", "machine_warranty_events"]} />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="xt-eyebrow">Administración</p>
@@ -138,6 +138,40 @@ export default async function StatisticsPage({
           value={String(dashboard.summary.lateShipmentCount)}
           detail={`Retraso promedio ${formatHours(dashboard.summary.averageShipmentDelayHours)}.`}
         />
+      </section>
+
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCcw className="h-5 w-5" />
+              Garantías
+            </CardTitle>
+            <CardDescription>Máquinas devueltas a producción por garantía dentro del rango seleccionado.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="xt-eyebrow">Registro</p>
+                <p className="text-3xl font-bold">{dashboard.summary.warrantyCount}</p>
+              </div>
+              <Badge variant="muted">
+                {dashboard.summary.warrantyCount} garantía{dashboard.summary.warrantyCount === 1 ? "" : "s"}
+              </Badge>
+            </div>
+            <StatsTable
+              empty="No hay garantías en este rango."
+              headers={["COTI", "Cliente", "Equipo", "Mensaje", "Fecha"]}
+              rows={dashboard.warrantyEvents.map((event) => [
+                `#${event.cotiNumber}`,
+                event.clientName,
+                event.equipmentName,
+                event.message,
+                formatDateTime(event.createdAt),
+              ])}
+            />
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mb-5 grid gap-5 xl:grid-cols-[1.2fr_1fr]">

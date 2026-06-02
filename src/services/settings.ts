@@ -15,6 +15,7 @@ export function mapSettings(row: SettingsRow): ProductionSettings {
     dailyHoursSun: Number(row.daily_hours_sun),
     activeWorkersCount: Number(row.active_workers_count),
     clientBufferDays: Number(row.client_buffer_days),
+    shippedRetentionDays: Number(row.shipped_retention_days ?? 60),
   };
 }
 

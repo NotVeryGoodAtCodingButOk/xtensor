@@ -13,6 +13,7 @@ type Settings = {
   daily_hours_sat: number;
   daily_hours_sun: number;
   client_buffer_days: number;
+  shipped_retention_days: number;
 };
 
 const inputCls = "h-8 w-28 text-right text-sm";
@@ -65,6 +66,20 @@ export function SettingsForm({ settings, savedOk }: { settings: Settings; savedO
             <TableCell>Buffer cliente</TableCell>
             <TableCell className="text-right">
               <Input name="client_buffer_days" type="number" step="1" min="0" defaultValue={settings.client_buffer_days} required className={inputCls} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Retención despachados</TableCell>
+            <TableCell className="text-right">
+              <Input
+                name="shipped_retention_days"
+                type="number"
+                step="1"
+                min="0"
+                defaultValue={settings.shipped_retention_days}
+                required
+                className={inputCls}
+              />
             </TableCell>
           </TableRow>
         </TableBody>

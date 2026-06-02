@@ -18,6 +18,7 @@ export type ProductionSettings = {
   dailyHoursSun: number;
   activeWorkersCount: number;
   clientBufferDays: number;
+  shippedRetentionDays: number;
 };
 
 export type QueueMachineInput = {
@@ -55,6 +56,7 @@ export const DEFAULT_SETTINGS: ProductionSettings = {
   dailyHoursSun: 0,
   activeWorkersCount: 9,
   clientBufferDays: 3,
+  shippedRetentionDays: 60,
 };
 
 export function estimateTotalHours(salePriceCop: number, settings: ProductionSettings) {

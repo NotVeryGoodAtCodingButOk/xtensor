@@ -17,6 +17,7 @@ const settings: ProductionSettings = {
   dailyHoursSun: 0,
   activeWorkersCount: 9,
   clientBufferDays: 3,
+  shippedRetentionDays: 60,
 };
 
 const noHolidays: Holiday[] = [];
@@ -130,6 +131,17 @@ describe("statistics dashboard aggregation", () => {
           status: "shipped",
         }),
       ],
+      warrantyEvents: [
+        {
+          id: "w1",
+          machineId: "m1",
+          cotiNumber: 101,
+          clientName: "Cliente A",
+          equipmentName: "Equipo A",
+          message: "Puerta desalineada",
+          createdAt: "2026-06-03T09:00:00-05:00",
+        },
+      ],
       range,
       settings,
       holidays: noHolidays,
@@ -140,8 +152,10 @@ describe("statistics dashboard aggregation", () => {
     expect(dashboard.summary.shippedMachinesCount).toBe(1);
     expect(dashboard.summary.production.averageHours).toBe(10);
     expect(dashboard.summary.productionToShipment.averageHours).toBe(2);
+    expect(dashboard.summary.warrantyCount).toBe(1);
     expect(dashboard.breakdowns.byEquipment).toHaveLength(1);
     expect(dashboard.breakdowns.byEquipment[0].label).toBe("Equipo A");
+    expect(dashboard.warrantyEvents[0].message).toBe("Puerta desalineada");
   });
 });
 

@@ -1,12 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { Pencil, RotateCcw, Truck } from "lucide-react";
-import { markShippedAction, unmarkShippedAction } from "@/app/admin/actions";
-import { Progress } from "@/components/ui/progress";
+import { useRef } from "react";
+import { Pencil, Truck } from "lucide-react";
+import { markShippedAction, warrantyMachineAction } from "@/app/admin/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
-import { cn, formatCurrencyCop, formatPercent } from "@/lib/utils";
+import { cn, formatCurrencyCop } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -60,6 +60,38 @@ function SortableHead({ sortKey, label, className, title, sortConfig, onSort }: 
   );
 }
 
+function WarrantyButton({ machineId }: { machineId: string }) {
+  const formRef = useRef<HTMLFormElement>(null);
+  const messageRef = useRef<HTMLInputElement>(null);
+
+  function handleClick() {
+    const message = window.prompt("Mensaje muy breve de la garantía");
+    if (!message?.trim()) {
+      return;
+    }
+
+    if (messageRef.current) {
+      messageRef.current.value = message.trim();
+    }
+    formRef.current?.requestSubmit();
+  }
+
+  return (
+    <form ref={formRef} action={warrantyMachineAction}>
+      <input type="hidden" name="machineId" value={machineId} />
+      <input ref={messageRef} type="hidden" name="message" defaultValue="" />
+      <button
+        type="button"
+        onClick={handleClick}
+        title="Enviar a garantía"
+        className="inline-flex h-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow)] px-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
+      >
+        Garantía
+      </button>
+    </form>
+  );
+}
+
 export function ProductionTable({
   machines,
   shipped = false,
@@ -93,23 +125,23 @@ export function ProductionTable({
           <TableRow>
             {selectable && <TableHead className="w-8 px-2" />}
             {sh("orderPosition", "#")}
-            {sh("progressPct", "%")}
+            {!shipped && sh("progressPct", "%")}
             {sh("cotiNumber", "COTI")}
             {sh("clientName", "Cliente")}
             {sh("equipmentName", "Equipo")}
             {sh("colorName", "Color")}
             {sh("city", "Ciudad")}
             {sh("line", "Línea")}
-            {sh("salePriceCop", "Venta", `${C} text-right`, "Venta antes de IVA")}
+            {!shipped && sh("salePriceCop", "Venta", `${C} text-right`, "Venta antes de IVA")}
             {sh("totalHours", "H.Tot", `${C} text-right`, "Horas totales")}
-            {sh("remainingHours", "H.Fal", `${C} text-right`, "Horas faltantes")}
-            {sh("remainingHumanDays", "D-H", `${C} text-right`, "Días-hombre restantes")}
+            {!shipped && sh("remainingHours", "H.Fal", `${C} text-right`, "Horas faltantes")}
+            {!shipped && sh("remainingHumanDays", "D-H", `${C} text-right`, "Días-hombre restantes")}
             {sh("accumulatedHours", "Acum", `${C} text-right`, "Horas acumuladas en cola")}
             {sh("assignedTo", "Quién")}
             {sh("promisedDate", "Ofrec.", C, "Fecha ofrecida")}
             {sh("estimatedDate", "Estim.", C, "Fecha estimada")}
-            <TableHead className={C} title="Fecha de la última etapa completada">Comp.</TableHead>
-            {STAGES_SHORT.map((s, i) => (
+            {!shipped && <TableHead className={C} title="Fecha de la última etapa completada">Comp.</TableHead>}
+            {!shipped && STAGES_SHORT.map((s, i) => (
               <TableHead key={s} className={`${C} text-center`} title={STAGES_FULL[i]}>{s}</TableHead>
             ))}
             <TableHead className={C} />
@@ -118,12 +150,10 @@ export function ProductionTable({
         <TableBody>
           {machines.map((machine) => {
             const isLate   = machine.estimatedDate > machine.promisedDate;
-            const isReady  = machine.progressPct >= 1 && machine.status === "in_production";
             const rowColor = colorRows ? getMachineRowColor(machine.colorName) : null;
             return (
               <TableRow
                 key={machine.id}
-                className={cn(isReady && !rowColor ? "bg-[var(--xt-yellow-soft)]" : undefined)}
                 style={rowColor ? { backgroundColor: rowColor } : undefined}
               >
                 {selectable && (
@@ -138,14 +168,21 @@ export function ProductionTable({
                 )}
                 <TableCell className={`${C} tabular-nums text-[var(--xt-steel)]`}>{machine.orderPosition}</TableCell>
 
-                <TableCell className={C}>
-                  <div className="flex w-14 flex-col gap-0.5">
-                    <Progress value={machine.progressPct} className="h-1.5" />
-                    <span className="text-center tabular-nums text-[10px] leading-none text-[var(--xt-steel)]">
-                      {formatPercent(machine.progressPct)}
-                    </span>
-                  </div>
-                </TableCell>
+                {!shipped && (
+                  <TableCell className={C}>
+                    <div className="flex w-14 flex-col gap-0.5">
+                      <div className="h-1.5 overflow-hidden rounded-full bg-[var(--xt-cement)]">
+                        <div
+                          className="h-full bg-[var(--xt-black)]"
+                          style={{ width: `${Math.max(0, Math.min(1, machine.progressPct)) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-center tabular-nums text-[10px] leading-none text-[var(--xt-steel)]">
+                        {Math.round(machine.progressPct * 100)}%
+                      </span>
+                    </div>
+                  </TableCell>
+                )}
 
                 <TableCell className={C}>
                   <Link
@@ -173,12 +210,14 @@ export function ProductionTable({
                 <TableCell className={C}>{machine.city ?? "—"}</TableCell>
                 <TableCell className={C}>{machine.line ?? "—"}</TableCell>
 
-                <TableCell className={`${C} text-right tabular-nums whitespace-nowrap`}>
-                  {formatCurrencyCop(machine.salePriceCop)}
-                </TableCell>
+                {!shipped && (
+                  <TableCell className={`${C} text-right tabular-nums whitespace-nowrap`}>
+                    {formatCurrencyCop(machine.salePriceCop)}
+                  </TableCell>
+                )}
                 <TableCell className={`${C} text-right tabular-nums`}>{machine.totalHours.toFixed(1)}</TableCell>
-                <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHours.toFixed(1)}</TableCell>
-                <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHumanDays.toFixed(1)}</TableCell>
+                {!shipped && <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHours.toFixed(1)}</TableCell>}
+                {!shipped && <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHumanDays.toFixed(1)}</TableCell>}
                 <TableCell className={`${C} text-right tabular-nums`}>{machine.accumulatedHours.toFixed(1)}</TableCell>
 
                 <TableCell className={C}>{machine.assignedTo ?? "—"}</TableCell>
@@ -188,11 +227,13 @@ export function ProductionTable({
                 >
                   {formatDateEs(machine.estimatedDate)}
                 </TableCell>
-                <TableCell className={`${C} whitespace-nowrap`}>
-                  {machine.lastCompletedStageAt ? formatDateEs(machine.lastCompletedStageAt) : "—"}
-                </TableCell>
+                {!shipped && (
+                  <TableCell className={`${C} whitespace-nowrap`}>
+                    {machine.lastCompletedStageAt ? formatDateEs(machine.lastCompletedStageAt) : "—"}
+                  </TableCell>
+                )}
 
-                {machine.stages.map((stage) => (
+                {!shipped && machine.stages.map((stage) => (
                   <TableCell key={stage.id} className={`${C} text-center`}>
                     <StagePin completion={stage.completion} />
                   </TableCell>
@@ -209,16 +250,20 @@ export function ProductionTable({
                         <Pencil className="h-3 w-3" />
                       </Link>
                     )}
-                    <form action={shipped ? unmarkShippedAction : markShippedAction}>
-                      <input type="hidden" name="machineId" value={machine.id} />
-                      <button
-                        type="submit"
-                        title={shipped ? "Reactivar" : "Despachar"}
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
-                      >
-                        {shipped ? <RotateCcw className="h-3 w-3" /> : <Truck className="h-3 w-3" />}
-                      </button>
-                    </form>
+                    {shipped ? (
+                      <WarrantyButton machineId={machine.id} />
+                    ) : (
+                      <form action={markShippedAction}>
+                        <input type="hidden" name="machineId" value={machine.id} />
+                        <button
+                          type="submit"
+                          title="Despachar"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
+                        >
+                          <Truck className="h-3 w-3" />
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </TableCell>
               </TableRow>
