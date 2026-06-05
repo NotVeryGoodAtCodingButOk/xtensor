@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasSupabaseConfig } from "@/lib/env";
+import { MACHINE_LINE_OPTIONS } from "@/lib/machine-lines";
 import { listCatalog, listColors } from "@/services/catalog";
 
 export default async function NewMachinePage() {
@@ -62,9 +63,7 @@ export default async function NewMachinePage() {
             <Field label="Ciudad">
               <Input name="city" />
             </Field>
-            <Field label="Línea">
-              <Input name="line" />
-            </Field>
+            <LineField />
             <Field label="Venta antes de IVA">
               <Input name="salePriceCop" type="number" min="0" required />
             </Field>
@@ -94,6 +93,25 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <label className="grid gap-2 text-sm font-medium">
       {label}
       {children}
+    </label>
+  );
+}
+
+function LineField() {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      Línea
+      <select
+        name="line"
+        defaultValue="otros"
+        className="h-10 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]"
+      >
+        {MACHINE_LINE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

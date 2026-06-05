@@ -1,5 +1,6 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizeMachineLine } from "@/lib/machine-lines";
 import type { ProductionSettings } from "@/services/calculations";
 import type { Holiday } from "@/services/schedule";
 import type { Database, MachineStatus } from "@/types/database";
@@ -529,7 +530,7 @@ function mapStatisticsMachineRow(row: MachineStatisticsRow): MachineTimingInput 
     cotiNumber: row.coti_number,
     clientName: row.clients?.name ?? "Cliente sin nombre",
     equipmentName,
-    line: row.line_override ?? row.equipment_catalog?.line ?? null,
+    line: normalizeMachineLine(row.line_override ?? row.equipment_catalog?.line),
     colorName: row.colors?.name ?? null,
     city: row.city,
     promisedDate: row.promised_date,

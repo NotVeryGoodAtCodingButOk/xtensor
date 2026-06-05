@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
 import { cn, formatCurrencyCop } from "@/lib/utils";
 import type { Database } from "@/types/database";
 import type { EquipmentPrevioView, PrevioCatalogView } from "@/types/domain";
@@ -20,8 +21,6 @@ import type { EquipmentPrevioView, PrevioCatalogView } from "@/types/domain";
 type CatalogRow = Database["public"]["Tables"]["equipment_catalog"]["Row"] & {
   previos: EquipmentPrevioView[];
 };
-
-const LINE_OPTIONS = ["Bioparques", "Musculación", "Calistenia", "Otro"] as const;
 
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
@@ -34,10 +33,9 @@ function AddRow({ onCancel }: { onCancel: () => void }) {
         <form action={addCatalogItemAction} className="flex flex-wrap items-center gap-2">
           <Input name="code" placeholder="Código" className="h-8 w-28 text-sm" required autoFocus />
           <Input name="name" placeholder="Nombre del equipo" className="h-8 w-52 text-sm" required />
-          <select name="line" className={cn(selectCls, "w-36")}>
-            <option value="">Línea…</option>
-            {LINE_OPTIONS.map((opt) => (
-              <option key={opt} value={opt}>{opt}</option>
+          <select name="line" defaultValue="otros" className={cn(selectCls, "w-36")}>
+            {MACHINE_LINE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>{option.label}</option>
             ))}
           </select>
           <Input name="default_price_cop" type="number" min="0" placeholder="Precio" className="h-8 w-32 text-sm" />
@@ -61,7 +59,7 @@ function EditPanel({
   item: CatalogRow;
   onClose: () => void;
 }) {
-  const currentLine = LINE_OPTIONS.includes(item.line as (typeof LINE_OPTIONS)[number]) ? item.line : "";
+  const currentLine = normalizeMachineLine(item.line);
 
   return (
     <TableRow className="bg-[var(--xt-yellow-soft)]/45 hover:bg-[var(--xt-yellow-soft)]/45">
@@ -73,10 +71,9 @@ function EditPanel({
             <input type="hidden" name="id" value={item.id} />
             <Input name="code" defaultValue={item.code} placeholder="Código" className="h-8 w-28 text-sm" required />
             <Input name="name" defaultValue={item.name} placeholder="Nombre del equipo" className="h-8 w-52 text-sm" required />
-            <select name="line" defaultValue={currentLine ?? ""} className={cn(selectCls, "w-36")}>
-              <option value="">Línea…</option>
-              {LINE_OPTIONS.map((opt) => (
-                <option key={opt} value={opt}>{opt}</option>
+            <select name="line" defaultValue={currentLine} className={cn(selectCls, "w-36")}>
+              {MACHINE_LINE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
               ))}
             </select>
             <Input

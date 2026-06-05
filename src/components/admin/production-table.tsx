@@ -12,13 +12,14 @@ import {
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
+import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
 import { cn, formatCurrencyCop } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
 export type SortKey = keyof CalculatedMachineView;
 export type SortConfig = { key: SortKey; dir: "asc" | "desc" } | null;
-type EditableField = "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line";
+type EditableField = "cotiNumber" | "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line";
 
 function StagePin({ completion }: { completion: number }) {
   if (completion === 100) {
@@ -144,6 +145,7 @@ function EditableMachineCell({
 
 function HiddenMachineFields({ machine, omit }: { machine: CalculatedMachineView; omit: EditableField }) {
   const fields: Array<{ name: EditableField; value: string | number }> = [
+    { name: "cotiNumber", value: machine.cotiNumber },
     { name: "salePriceCop", value: machine.salePriceCop },
     { name: "assignedTo", value: machine.assignedTo ?? "" },
     { name: "promisedDate", value: machine.promisedDate },
@@ -160,6 +162,84 @@ function HiddenMachineFields({ machine, omit }: { machine: CalculatedMachineView
           <input key={field.name} type="hidden" name={field.name} value={field.value} />
         ))}
     </>
+  );
+}
+
+function EditableMachineLineCell({
+  machine,
+}: {
+  machine: CalculatedMachineView;
+}) {
+  const [editing, setEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    if (!editing) return;
+    selectRef.current?.focus();
+  }, [editing]);
+
+  function beginEdit() {
+    setEditing(true);
+  }
+
+  function submitEdit() {
+    formRef.current?.requestSubmit();
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLSelectElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setEditing(false);
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitEdit();
+    }
+  }
+
+  const line = normalizeMachineLine(machine.line);
+
+  if (!editing) {
+    return (
+      <div
+        className="w-full cursor-text rounded-[2px] px-1 -mx-1 transition-colors hover:bg-[var(--xt-yellow-soft)]"
+        onDoubleClick={beginEdit}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            beginEdit();
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        title="Doble clic para editar la línea"
+      >
+        {line}
+      </div>
+    );
+  }
+
+  return (
+    <form ref={formRef} action={updateMachineInlineAction} className="min-w-0">
+      <input type="hidden" name="machineId" value={machine.id} />
+      <HiddenMachineFields machine={machine} omit="line" />
+      <select
+        ref={selectRef}
+        name="line"
+        defaultValue={line}
+        onBlur={submitEdit}
+        onChange={submitEdit}
+        onKeyDown={handleKeyDown}
+        className="h-7 min-w-28 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-white)] px-2 text-xs shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--xt-yellow)]"
+      >
+        {MACHINE_LINE_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </form>
   );
 }
 
@@ -324,13 +404,19 @@ export function ProductionTable({
                   </TableCell>
                 )}
 
-                <TableCell className={C}>
-                  <Link
-                    className="font-semibold underline-offset-2 hover:underline hover:decoration-[var(--xt-yellow)]"
-                    href={`/admin/maquinas/${machine.id}`}
-                  >
-                    {machine.cotiNumber}
-                  </Link>
+                <TableCell className={`${C} tabular-nums`}>
+                  <EditableMachineCell
+                    machine={machine}
+                    field="cotiNumber"
+                    value={machine.cotiNumber}
+                    inputType="number"
+                    min={1}
+                    step={1}
+                    className="w-full font-semibold"
+                    inputClassName="w-20 font-semibold tabular-nums"
+                    display={machine.cotiNumber}
+                    title="Doble clic para editar el COTI"
+                  />
                 </TableCell>
 
                 <TableCell className={`${C} max-w-[90px] truncate`} title={machine.clientName}>
@@ -359,15 +445,7 @@ export function ProductionTable({
                   />
                 </TableCell>
                 <TableCell className={C}>
-                  <EditableMachineCell
-                    machine={machine}
-                    field="line"
-                    value={machine.line ?? ""}
-                    inputType="text"
-                    className="w-full"
-                    inputClassName="min-w-24"
-                    display={machine.line ?? "—"}
-                  />
+                  <EditableMachineLineCell machine={machine} />
                 </TableCell>
 
                 {!shipped && (

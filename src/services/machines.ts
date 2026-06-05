@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizeMachineLine } from "@/lib/machine-lines";
 import type { Database } from "@/types/database";
 import type { CalculatedMachineView, MachineView, StageView } from "@/types/domain";
 import {
@@ -312,6 +313,20 @@ export async function unmarkMachineShipped(id: string) {
   });
 }
 
+export async function sendMachineToPrevios(id: string) {
+  return updateMachine(id, {
+    status: "pending",
+    shipped_at: null,
+  });
+}
+
+export async function sendMachineToProduction(id: string) {
+  return updateMachine(id, {
+    status: "in_production",
+    shipped_at: null,
+  });
+}
+
 export async function sendMachineToWarranty(id: string, message: string) {
   const supabase = createSupabaseAdminClient();
   const warrantyMessage = message.trim();
@@ -368,7 +383,7 @@ export async function bulkSendToProduction(ids: string[]) {
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase
     .from("machines")
-    .update({ status: "in_production" })
+    .update({ status: "in_production", shipped_at: null })
     .in("id", ids)
     .eq("status", "pending");
   if (error) throw new Error(`No se pudo enviar a producción: ${error.message}`);
@@ -409,7 +424,7 @@ function mapMachineRow(row: MachineRow): MachineView {
     equipmentName,
     colorName: row.colors?.name ?? null,
     city: row.city,
-    line: row.line_override ?? row.equipment_catalog?.line ?? null,
+    line: normalizeMachineLine(row.line_override ?? row.equipment_catalog?.line),
     salePriceCop: Number(row.sale_price_cop),
     assignedTo: row.assigned_to,
     promisedDate: row.promised_date,

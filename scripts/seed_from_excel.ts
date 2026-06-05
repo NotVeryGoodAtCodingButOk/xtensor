@@ -12,6 +12,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { createClient } from "@supabase/supabase-js";
+import { normalizeMachineLine } from "../src/lib/machine-lines";
 
 type Fixture = {
   settings: {
@@ -170,7 +171,7 @@ async function main() {
     catalogMap.set(code, {
       code,
       name: item.name,
-      line: null,
+      line: "otros",
       default_price_cop: item.defaultPriceCop ?? null,
     });
   }
@@ -183,7 +184,7 @@ async function main() {
     catalogMap.set(code, {
       code,
       name: existing?.name || r.equipmentName,
-      line: r.line || existing?.line || null,
+      line: normalizeMachineLine(r.line || existing?.line),
       default_price_cop: r.salePriceCop || existing?.default_price_cop || null,
     });
   }

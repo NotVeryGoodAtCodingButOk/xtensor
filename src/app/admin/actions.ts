@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { normalizeMachineLine } from "@/lib/machine-lines";
 import {
   createCustomEquipment,
   createColor,
@@ -26,6 +27,8 @@ import {
   getMaxOrderPosition,
   markMachineShipped,
   reorderMachines,
+  sendMachineToPrevios,
+  sendMachineToProduction,
   sendMachineToWarranty,
   updateMachine,
   unmarkMachineShipped,
@@ -75,7 +78,7 @@ export async function createMachineAction(formData: FormData) {
   const customEquipmentName = String(formData.get("customEquipmentName") ?? "").trim();
   const equipmentIdInput = String(formData.get("equipmentId") ?? "");
   const salePriceCop = Number(formData.get("salePriceCop"));
-  const line = String(formData.get("line") ?? "").trim() || null;
+  const line = normalizeMachineLine(formData.get("line"));
   const equipment =
     equipmentIdInput || !customEquipmentName
       ? null
@@ -105,12 +108,13 @@ export async function createMachineAction(formData: FormData) {
 export async function updateMachineAction(formData: FormData) {
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
+    coti_number: Number(formData.get("cotiNumber")),
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
     order_position: Number(formData.get("orderPosition")) || 9999,
     city: String(formData.get("city") ?? "").trim() || null,
-    line_override: String(formData.get("line") ?? "").trim() || null,
+    line_override: normalizeMachineLine(formData.get("line")),
   });
 
   revalidatePath("/admin");
@@ -121,12 +125,13 @@ export async function updateMachineAction(formData: FormData) {
 export async function updateMachineInlineAction(formData: FormData) {
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
+    coti_number: Number(formData.get("cotiNumber")),
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
     order_position: Number(formData.get("orderPosition")) || 9999,
     city: String(formData.get("city") ?? "").trim() || null,
-    line_override: String(formData.get("line") ?? "").trim() || null,
+    line_override: normalizeMachineLine(formData.get("line")),
   });
 
   revalidatePath("/admin");
@@ -141,6 +146,28 @@ export async function unmarkShippedAction(formData: FormData) {
 export async function deleteMachineAction(formData: FormData) {
   await deleteMachine(String(formData.get("machineId") ?? ""));
   redirect("/admin");
+}
+
+export async function sendMachineToPreviosAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "");
+  if (machineId) {
+    await sendMachineToPrevios(machineId);
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/previos");
+  revalidatePath(`/admin/maquinas/${machineId}`);
+  redirect(`/admin/maquinas/${machineId}?moved=previos`);
+}
+
+export async function sendMachineToProductionAction(formData: FormData) {
+  const machineId = String(formData.get("machineId") ?? "");
+  if (machineId) {
+    await sendMachineToProduction(machineId);
+  }
+  revalidatePath("/admin");
+  revalidatePath("/admin/previos");
+  revalidatePath(`/admin/maquinas/${machineId}`);
+  redirect(`/admin/maquinas/${machineId}?moved=production`);
 }
 
 export async function reorderMachinesAction(formData: FormData) {
@@ -232,7 +259,7 @@ export async function updateWorkerAction(formData: FormData) {
 export async function addCatalogItemAction(formData: FormData) {
   const code = String(formData.get("code") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
-  const line = String(formData.get("line") ?? "").trim() || null;
+  const line = normalizeMachineLine(formData.get("line"));
   const default_price_cop = Number(formData.get("default_price_cop")) || null;
   if (code && name) await createCatalogItem({ code, name, line, default_price_cop });
   redirect("/admin/catalogo");
@@ -294,7 +321,7 @@ export async function updateCatalogItemAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const code = String(formData.get("code") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
-  const line = String(formData.get("line") ?? "").trim() || null;
+  const line = normalizeMachineLine(formData.get("line"));
   const default_price_cop = Number(formData.get("default_price_cop")) || null;
   const is_active = formData.get("is_active") !== "false";
   if (id) await updateCatalogItem(id, { code, name, line, default_price_cop, is_active });
@@ -441,6 +468,7 @@ export async function importQuoteAction(input: {
 
   for (const line of importable) {
     let equipmentId: string | null = null;
+    let lineOverride: string | null = line.line == null ? null : normalizeMachineLine(line.line);
 
     if (line.resolution === "catalog") {
       if (!line.catalogId) throw new Error(`Falta el equipo del catálogo para "${line.producto}".`);
@@ -448,9 +476,10 @@ export async function importQuoteAction(input: {
     } else {
       const name = (line.customName ?? line.producto).trim();
       if (!name) throw new Error("El producto personalizado requiere un nombre.");
+      lineOverride = normalizeMachineLine(line.line);
       const equipment = await createCustomEquipment({
         name,
-        line: line.line?.trim() || null,
+        line: lineOverride,
         defaultPriceCop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : null,
       });
       equipmentId = equipment.id;
@@ -464,7 +493,7 @@ export async function importQuoteAction(input: {
         client_id: client.id,
         equipment_id: equipmentId,
         custom_equipment_name: null,
-        line_override: line.line?.trim() || null,
+        line_override: lineOverride,
         sale_price_cop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : 0,
         promised_date: input.promisedDate,
         order_position: position,
