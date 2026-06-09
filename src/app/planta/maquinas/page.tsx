@@ -65,7 +65,7 @@ export default async function FactoryMachinesPage() {
             </form>
             <form action={lockFactoryAction}>
               <Button type="submit" variant="secondary" size="lg">
-                Bloquear
+                Cerrar sesión
               </Button>
             </form>
           </div>

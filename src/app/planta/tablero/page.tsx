@@ -1,7 +1,10 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
+import { lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
+import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
@@ -44,31 +47,45 @@ export default async function FactoryBoardPage() {
     <main className="flex min-h-screen flex-col bg-[var(--xt-black)] text-[var(--xt-white)]">
       <RealtimeRefresh channelName="factory-board" tables={["machines", "machine_stages", "settings", "colors"]} />
 
-      <header className="flex items-center justify-between gap-6 border-b border-[var(--xt-steel)] bg-[var(--xt-black)] px-8 py-5">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--xt-steel)] bg-[var(--xt-black)] px-8 py-5">
         <div className="flex items-center gap-6">
           <BrandLogo inverse />
           <div className="border-l border-white/40 pl-6">
             <p className="xt-eyebrow text-white/70">Estado de producción</p>
             <h1 className="[font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none">
-              Tablero de planta
+              Cartelera
             </h1>
           </div>
         </div>
-        <div className="flex items-center gap-8 text-right">
-          <div>
-            <p className="text-5xl font-bold tabular-nums leading-none">{orderedMachines.length}</p>
-            <p className="xt-eyebrow text-white/70">En producción</p>
+        <div className="flex items-center gap-6">
+          <div className="flex flex-wrap gap-3">
+            <Link href="/planta/operarios">
+              <Button type="button" variant="secondary" size="lg">
+                Ver usuarios
+              </Button>
+            </Link>
+            <form action={lockFactoryAction}>
+              <Button type="submit" variant="outline" size="lg">
+                Cerrar sesión
+              </Button>
+            </form>
           </div>
-          <div className={cn(lateCount > 0 && "xt-flash-late rounded-[4px] px-3 py-1")}>
-            <p
-              className={cn(
-                "text-5xl font-bold tabular-nums leading-none",
-                lateCount > 0 ? "text-[var(--xt-white)]" : "text-white/40",
-              )}
-            >
-              {lateCount}
-            </p>
-            <p className="xt-eyebrow text-white/70">Atrasadas</p>
+          <div className="flex items-center gap-8 text-right border-l border-white/20 pl-6">
+            <div>
+              <p className="text-5xl font-bold tabular-nums leading-none">{orderedMachines.length}</p>
+              <p className="xt-eyebrow text-white/70">En producción</p>
+            </div>
+            <div className={cn(lateCount > 0 && "xt-flash-late rounded-[4px] px-3 py-1")}>
+              <p
+                className={cn(
+                  "text-5xl font-bold tabular-nums leading-none",
+                  lateCount > 0 ? "text-[var(--xt-white)]" : "text-white/40",
+                )}
+              >
+                {lateCount}
+              </p>
+              <p className="xt-eyebrow text-white/70">Atrasadas</p>
+            </div>
           </div>
         </div>
       </header>

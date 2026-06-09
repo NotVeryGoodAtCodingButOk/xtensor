@@ -31,12 +31,12 @@ export default async function FactoryWorkersPage() {
           <div className="flex flex-wrap gap-3">
             <Link href="/planta/tablero">
               <Button type="button" variant="secondary" size="lg">
-                Ver tablero
+                Ver cartelera
               </Button>
             </Link>
             <form action={lockFactoryAction}>
               <Button type="submit" variant="outline" size="lg">
-                Bloquear tablero
+                Cerrar sesión
               </Button>
             </form>
           </div>
