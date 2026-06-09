@@ -28,6 +28,8 @@ export async function updateStageProgress(input: {
     return { stage: current, log: null };
   }
 
+  const isReprocess = current.completion >= 100 && input.completion < 100;
+
   const { data: log, error: logError } = await supabase
     .from("stage_logs")
     .insert({
@@ -36,6 +38,7 @@ export async function updateStageProgress(input: {
       worker_id: input.workerId,
       previous_completion: current.completion,
       new_completion: input.completion,
+      is_reprocess: isReprocess,
     })
     .select("*")
     .single();

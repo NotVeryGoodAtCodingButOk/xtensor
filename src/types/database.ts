@@ -385,6 +385,7 @@ export type Database = {
           worker_id: string;
           previous_completion: number;
           new_completion: number;
+          is_reprocess: boolean;
           is_undone: boolean;
           created_at: string;
         };
@@ -395,6 +396,7 @@ export type Database = {
           worker_id: string;
           previous_completion: number;
           new_completion: number;
+          is_reprocess?: boolean;
           is_undone?: boolean;
           created_at?: string;
         };
@@ -405,6 +407,7 @@ export type Database = {
           worker_id?: string;
           previous_completion?: number;
           new_completion?: number;
+          is_reprocess?: boolean;
           is_undone?: boolean;
           created_at?: string;
         };

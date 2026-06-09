@@ -50,6 +50,7 @@ export type StageLogTimingInput = {
   workerName: string | null;
   previousCompletion: number;
   newCompletion: number;
+  isReprocess: boolean;
   isUndone: boolean;
   createdAt: string;
 };
@@ -119,6 +120,7 @@ export type HourSummary = {
 export type StageTimingStats = HourSummary & {
   stageId: number;
   stageName: string;
+  reprocessCount: number;
 };
 
 export type BreakdownTimingStats = HourSummary & {
@@ -130,6 +132,7 @@ export type WorkerActivityStats = {
   workerName: string;
   updateCount: number;
   completionCount: number;
+  reprocessCount: number;
   lastActivityAt: string;
 };
 
@@ -162,6 +165,7 @@ export type StatisticsDashboardData = {
     averageProductionDelayHours: number | null;
     averageShipmentDelayHours: number | null;
     warrantyCount: number;
+    reprocessCount: number;
   };
   stages: StageTimingStats[];
   currentOpenStages: CurrentOpenStageStats[];
@@ -345,8 +349,9 @@ export function buildStatisticsDashboard(input: {
       averageProductionDelayHours: average(lateProductionDelays),
       averageShipmentDelayHours: average(lateShipmentDelays),
       warrantyCount: warrantyEvents.length,
+      reprocessCount: logsInRange.filter((log) => log.isReprocess && !log.isUndone).length,
     },
-    stages: summarizeStages(stageEntries),
+    stages: summarizeStages(stageEntries, logsInRange),
     currentOpenStages: machineTimings
       .filter((machine) => machine.status === "in_production" && machine.currentOpenStage)
       .map((machine) => ({
@@ -551,6 +556,7 @@ function mapStatisticsMachineRow(row: MachineStatisticsRow): MachineTimingInput 
       workerName: log.workers?.full_name ?? null,
       previousCompletion: log.previous_completion,
       newCompletion: log.new_completion,
+      isReprocess: log.is_reprocess,
       isUndone: log.is_undone,
       createdAt: log.created_at,
     })),
@@ -607,8 +613,10 @@ function resolveCurrentOpenStage(
 
 function summarizeStages(
   entries: Array<StageTiming & { machine: MachineTimingStats }>,
+  logs: StageLogTimingInput[],
 ): StageTimingStats[] {
   const byStage = new Map<number, Array<StageTiming & { machine: MachineTimingStats }>>();
+  const reprocessByStage = new Map<number, number>();
 
   for (const entry of entries) {
     const current = byStage.get(entry.stageId) ?? [];
@@ -616,10 +624,18 @@ function summarizeStages(
     byStage.set(entry.stageId, current);
   }
 
+  for (const log of logs) {
+    if (!log.isReprocess || log.isUndone) {
+      continue;
+    }
+    reprocessByStage.set(log.stageId, (reprocessByStage.get(log.stageId) ?? 0) + 1);
+  }
+
   return [...byStage.entries()]
     .map(([stageId, stageEntries]) => ({
       stageId,
       stageName: stageEntries[0]?.stageName ?? `Etapa ${stageId}`,
+      reprocessCount: reprocessByStage.get(stageId) ?? 0,
       ...summarizeHours(stageEntries.map((entry) => entry.workingHours)),
     }))
     .sort((a, b) => (b.p90Hours ?? 0) - (a.p90Hours ?? 0));
@@ -652,12 +668,16 @@ function summarizeWorkers(logs: StageLogTimingInput[]): WorkerActivityStats[] {
       workerName: log.workerName ?? "Operario sin nombre",
       updateCount: 0,
       completionCount: 0,
+      reprocessCount: 0,
       lastActivityAt: log.createdAt,
     };
 
     current.updateCount += 1;
     if (log.newCompletion === 100) {
       current.completionCount += 1;
+    }
+    if (log.isReprocess) {
+      current.reprocessCount += 1;
     }
     if (compareIso(log.createdAt, current.lastActivityAt) > 0) {
       current.lastActivityAt = log.createdAt;

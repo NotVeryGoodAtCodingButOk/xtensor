@@ -127,7 +127,7 @@ export default async function FactoryMachineDetailPage({
                 <input type="hidden" name="stageId" value={stage.id} />
                 <input type="hidden" name="completion" value={isDone ? 0 : 100} />
                 <Button type="submit" size="touch" variant={isDone ? "outline" : "default"} className="w-full">
-                  {isDone ? "Marcar pendiente" : "Marcar como hecha"}
+                  {isDone ? "Reproceso" : "Marcar como hecha"}
                 </Button>
               </form>
             </div>

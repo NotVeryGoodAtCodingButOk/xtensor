@@ -109,7 +109,7 @@ export default async function StatisticsPage({
         />
       </section>
 
-      <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
         <MetricCard
           icon={Clock}
           eyebrow="Entrada a despacho"
@@ -123,6 +123,13 @@ export default async function StatisticsPage({
           title="En producción"
           value={String(dashboard.summary.currentWipCount)}
           detail="Máquinas activas ahora."
+        />
+        <MetricCard
+          icon={RefreshCcw}
+          eyebrow="Calidad"
+          title="Reprocesos"
+          value={String(dashboard.summary.reprocessCount)}
+          detail="Veces que una tarea hecha volvió a abrirse."
         />
         <MetricCard
           icon={AlertTriangle}
@@ -183,10 +190,11 @@ export default async function StatisticsPage({
           <CardContent>
             <StatsTable
               empty="No hay etapas completadas en este rango."
-              headers={["Etapa", "Completadas", "Promedio", "Mediana", "P90", "Máximo"]}
+              headers={["Etapa", "Completadas", "Reprocesos", "Promedio", "Mediana", "P90", "Máximo"]}
               rows={dashboard.stages.map((stage) => [
                 stage.stageName,
                 String(stage.count),
+                String(stage.reprocessCount),
                 formatHours(stage.averageHours),
                 formatHours(stage.medianHours),
                 formatHours(stage.p90Hours),
@@ -230,16 +238,17 @@ export default async function StatisticsPage({
               <Users className="h-5 w-5" />
               Actividad por operario
             </CardTitle>
-            <CardDescription>Cuenta acciones de avance, no horas de mano de obra.</CardDescription>
+            <CardDescription>Cuenta acciones de avance y reproceso, no horas de mano de obra.</CardDescription>
           </CardHeader>
           <CardContent>
             <StatsTable
               empty="No hay actividad registrada en este rango."
-              headers={["Operario", "Acciones", "Cierres 100%", "Última actividad"]}
+              headers={["Operario", "Acciones", "Cierres 100%", "Reprocesos", "Última actividad"]}
               rows={dashboard.workers.map((worker) => [
                 worker.workerName,
                 String(worker.updateCount),
                 String(worker.completionCount),
+                String(worker.reprocessCount),
                 formatDateTime(worker.lastActivityAt),
               ])}
             />

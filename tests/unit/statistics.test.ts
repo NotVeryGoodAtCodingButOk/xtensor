@@ -110,6 +110,8 @@ describe("statistics dashboard aggregation", () => {
           ],
           logs: [
             log("m1-l1", 1, 0, 100, "2026-06-01T09:00:00-05:00"),
+            log("m1-l1r", 1, 100, 0, "2026-06-01T12:00:00-05:00"),
+            log("m1-l1c", 1, 0, 100, "2026-06-01T13:00:00-05:00"),
             log("m1-l2", 2, 0, 100, "2026-06-02T09:00:00-05:00"),
           ],
           shippedAt: "2026-06-02T11:00:00-05:00",
@@ -153,8 +155,11 @@ describe("statistics dashboard aggregation", () => {
     expect(dashboard.summary.production.averageHours).toBe(10);
     expect(dashboard.summary.productionToShipment.averageHours).toBe(2);
     expect(dashboard.summary.warrantyCount).toBe(1);
+    expect(dashboard.summary.reprocessCount).toBe(1);
     expect(dashboard.breakdowns.byEquipment).toHaveLength(1);
     expect(dashboard.breakdowns.byEquipment[0].label).toBe("Equipo A");
+    expect(dashboard.stages[0]?.reprocessCount).toBe(1);
+    expect(dashboard.workers[0]?.reprocessCount).toBe(1);
     expect(dashboard.warrantyEvents[0].message).toBe("Puerta desalineada");
   });
 });
@@ -208,6 +213,7 @@ function log(
     workerName: "Operario",
     previousCompletion,
     newCompletion,
+    isReprocess: previousCompletion >= 100 && newCompletion < 100,
     isUndone: false,
     createdAt,
   };
