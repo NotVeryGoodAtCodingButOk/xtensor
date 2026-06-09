@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { createMachineAction } from "@/app/admin/actions";
+
+export const metadata: Metadata = { title: "Nueva Máquina XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { Button } from "@/components/ui/button";

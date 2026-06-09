@@ -7,6 +7,7 @@ import { sendToProductionAction, toggleMachinePrevioAction, updateMachineCotiAct
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CellTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
@@ -367,12 +368,14 @@ export function PreviosManager({
                       <InlineClientEdit machineId={machine.machineId} clientName={machine.clientName} />
                     </TableCell>
                     <TableCell className="max-w-[160px]">
-                      <div className="grid gap-0.5">
-                        <span className="line-clamp-1">{machine.equipmentName}</span>
-                        {machine.equipmentCode ? (
-                          <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
-                        ) : null}
-                      </div>
+                      <CellTooltip text={[machine.equipmentCode, machine.equipmentName].filter(Boolean).join(" · ")}>
+                        <div className="grid gap-0.5">
+                          <span className="line-clamp-1">{machine.equipmentName}</span>
+                          {machine.equipmentCode ? (
+                            <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
+                          ) : null}
+                        </div>
+                      </CellTooltip>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
                     <TableCell>
@@ -437,12 +440,14 @@ export function PreviosManager({
                       <InlineClientEdit machineId={machine.machineId} clientName={machine.clientName} />
                     </TableCell>
                     <TableCell className="max-w-[160px]">
-                      <div className="grid gap-0.5">
-                        <span className="line-clamp-1">{machine.equipmentName}</span>
-                        {machine.equipmentCode ? (
-                          <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
-                        ) : null}
-                      </div>
+                      <CellTooltip text={[machine.equipmentCode, machine.equipmentName].filter(Boolean).join(" · ")}>
+                        <div className="grid gap-0.5">
+                          <span className="line-clamp-1">{machine.equipmentName}</span>
+                          {machine.equipmentCode ? (
+                            <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
+                          ) : null}
+                        </div>
+                      </CellTooltip>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
                     <TableCell>

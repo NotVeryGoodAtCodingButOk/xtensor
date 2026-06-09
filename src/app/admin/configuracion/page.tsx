@@ -1,4 +1,7 @@
+import type { Metadata } from "next";
 import { LogOut } from "lucide-react";
+
+export const metadata: Metadata = { title: "Configuración XTENSOR" };
 import { signOutAction, updateFactoryPasswordAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/app-shell";
 import { HolidaysManager } from "@/components/admin/holidays-manager";

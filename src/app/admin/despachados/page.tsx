@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { ProductionTable } from "@/components/admin/production-table";
+
+export const metadata: Metadata = { title: "Despachados XTENSOR" };
 import { hasSupabaseConfig } from "@/lib/env";
 import { listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";

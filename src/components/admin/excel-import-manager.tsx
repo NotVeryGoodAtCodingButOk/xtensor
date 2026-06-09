@@ -207,7 +207,7 @@ export function ExcelImportManager({
                 <TableHeader>
                   <TableRow>
                     <TableHead>Producto</TableHead>
-                    <TableHead>Clave</TableHead>
+                    <TableHead>Código</TableHead>
                     <TableHead className="w-20">UNID.</TableHead>
                     <TableHead className="text-right">P.UNIT.</TableHead>
                     <TableHead className="w-72">Acción</TableHead>

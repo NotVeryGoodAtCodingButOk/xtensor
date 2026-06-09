@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { AdminShell } from "@/components/app-shell";
 import { ClientsManager } from "@/components/admin/clients-manager";
+
+export const metadata: Metadata = { title: "Clientes XTENSOR" };
 import { ConfigWarning } from "@/components/config-warning";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasSupabaseConfig } from "@/lib/env";

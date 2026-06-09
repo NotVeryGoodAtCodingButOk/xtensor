@@ -59,7 +59,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
                 <thead className="bg-[var(--xt-yellow-soft)] text-[var(--xt-black)]">
                   <tr>
                     <th className="px-3 py-2">Producto</th>
-                    <th className="px-3 py-2">Clave</th>
+                    <th className="px-3 py-2">Código</th>
                     <th className="px-3 py-2">Descripción</th>
                     <th className="px-3 py-2">UNID.</th>
                     <th className="px-3 py-2">P.UNIT.</th>
@@ -78,7 +78,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
                 </tbody>
               </table>
             </div>
-            <p>La columna `Clave` debe coincidir con el catálogo para hacer match automático.</p>
+            <p>La columna `Código` debe coincidir con el catálogo para hacer match automático.</p>
             <p>El importador se detiene cuando encuentra una fila de totales con `Suma` o `Total`.</p>
             <p>`UNID.` crea una máquina por cada unidad redondeada a entero.</p>
           </div>
@@ -92,7 +92,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
             <div>Email       ventas@xtensor.co</div>
             <div>Teléfono    3233437444</div>
             <div className="mt-2 border-t border-[var(--xt-cement)] pt-2">
-              Producto | Clave | Descripción | UNID. | P.UNIT. | Importe
+              Producto | Código | Descripción | UNID. | P.UNIT. | Importe
             </div>
             <div>Flexo Extensor | XM120 | XM120 - Tren Inferior | 1 | 4748100 | 4748100</div>
           </div>

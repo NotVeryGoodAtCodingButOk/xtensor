@@ -10,6 +10,7 @@ import {
   warrantyMachineAction,
 } from "@/app/admin/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CellTooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
@@ -350,7 +351,6 @@ export function ProductionTable({
             {!shipped && sh("estimatedDate", "Act.", C, "Fecha actualizada")}
             {sh("productionStartedAt", "Inicio", C, "Inicio en producción")}
             {sh("completedAt", "Term.", C, "Fecha terminada")}
-            {!shipped && <TableHead className={C} title="Fecha de la última etapa completada">Comp.</TableHead>}
             {!shipped && STAGES_SHORT.map((s, i) => (
               <TableHead key={s} className={`${C} text-center`} title={STAGES_FULL[i]}>{s}</TableHead>
             ))}
@@ -422,17 +422,23 @@ export function ProductionTable({
                   />
                 </TableCell>
 
-                <TableCell className={`${C} max-w-[90px] truncate`} title={machine.clientName}>
-                  {machine.clientName}
+                <TableCell className={`${C} max-w-[90px]`}>
+                  <CellTooltip text={machine.clientName} className="truncate w-full">
+                    <span className="truncate">{machine.clientName}</span>
+                  </CellTooltip>
                 </TableCell>
 
-                <TableCell className={`${C} max-w-[160px]`} title={`${machine.equipmentCode ?? ""} ${machine.equipmentName}`}>
-                  {machine.equipmentCode && (
-                    <span className="mr-1 font-mono text-[10px] text-[var(--xt-steel)]">
-                      {machine.equipmentCode}
+                <TableCell className={`${C} max-w-[160px]`}>
+                  <CellTooltip text={[machine.equipmentCode, machine.equipmentName].filter(Boolean).join(" · ")}>
+                    <span className="line-clamp-1">
+                      {machine.equipmentCode && (
+                        <span className="mr-1 font-mono text-[10px] text-[var(--xt-steel)]">
+                          {machine.equipmentCode}
+                        </span>
+                      )}
+                      {machine.equipmentName}
                     </span>
-                  )}
-                  <span className="line-clamp-1">{machine.equipmentName}</span>
+                  </CellTooltip>
                 </TableCell>
 
                 <TableCell className={`${C} whitespace-nowrap`}>{machine.colorName ?? "—"}</TableCell>
@@ -513,11 +519,6 @@ export function ProductionTable({
                 <TableCell className={`${C} whitespace-nowrap`}>
                   {machine.completedAt ? formatDateEs(machine.completedAt) : "—"}
                 </TableCell>
-                {!shipped && (
-                  <TableCell className={`${C} whitespace-nowrap`}>
-                    {machine.lastCompletedStageAt ? formatDateEs(machine.lastCompletedStageAt) : "—"}
-                  </TableCell>
-                )}
 
                 {!shipped && machine.stages.map((stage) => (
                   <TableCell key={stage.id} className={`${C} text-center`}>

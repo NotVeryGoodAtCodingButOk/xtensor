@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Upload } from "lucide-react";
+
+export const metadata: Metadata = { title: "Previos XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
 import { ExcelImportGuide } from "@/components/admin/excel-import-guide";
 import { PreviosManager } from "@/components/admin/previos-manager";

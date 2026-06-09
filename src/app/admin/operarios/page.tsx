@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { AdminShell } from "@/components/app-shell";
 import { WorkersManager } from "@/components/admin/workers-manager";
+
+export const metadata: Metadata = { title: "Operarios XTENSOR" };
 import { ConfigWarning } from "@/components/config-warning";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasSupabaseConfig } from "@/lib/env";

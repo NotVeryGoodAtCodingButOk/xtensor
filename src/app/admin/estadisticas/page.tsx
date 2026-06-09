@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Activity, AlertTriangle, BarChart3, Clock, Factory, RefreshCcw, Timer, Truck, Users } from "lucide-react";
+
+export const metadata: Metadata = { title: "Estadísticas XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { ExcelImportGuide } from "@/components/admin/excel-import-guide";
+
+export const metadata: Metadata = { title: "Importar XTENSOR" };
 import { ExcelImportManager } from "@/components/admin/excel-import-manager";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listCatalog, listHolidays } from "@/services/catalog";

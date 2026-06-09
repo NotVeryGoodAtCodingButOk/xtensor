@@ -26,3 +26,5 @@ Recent history favors short, imperative commit subjects, often with a scope: `fe
 Keep secrets in `.env.local` only. Required variables are listed in `README.md`, including Supabase keys and `FACTORY_COOKIE_SECRET`. This project uses the online Supabase project; do not assume a local database stack when validating migrations or seeds.
 
 commit and push after your changes, before ending your work and doing the handoff to the user. 
+
+Refer to CLAUDE.md for further instructions. 

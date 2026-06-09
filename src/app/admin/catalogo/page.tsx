@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import { AdminShell } from "@/components/app-shell";
 import { CatalogUnifiedManager } from "@/components/admin/catalog-unified-manager";
+
+export const metadata: Metadata = { title: "Catálogo XTENSOR" };
 import { ConfigWarning } from "@/components/config-warning";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listCatalogWithMachineTargets, listPrevioCatalog } from "@/services/previos";

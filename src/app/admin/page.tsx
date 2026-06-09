@@ -1,5 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Download, Plus } from "lucide-react";
+
+export const metadata: Metadata = { title: "Producción XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { ProductionTablePanel } from "@/components/admin/production-table-panel";
