@@ -3,7 +3,6 @@ import Link from "next/link";
 import { updateStageAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
-import { PlantaNav } from "@/components/factory/planta-nav";
 import { QueryToast } from "@/components/ui/query-toast";
 import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
@@ -63,27 +62,36 @@ export default async function FactoryMachineDetailPage({
         clearKeys={["toast"]}
       />
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
-      <header className="mb-5 border-b border-[var(--xt-black)] bg-[var(--xt-white)]">
-        <PlantaNav />
+      <header className="mb-5 border-b border-[var(--xt-black)]">
         <div
-          className="grid items-center gap-4 border-b border-[var(--xt-graphite)] px-5 py-4 text-[var(--xt-white)] md:grid-cols-[auto_1fr_auto]"
+          className="px-5 py-3 text-[var(--xt-white)]"
           style={{ background: workerColor }}
         >
-          <div className="flex justify-center md:justify-start">
-            <BrandLogo inverse />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-4">
+              <BrandLogo inverse />
+              <div>
+                <p className="xt-eyebrow text-white/70 leading-none mb-0.5">Operario activo</p>
+                <p className="font-bold leading-none text-lg">{worker?.full_name ?? "Operario"}</p>
+              </div>
+            </div>
+            <nav className="flex flex-wrap items-center gap-2">
+              <Button asChild variant="ghost" size="sm" className="text-white hover:text-white hover:bg-white/20">
+                <Link href="/planta/operarios">Operarios</Link>
+              </Button>
+              <Button asChild variant="ghost" size="sm" className="text-white hover:text-white hover:bg-white/20">
+                <Link href="/planta/tablero">Cartelera</Link>
+              </Button>
+              <Button
+                asChild
+                variant="outline"
+                size="sm"
+                className="border-[var(--xt-black)] bg-[var(--xt-yellow)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)]"
+              >
+                <Link href={`/planta/maquinas${workerQuery}`}>Volver a máquinas</Link>
+              </Button>
+            </nav>
           </div>
-          <div className="text-center">
-            <p className="xt-eyebrow text-white/80">Operario activo</p>
-            <h1 className="text-3xl font-bold leading-none md:text-4xl">{worker?.full_name ?? "Operario"}</h1>
-          </div>
-          <Button
-            asChild
-            variant="outline"
-            size="lg"
-            className="justify-self-center border-[var(--xt-black)] bg-[var(--xt-yellow)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)] md:justify-self-end"
-          >
-            <Link href={`/planta/maquinas${workerQuery}`}>Volver a máquinas</Link>
-          </Button>
         </div>
         <div className="xt-hazard h-2" />
         <div className="grid gap-4 px-5 py-6 text-center">

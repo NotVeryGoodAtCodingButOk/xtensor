@@ -2,8 +2,15 @@ import { buildScheduleWorkbook } from "@/services/excel";
 import { listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET() {
+  try {
+    await requireAdmin();
+  } catch {
+    return new Response("No autorizado.", { status: 401 });
+  }
+
   const settings = mapSettings(await getSettings());
   const holidays = await listHolidays();
   const machines = await listCalculatedMachines({ settings, holidays });

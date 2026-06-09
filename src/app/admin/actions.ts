@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { revalidateFactoryData } from "@/lib/factory-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { requireAdmin } from "@/lib/admin-auth";
 import { normalizeMachineLine } from "@/lib/machine-lines";
 import {
   createCustomEquipment,
@@ -70,12 +70,14 @@ export async function signOutAction() {
 }
 
 export async function markShippedAction(formData: FormData) {
+  await requireAdmin();
   await markMachineShipped(String(formData.get("machineId") ?? ""));
   revalidateFactoryData();
   redirect("/admin?toast=shipped&count=1");
 }
 
 export async function createMachineAction(formData: FormData) {
+  await requireAdmin();
   const client = await ensureClientByName(String(formData.get("clientName") ?? ""));
   const customEquipmentName = String(formData.get("customEquipmentName") ?? "").trim();
   const equipmentIdInput = String(formData.get("equipmentId") ?? "");
@@ -109,6 +111,7 @@ export async function createMachineAction(formData: FormData) {
 }
 
 export async function updateMachineAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
     coti_number: Number(formData.get("cotiNumber")),
@@ -127,6 +130,7 @@ export async function updateMachineAction(formData: FormData) {
 }
 
 export async function updateMachineInlineAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
     coti_number: Number(formData.get("cotiNumber")),
@@ -144,18 +148,21 @@ export async function updateMachineInlineAction(formData: FormData) {
 }
 
 export async function unmarkShippedAction(formData: FormData) {
+  await requireAdmin();
   await unmarkMachineShipped(String(formData.get("machineId") ?? ""));
   revalidateFactoryData();
   redirect("/admin/despachados");
 }
 
 export async function deleteMachineAction(formData: FormData) {
+  await requireAdmin();
   await deleteMachine(String(formData.get("machineId") ?? ""));
   revalidateFactoryData();
   redirect("/admin");
 }
 
 export async function sendMachineToPreviosAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   if (machineId) {
     await sendMachineToPrevios(machineId);
@@ -168,6 +175,7 @@ export async function sendMachineToPreviosAction(formData: FormData) {
 }
 
 export async function sendMachineToProductionAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   if (machineId) {
     await sendMachineToProduction(machineId);
@@ -180,6 +188,7 @@ export async function sendMachineToProductionAction(formData: FormData) {
 }
 
 export async function reorderMachinesAction(formData: FormData) {
+  await requireAdmin();
   const orderedIds = String(formData.get("orderedIds") ?? "")
     .split(",")
     .map((id) => id.trim())
@@ -192,6 +201,7 @@ export async function reorderMachinesAction(formData: FormData) {
 }
 
 export async function updateFactoryPasswordAction(formData: FormData) {
+  await requireAdmin();
   const password = String(formData.get("password") ?? "");
   const confirm = String(formData.get("confirm") ?? "");
 
@@ -207,11 +217,13 @@ export async function updateFactoryPasswordAction(formData: FormData) {
 }
 
 export async function regenerateClientTokenAction(formData: FormData) {
+  await requireAdmin();
   await regenerateClientToken(String(formData.get("clientId") ?? ""));
   redirect("/admin/clientes");
 }
 
 export async function updateClientAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("clientId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (id && name) await updateClient(id, name);
@@ -219,12 +231,14 @@ export async function updateClientAction(formData: FormData) {
 }
 
 export async function deleteClientAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("clientId") ?? "");
   if (id) await deleteClient(id);
   redirect("/admin/clientes");
 }
 
 export async function addColorAction(formData: FormData) {
+  await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   if (name) await createColor(name);
   revalidateFactoryData();
@@ -232,6 +246,7 @@ export async function addColorAction(formData: FormData) {
 }
 
 export async function updateColorAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (id && name) await updateColor(id, name);
@@ -240,6 +255,7 @@ export async function updateColorAction(formData: FormData) {
 }
 
 export async function deleteColorAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   if (id) await deleteColor(id);
   revalidateFactoryData();
@@ -247,6 +263,7 @@ export async function deleteColorAction(formData: FormData) {
 }
 
 export async function addWorkerAction(formData: FormData) {
+  await requireAdmin();
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "").trim();
   const raw_cost = formData.get("hourly_cost_cop");
@@ -259,6 +276,7 @@ export async function addWorkerAction(formData: FormData) {
 }
 
 export async function updateWorkerAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "").trim();
@@ -272,6 +290,7 @@ export async function updateWorkerAction(formData: FormData) {
 }
 
 export async function addCatalogItemAction(formData: FormData) {
+  await requireAdmin();
   const code = String(formData.get("code") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   const line = normalizeMachineLine(formData.get("line"));
@@ -281,18 +300,21 @@ export async function addCatalogItemAction(formData: FormData) {
 }
 
 export async function addPrevioCatalogItemAction(formData: FormData) {
+  await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
   if (name) await createPrevioCatalogItem(name);
   redirect("/admin/catalogo");
 }
 
 export async function deletePrevioCatalogItemAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "").trim();
   if (id) await deletePrevioCatalogItem(id);
   redirect("/admin/catalogo");
 }
 
 export async function bulkApplyCatalogPrevioAction(formData: FormData) {
+  await requireAdmin();
   const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
   const mode = String(formData.get("mode") ?? "add") === "remove" ? "remove" : "add";
   const machineIds = formData.getAll("machineIds").map((value) => String(value)).filter(Boolean);
@@ -303,6 +325,7 @@ export async function bulkApplyCatalogPrevioAction(formData: FormData) {
 }
 
 export async function addEquipmentPrevioAction(formData: FormData) {
+  await requireAdmin();
   const equipmentId = String(formData.get("equipmentId") ?? "").trim();
   const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
   if (equipmentId && previoCatalogId) {
@@ -313,12 +336,14 @@ export async function addEquipmentPrevioAction(formData: FormData) {
 }
 
 export async function removeEquipmentPrevioAction(formData: FormData) {
+  await requireAdmin();
   const equipmentPrevioId = String(formData.get("equipmentPrevioId") ?? "").trim();
   if (equipmentPrevioId) await removeEquipmentPrevio(equipmentPrevioId);
   redirect("/admin/catalogo");
 }
 
 export async function toggleEquipmentPrevioAction(formData: FormData) {
+  await requireAdmin();
   const equipmentId = String(formData.get("equipmentId") ?? "").trim();
   const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
   const isActive = String(formData.get("isActive") ?? "") === "true";
@@ -333,6 +358,7 @@ export async function toggleEquipmentPrevioAction(formData: FormData) {
 }
 
 export async function updateCatalogItemAction(formData: FormData) {
+  await requireAdmin();
   const id = String(formData.get("id") ?? "");
   const code = String(formData.get("code") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
@@ -344,6 +370,7 @@ export async function updateCatalogItemAction(formData: FormData) {
 }
 
 export async function addMachinePrevioAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "").trim();
   const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
   if (machineId && previoCatalogId) {
@@ -353,6 +380,7 @@ export async function addMachinePrevioAction(formData: FormData) {
 }
 
 export async function removeMachinePrevioAction(formData: FormData) {
+  await requireAdmin();
   const machinePrevioId = String(formData.get("machinePrevioId") ?? "").trim();
   if (machinePrevioId) {
     await removeMachinePrevio(machinePrevioId);
@@ -372,11 +400,13 @@ export async function toggleMachinePrevioAction(formData: FormData) {
 }
 
 export async function bootstrapPreviosAction() {
+  await requireAdmin();
   const result = await bootstrapPreviosFromFixture();
   redirect(`/admin/previos?seed=ok&machines=${result.machinesTouched}&previos=${result.previosCreated}`);
 }
 
 export async function updateSettingsAction(formData: FormData) {
+  await requireAdmin();
   await updateSettings({
     hourly_cost_per_worker_cop: Number(formData.get("hourly_cost_per_worker_cop")),
     labor_factor: Number(formData.get("labor_factor")),
@@ -392,6 +422,7 @@ export async function updateSettingsAction(formData: FormData) {
 }
 
 export async function addHolidayAction(formData: FormData) {
+  await requireAdmin();
   const date = String(formData.get("date") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   if (date && name) await createHoliday(date, name);
@@ -400,6 +431,7 @@ export async function addHolidayAction(formData: FormData) {
 }
 
 export async function deleteHolidayAction(formData: FormData) {
+  await requireAdmin();
   const date = String(formData.get("date") ?? "").trim();
   if (date) await deleteHoliday(date);
   revalidateFactoryData();
@@ -421,6 +453,7 @@ export type QuotePreview = {
 };
 
 export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePreview> {
+  await requireAdmin();
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("Selecciona un archivo de Excel.");
@@ -468,6 +501,7 @@ export async function importQuoteAction(input: {
   promisedDate: string;
   lines: ImportQuoteLineInput[];
 }) {
+  await requireAdmin();
   const clientName = input.clientName.trim();
   if (!clientName) throw new Error("El cliente es requerido.");
   if (!input.cotiNumber || !Number.isFinite(input.cotiNumber)) {
@@ -526,6 +560,7 @@ export async function importQuoteAction(input: {
 }
 
 export async function updateMachineClientAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   const clientName = String(formData.get("clientName") ?? "").trim();
   if (machineId && clientName) {
@@ -537,6 +572,7 @@ export async function updateMachineClientAction(formData: FormData) {
 }
 
 export async function updateMachineCotiAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   const cotiNumber = Number(formData.get("cotiNumber"));
   if (machineId && Number.isFinite(cotiNumber) && cotiNumber > 0) {
@@ -547,6 +583,7 @@ export async function updateMachineCotiAction(formData: FormData) {
 }
 
 export async function sendToProductionAction(formData: FormData) {
+  await requireAdmin();
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkSendToProduction(machineIds);
   revalidateFactoryData();
@@ -554,6 +591,7 @@ export async function sendToProductionAction(formData: FormData) {
 }
 
 export async function bulkMarkShippedAction(formData: FormData) {
+  await requireAdmin();
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkMarkShipped(machineIds);
   revalidateFactoryData();
@@ -561,6 +599,7 @@ export async function bulkMarkShippedAction(formData: FormData) {
 }
 
 export async function warrantyMachineAction(formData: FormData) {
+  await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   const message = String(formData.get("message") ?? "").trim();
 
@@ -577,40 +616,5 @@ export async function warrantyMachineAction(formData: FormData) {
 }
 
 async function requireActorProfileId() {
-  const supabase = await createSupabaseServerClient();
-  const {
-    data: { user },
-    error,
-  } = await supabase.auth.getUser();
-
-  if (error || !user) {
-    throw new Error("No se pudo identificar al usuario actual.");
-  }
-
-  // Several columns (machine_previos.ordered_by/received_by,
-  // machine_previo_events.actor_profile_id) reference profiles(id). A profile
-  // row is the admin allow-list (profiles_role_check only permits 'admin'), so
-  // require an existing one rather than minting it here — auto-creating would
-  // let any authenticated Supabase user self-promote to admin. Missing-profile
-  // requests are refused with a clear error instead of a raw FK crash.
-  await requireAdminProfile(user.id);
-
-  return user.id;
-}
-
-async function requireAdminProfile(userId: string) {
-  const admin = createSupabaseAdminClient();
-  const { data, error } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .maybeSingle();
-
-  if (error) {
-    throw new Error(`No se pudo verificar el perfil del usuario: ${error.message}`);
-  }
-
-  if (!data || data.role !== "admin") {
-    throw new Error("No autorizado: el usuario no tiene un perfil de administrador.");
-  }
+  return (await requireAdmin()).id;
 }
