@@ -83,40 +83,39 @@ export default async function FactoryMachinesPage({
           const isStarted = machine.stages.some((stage) => stage.completion > 0) && !isComplete;
 
           return (
-          <Link
-            key={machine.id}
-            href={`/planta/maquinas/${machine.id}${workerQuery}`}
-            className="flex min-h-[230px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
-          >
-            <div className="flex flex-1 flex-col gap-4 p-5">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="xt-eyebrow">COTI {machine.cotiNumber}</p>
-                  <h2 className="[font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none">
-                    {machine.equipmentName}
-                  </h2>
+            <Link
+              key={machine.id}
+              href={`/planta/maquinas/${machine.id}${workerQuery}`}
+              className="flex min-h-[230px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
+            >
+              <div className="flex flex-1 flex-col gap-4 p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <h2 className="[font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none">
+                      {machine.equipmentName}
+                    </h2>
+                  </div>
+                  <ChevronRight className="mt-2 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
                 </div>
-                <ChevronRight className="mt-2 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
+
+                <div className="grid gap-1 text-base text-[var(--xt-steel)]">
+                  <p className="truncate">
+                    {machine.clientName} · {machine.colorName ?? "Sin color"}
+                  </p>
+                  <p className="truncate">
+                    COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"}
+                  </p>
+                </div>
+
+                <div className="[font-family:var(--font-barlow-condensed)] text-xl font-bold">
+                  {isComplete ? "Terminada" : isStarted ? `${completedStages} de ${totalStages} tareas listas` : "Sin iniciar"}
+                </div>
               </div>
 
-              <div className="grid gap-1 text-base text-[var(--xt-steel)]">
-                <p className="truncate">
-                  {machine.clientName} · {machine.colorName ?? "Sin color"}
-                </p>
-                <p className="truncate">
-                  COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"} · {machine.equipmentName}
-                </p>
+              <div className="border-t border-[var(--xt-cement)] px-5 py-3">
+                <StageStrip stages={machine.stages} />
               </div>
-
-              <div className="[font-family:var(--font-barlow-condensed)] text-xl font-bold">
-                {isComplete ? "Terminada" : isStarted ? `${completedStages} de ${totalStages} tareas listas` : "Sin iniciar"}
-              </div>
-            </div>
-
-            <div className="border-t border-[var(--xt-cement)] px-5 py-3">
-              <StageStrip stages={machine.stages} />
-            </div>
-          </Link>
+            </Link>
           );
         })}
       </div>
