@@ -1,6 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { revalidateFactoryData } from "@/lib/factory-cache";
 import {
   clearActiveWorker,
   clearFactorySession,
@@ -66,6 +67,7 @@ export async function updateStageAction(formData: FormData) {
   }
 
   const result = await updateStageProgress({ machineId, stageId, completion, workerId });
+  revalidateFactoryData();
   const nextParams = new URLSearchParams();
 
   if (result.log?.id) {
@@ -98,5 +100,6 @@ export async function undoStageAction(formData: FormData) {
   }
 
   await undoStageLog({ logId, workerId });
+  revalidateFactoryData();
   redirect(`/planta/maquinas/${machineId}`);
 }

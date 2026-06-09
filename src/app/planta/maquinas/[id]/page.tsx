@@ -8,9 +8,9 @@ import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
-import { listWorkers } from "@/services/catalog";
 import { getMachine } from "@/services/machines";
 import type { StageView } from "@/types/domain";
 
@@ -19,7 +19,7 @@ export default async function FactoryMachineDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ logged?: string; toast?: string }>;
+  searchParams: Promise<{ logged?: string; toast?: string; workerId?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -33,17 +33,26 @@ export default async function FactoryMachineDetailPage({
     redirect("/planta");
   }
 
-  const workerId = await getActiveWorkerId();
-  if (!workerId) {
+  const [{ id }, query, cookieWorkerId, shared] = await Promise.all([
+    params,
+    searchParams,
+    getActiveWorkerId(),
+    getFactorySharedData(),
+  ]);
+  const resolvedWorkerId = cookieWorkerId ?? query.workerId ?? null;
+  if (!resolvedWorkerId) {
     redirect("/planta/operarios");
   }
 
-  const [{ id }, query] = await Promise.all([params, searchParams]);
-  const [machine, workers] = await Promise.all([getMachine(id), listWorkers(true)]);
-  const worker = workers.find((item) => item.id === workerId);
+  const machine = await getMachine(id);
+  const worker = shared.workers.find((item) => item.id === resolvedWorkerId);
+  if (!worker) {
+    redirect("/planta/operarios?error=operario");
+  }
   const workerColor = worker?.display_color ?? "var(--xt-black)";
   const orderedStages = [...machine.stages].sort(sortStagesForWorkers);
   const toastMessage = query.toast === "finished" ? "Máquina terminada" : null;
+  const workerQuery = cookieWorkerId ? "" : `?workerId=${resolvedWorkerId}`;
 
   return (
     <main className="min-h-screen bg-[var(--xt-paper)] pb-28">
@@ -71,7 +80,7 @@ export default async function FactoryMachineDetailPage({
             size="lg"
             className="justify-self-center border-[var(--xt-black)] bg-[var(--xt-yellow)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)] md:justify-self-end"
           >
-            <Link href="/planta/maquinas">Volver a máquinas</Link>
+            <Link href={`/planta/maquinas${workerQuery}`}>Volver a máquinas</Link>
           </Button>
         </div>
         <div className="xt-hazard h-2" />
@@ -124,7 +133,7 @@ export default async function FactoryMachineDetailPage({
           );
         })}
       </div>
-      {query.logged ? <ReturnToWorkersBar continueHref={`/planta/maquinas/${machine.id}`} /> : null}
+      {query.logged ? <ReturnToWorkersBar continueHref={`/planta/maquinas/${machine.id}${workerQuery}`} /> : null}
     </main>
   );
 }

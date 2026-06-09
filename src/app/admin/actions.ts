@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { revalidateFactoryData } from "@/lib/factory-cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeMachineLine } from "@/lib/machine-lines";
@@ -70,6 +71,7 @@ export async function signOutAction() {
 
 export async function markShippedAction(formData: FormData) {
   await markMachineShipped(String(formData.get("machineId") ?? ""));
+  revalidateFactoryData();
   redirect("/admin?toast=shipped&count=1");
 }
 
@@ -102,6 +104,7 @@ export async function createMachineAction(formData: FormData) {
     order_position: Number(formData.get("orderPosition")) || 9999,
   });
 
+  revalidateFactoryData();
   redirect("/admin");
 }
 
@@ -117,6 +120,7 @@ export async function updateMachineAction(formData: FormData) {
     line_override: normalizeMachineLine(formData.get("line")),
   });
 
+  revalidateFactoryData();
   revalidatePath("/admin");
   revalidatePath(`/admin/maquinas/${machineId}`);
   redirect("/admin");
@@ -134,17 +138,20 @@ export async function updateMachineInlineAction(formData: FormData) {
     line_override: normalizeMachineLine(formData.get("line")),
   });
 
+  revalidateFactoryData();
   revalidatePath("/admin");
   revalidatePath(`/admin/maquinas/${machineId}`);
 }
 
 export async function unmarkShippedAction(formData: FormData) {
   await unmarkMachineShipped(String(formData.get("machineId") ?? ""));
+  revalidateFactoryData();
   redirect("/admin/despachados");
 }
 
 export async function deleteMachineAction(formData: FormData) {
   await deleteMachine(String(formData.get("machineId") ?? ""));
+  revalidateFactoryData();
   redirect("/admin");
 }
 
@@ -153,6 +160,7 @@ export async function sendMachineToPreviosAction(formData: FormData) {
   if (machineId) {
     await sendMachineToPrevios(machineId);
   }
+  revalidateFactoryData();
   revalidatePath("/admin");
   revalidatePath("/admin/previos");
   revalidatePath(`/admin/maquinas/${machineId}`);
@@ -164,6 +172,7 @@ export async function sendMachineToProductionAction(formData: FormData) {
   if (machineId) {
     await sendMachineToProduction(machineId);
   }
+  revalidateFactoryData();
   revalidatePath("/admin");
   revalidatePath("/admin/previos");
   revalidatePath(`/admin/maquinas/${machineId}`);
@@ -177,6 +186,7 @@ export async function reorderMachinesAction(formData: FormData) {
     .filter(Boolean);
 
   await reorderMachines(orderedIds);
+  revalidateFactoryData();
   revalidatePath("/admin");
   redirect("/admin");
 }
@@ -217,6 +227,7 @@ export async function deleteClientAction(formData: FormData) {
 export async function addColorAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (name) await createColor(name);
+  revalidateFactoryData();
   redirect("/admin/colores");
 }
 
@@ -224,12 +235,14 @@ export async function updateColorAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (id && name) await updateColor(id, name);
+  revalidateFactoryData();
   redirect("/admin/colores");
 }
 
 export async function deleteColorAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (id) await deleteColor(id);
+  revalidateFactoryData();
   redirect("/admin/colores");
 }
 
@@ -241,6 +254,7 @@ export async function addWorkerAction(formData: FormData) {
   const display_color = String(formData.get("display_color") ?? "").trim() || null;
   const is_active = formData.get("is_active") !== "false";
   if (full_name && role) await createWorker({ full_name, role, hourly_cost_cop, display_color, is_active });
+  revalidateFactoryData();
   redirect("/admin/operarios");
 }
 
@@ -253,6 +267,7 @@ export async function updateWorkerAction(formData: FormData) {
   const display_color = String(formData.get("display_color") ?? "").trim() || null;
   const is_active = formData.get("is_active") !== "false";
   if (id) await updateWorker(id, { full_name, role, hourly_cost_cop, display_color, is_active });
+  revalidateFactoryData();
   redirect("/admin/operarios");
 }
 
@@ -372,6 +387,7 @@ export async function updateSettingsAction(formData: FormData) {
     client_buffer_days: Number(formData.get("client_buffer_days")),
     shipped_retention_days: Number(formData.get("shipped_retention_days")),
   });
+  revalidateFactoryData();
   redirect("/admin/configuracion?settings=ok");
 }
 
@@ -379,12 +395,14 @@ export async function addHolidayAction(formData: FormData) {
   const date = String(formData.get("date") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
   if (date && name) await createHoliday(date, name);
+  revalidateFactoryData();
   redirect("/admin/configuracion");
 }
 
 export async function deleteHolidayAction(formData: FormData) {
   const date = String(formData.get("date") ?? "").trim();
   if (date) await deleteHoliday(date);
+  revalidateFactoryData();
   redirect("/admin/configuracion");
 }
 
@@ -503,6 +521,7 @@ export async function importQuoteAction(input: {
     }
   }
 
+  revalidateFactoryData();
   return { created };
 }
 
@@ -513,6 +532,7 @@ export async function updateMachineClientAction(formData: FormData) {
     const client = await ensureClientByName(clientName);
     await updateMachine(machineId, { client_id: client.id });
   }
+  revalidateFactoryData();
   revalidatePath("/admin/previos");
 }
 
@@ -522,18 +542,21 @@ export async function updateMachineCotiAction(formData: FormData) {
   if (machineId && Number.isFinite(cotiNumber) && cotiNumber > 0) {
     await updateMachine(machineId, { coti_number: cotiNumber });
   }
+  revalidateFactoryData();
   revalidatePath("/admin/previos");
 }
 
 export async function sendToProductionAction(formData: FormData) {
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkSendToProduction(machineIds);
+  revalidateFactoryData();
   redirect(`/admin/previos?toast=sent-production&count=${machineIds.length || 1}`);
 }
 
 export async function bulkMarkShippedAction(formData: FormData) {
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkMarkShipped(machineIds);
+  revalidateFactoryData();
   redirect(`/admin?toast=shipped&count=${machineIds.length || 1}`);
 }
 
@@ -549,6 +572,7 @@ export async function warrantyMachineAction(formData: FormData) {
   }
 
   await sendMachineToWarranty(machineId, message);
+  revalidateFactoryData();
   redirect("/admin/despachados");
 }
 

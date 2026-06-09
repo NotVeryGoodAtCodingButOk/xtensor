@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { lockFactoryAction, selectWorkerAction } from "@/app/planta/actions";
+import { lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { WorkerPicker } from "@/components/factory/worker-picker";
 import { Button } from "@/components/ui/button";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
@@ -48,21 +49,7 @@ export default async function FactoryWorkersPage() {
           <p className="xt-eyebrow">Operarios</p>
           <h1 className="text-4xl font-bold">¿Quién eres?</h1>
         </div>
-        <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
-          {workers.map((worker) => (
-            <form key={worker.id} action={selectWorkerAction}>
-              <input type="hidden" name="workerId" value={worker.id} />
-              <button
-                type="submit"
-                className="flex h-[200px] w-full flex-col justify-end border border-[var(--xt-black)] p-6 text-left text-white shadow-[var(--shadow-stamp)] transition-transform duration-200 ease-[var(--ease-snap)] active:translate-y-px active:shadow-none"
-                style={{ background: worker.display_color ?? "var(--xt-black)" }}
-              >
-                <span className="[font-family:var(--font-barlow-condensed)] text-3xl font-bold leading-tight">{worker.full_name}</span>
-                <span className="mt-2 text-lg opacity-90">{worker.role}</span>
-              </button>
-            </form>
-          ))}
-        </div>
+        <WorkerPicker workers={workers} />
       </section>
     </main>
   );

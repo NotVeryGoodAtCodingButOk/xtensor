@@ -7,14 +7,16 @@ import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
+import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
-import { listHolidays, listWorkers } from "@/services/catalog";
-import { listCalculatedMachines } from "@/services/machines";
-import { getSettings, mapSettings } from "@/services/settings";
 import type { CalculatedMachineView } from "@/types/domain";
 
-export default async function FactoryMachinesPage() {
+export default async function FactoryMachinesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ workerId?: string }>;
+}) {
   if (!hasFactoryConfig()) {
     return (
       <main className="grid min-h-screen place-items-center bg-[var(--xt-paper)] p-6">
@@ -27,20 +29,25 @@ export default async function FactoryMachinesPage() {
     redirect("/planta");
   }
 
-  const workerId = await getActiveWorkerId();
+  const [{ workerId: workerIdFromQuery }, cookieWorkerId, shared] = await Promise.all([
+    searchParams,
+    getActiveWorkerId(),
+    getFactorySharedData(),
+  ]);
+  const workerId = cookieWorkerId ?? workerIdFromQuery ?? null;
   if (!workerId) {
     redirect("/planta/operarios");
   }
 
-  const [settingsRow, holidays, workers] = await Promise.all([getSettings(), listHolidays(), listWorkers(true)]);
-  const worker = workers.find((item) => item.id === workerId);
-  const machines = await listCalculatedMachines({
-    settings: mapSettings(settingsRow),
-    holidays,
-    status: "in_production",
-  });
+  const worker = shared.workers.find((item) => item.id === workerId);
+  if (!worker) {
+    redirect("/planta/operarios?error=operario");
+  }
+
+  const machines = shared.machines;
   const orderedMachines = [...machines].sort(sortMachinesForWorkers);
   const workerColor = worker?.display_color ?? "var(--xt-black)";
+  const workerQuery = cookieWorkerId ? "" : `?workerId=${workerId}`;
 
   return (
     <main className="min-h-screen bg-[var(--xt-paper)]">
@@ -83,7 +90,7 @@ export default async function FactoryMachinesPage() {
           return (
           <Link
             key={machine.id}
-            href={`/planta/maquinas/${machine.id}`}
+            href={`/planta/maquinas/${machine.id}${workerQuery}`}
             className="flex min-h-[230px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
           >
             <div className="flex flex-1 flex-col gap-4 p-5">
