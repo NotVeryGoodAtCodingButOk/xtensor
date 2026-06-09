@@ -10,6 +10,7 @@ import {
   setFactoryUnlocked,
 } from "@/lib/factory-session";
 import { listWorkers } from "@/services/catalog";
+import { getMachine } from "@/services/machines";
 import { undoStageLog, updateStageProgress } from "@/services/stages";
 import { verifyFactoryPassword } from "@/services/settings";
 
@@ -65,8 +66,22 @@ export async function updateStageAction(formData: FormData) {
   }
 
   const result = await updateStageProgress({ machineId, stageId, completion, workerId });
-  const logged = result.log?.id ? "?logged=1" : "";
-  redirect(`/planta/maquinas/${machineId}${logged}`);
+  const nextParams = new URLSearchParams();
+
+  if (result.log?.id) {
+    nextParams.set("logged", "1");
+  }
+
+  if (completion === 100) {
+    const machine = await getMachine(machineId);
+    const isCompleted = machine.stages.every((stage) => stage.completion === 100);
+    if (isCompleted) {
+      nextParams.set("toast", "finished");
+    }
+  }
+
+  const query = nextParams.toString();
+  redirect(`/planta/maquinas/${machineId}${query ? `?${query}` : ""}`);
 }
 
 export async function undoStageAction(formData: FormData) {

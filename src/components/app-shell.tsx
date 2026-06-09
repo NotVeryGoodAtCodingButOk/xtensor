@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BarChart3, ClipboardList, Factory, ListChecks, Palette, Settings, Truck, UserRound, Users } from "lucide-react";
+import { AdminFlashToast } from "@/components/admin/admin-flash-toast";
 import { BrandLogo } from "@/components/brand";
 
 const navItems = [
@@ -22,6 +23,7 @@ export function AdminShell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="min-h-screen bg-[var(--xt-paper)]">
+      <AdminFlashToast />
       <header className="sticky top-0 z-30 border-b border-[var(--xt-graphite)] bg-[var(--xt-black)] text-[var(--xt-white)]">
         <div className="flex min-h-14 items-center gap-4 px-5">
           <Link href="/admin" aria-label="XTENSOR Producción" className="shrink-0">

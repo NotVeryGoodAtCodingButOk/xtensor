@@ -70,7 +70,7 @@ export async function signOutAction() {
 
 export async function markShippedAction(formData: FormData) {
   await markMachineShipped(String(formData.get("machineId") ?? ""));
-  redirect("/admin");
+  redirect("/admin?toast=shipped&count=1");
 }
 
 export async function createMachineAction(formData: FormData) {
@@ -156,7 +156,7 @@ export async function sendMachineToPreviosAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/previos");
   revalidatePath(`/admin/maquinas/${machineId}`);
-  redirect(`/admin/maquinas/${machineId}?moved=previos`);
+  redirect(`/admin/maquinas/${machineId}?toast=sent-previos&count=1`);
 }
 
 export async function sendMachineToProductionAction(formData: FormData) {
@@ -167,7 +167,7 @@ export async function sendMachineToProductionAction(formData: FormData) {
   revalidatePath("/admin");
   revalidatePath("/admin/previos");
   revalidatePath(`/admin/maquinas/${machineId}`);
-  redirect(`/admin/maquinas/${machineId}?moved=production`);
+  redirect(`/admin/maquinas/${machineId}?toast=sent-production&count=1`);
 }
 
 export async function reorderMachinesAction(formData: FormData) {
@@ -528,13 +528,13 @@ export async function updateMachineCotiAction(formData: FormData) {
 export async function sendToProductionAction(formData: FormData) {
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkSendToProduction(machineIds);
-  redirect("/admin/previos");
+  redirect(`/admin/previos?toast=sent-production&count=${machineIds.length || 1}`);
 }
 
 export async function bulkMarkShippedAction(formData: FormData) {
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
   if (machineIds.length > 0) await bulkMarkShipped(machineIds);
-  redirect("/admin");
+  redirect(`/admin?toast=shipped&count=${machineIds.length || 1}`);
 }
 
 export async function warrantyMachineAction(formData: FormData) {

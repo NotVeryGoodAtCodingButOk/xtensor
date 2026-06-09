@@ -11,10 +11,8 @@ import { getMachine } from "@/services/machines";
 
 export default async function EditMachinePage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams?: Promise<{ moved?: string }>;
 }) {
   if (!hasSupabaseConfig()) {
     return (
@@ -24,18 +22,8 @@ export default async function EditMachinePage({
     );
   }
 
-  const [{ id }, query] = await Promise.all([
-    params,
-    searchParams ?? Promise.resolve({ moved: undefined }),
-  ]);
+  const { id } = await params;
   const machine = await getMachine(id);
-
-  const movedMessage =
-    query.moved === "previos"
-      ? "Máquina enviada a previos."
-      : query.moved === "production"
-        ? "Máquina devuelta a producción."
-        : null;
 
   return (
     <AdminShell>
@@ -44,11 +32,6 @@ export default async function EditMachinePage({
           <CardTitle>Editar COTI {machine.cotiNumber}</CardTitle>
         </CardHeader>
         <CardContent>
-          {movedMessage ? (
-            <div className="mb-4 rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-4 py-3 text-sm font-medium">
-              {movedMessage}
-            </div>
-          ) : null}
           <form action={updateMachineAction} className="grid gap-4 md:grid-cols-2">
             <input type="hidden" name="machineId" value={machine.id} />
             <Field label="COTI">
@@ -87,7 +70,7 @@ export default async function EditMachinePage({
               machineId={machine.id}
               cotiNumber={machine.cotiNumber}
               status={machine.status}
-              undoPreviosMove={query.moved === "previos"}
+              undoPreviosMove={false}
             />
           </div>
         </CardContent>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { updateStageAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { QueryToast } from "@/components/ui/query-toast";
 import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
@@ -18,7 +19,7 @@ export default async function FactoryMachineDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ logged?: string }>;
+  searchParams: Promise<{ logged?: string; toast?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -42,9 +43,15 @@ export default async function FactoryMachineDetailPage({
   const worker = workers.find((item) => item.id === workerId);
   const workerColor = worker?.display_color ?? "var(--xt-black)";
   const orderedStages = [...machine.stages].sort(sortStagesForWorkers);
+  const toastMessage = query.toast === "finished" ? "Máquina terminada" : null;
 
   return (
     <main className="min-h-screen bg-[var(--xt-paper)] pb-28">
+      <QueryToast
+        message={toastMessage}
+        description={toastMessage ? "Todas las etapas quedaron hechas." : null}
+        clearKeys={["toast"]}
+      />
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
       <header className="mb-5 border-b border-[var(--xt-black)] bg-[var(--xt-white)]">
         <div
