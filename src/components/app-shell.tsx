@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, ClipboardList, Factory, ListChecks, Palette, Settings, Truck, UserRound, Users } from "lucide-react";
+import { BarChart3, ClipboardList, Factory, ListChecks, Settings, Truck, UserRound, Users } from "lucide-react";
 import { AdminFlashToast } from "@/components/admin/admin-flash-toast";
 import { BrandLogo } from "@/components/brand";
 
@@ -14,7 +14,6 @@ const navItems = [
   { href: "/admin/catalogo", label: "Catálogo", icon: Factory },
   { href: "/admin/operarios", label: "Operarios", icon: Users },
   { href: "/admin/estadisticas", label: "Estadísticas", icon: BarChart3 },
-  { href: "/admin/colores", label: "Colores", icon: Palette },
   { href: "/admin/configuracion", label: "Configuración", icon: Settings },
 ];
 

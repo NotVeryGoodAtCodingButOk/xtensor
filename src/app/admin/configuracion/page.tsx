@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 export const metadata: Metadata = { title: "Configuración XTENSOR" };
 import { signOutAction, updateFactoryPasswordAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/app-shell";
+import { ColorsManager } from "@/components/admin/colors-manager";
 import { HolidaysManager } from "@/components/admin/holidays-manager";
 import { SettingsForm } from "@/components/admin/settings-form";
 import { ConfigWarning } from "@/components/config-warning";
@@ -11,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasSupabaseConfig } from "@/lib/env";
-import { listHolidays } from "@/services/catalog";
+import { listColors, listHolidays } from "@/services/catalog";
 import { getSettings } from "@/services/settings";
 
 const PASSWORD_MESSAGES: Record<string, { text: string; tone: "ok" | "error" }> = {
@@ -33,9 +34,10 @@ export default async function SettingsPage({
     );
   }
 
-  const [settings, holidays, params] = await Promise.all([
+  const [settings, holidays, colors, params] = await Promise.all([
     getSettings(),
     listHolidays(),
+    listColors(),
     searchParams,
   ]);
 
@@ -89,6 +91,14 @@ export default async function SettingsPage({
               </label>
               <Button type="submit">Actualizar contraseña</Button>
             </form>
+          </CardContent>
+        </Card>
+        <Card id="colores">
+          <CardHeader>
+            <CardTitle>Colores</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ColorsManager colors={colors} />
           </CardContent>
         </Card>
         <Card>

@@ -242,7 +242,7 @@ export async function addColorAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (name) await createColor(name);
   revalidateFactoryData();
-  redirect("/admin/colores");
+  redirect("/admin/configuracion#colores");
 }
 
 export async function updateColorAction(formData: FormData) {
@@ -251,7 +251,7 @@ export async function updateColorAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   if (id && name) await updateColor(id, name);
   revalidateFactoryData();
-  redirect("/admin/colores");
+  redirect("/admin/configuracion#colores");
 }
 
 export async function deleteColorAction(formData: FormData) {
@@ -259,7 +259,7 @@ export async function deleteColorAction(formData: FormData) {
   const id = String(formData.get("id") ?? "");
   if (id) await deleteColor(id);
   revalidateFactoryData();
-  redirect("/admin/colores");
+  redirect("/admin/configuracion#colores");
 }
 
 export async function addWorkerAction(formData: FormData) {
