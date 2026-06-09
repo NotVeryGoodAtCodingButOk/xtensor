@@ -93,9 +93,10 @@ export default async function FactoryBoardPage() {
       <div className="xt-hazard h-2" />
 
       {/* Column labels */}
-      <div className="grid grid-cols-[4.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,2.4fr)_minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)] items-center gap-3 px-6 py-1.5 text-white/50">
+      <div className="grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 px-6 py-1.5 text-white/50">
         <span className="xt-eyebrow text-center">COTI</span>
         <span className="xt-eyebrow">Máquina</span>
+        <span className="xt-eyebrow">Cliente</span>
         <span className="xt-eyebrow">Color</span>
         <span className="xt-eyebrow">Avance</span>
         <span className="xt-eyebrow">Siguiente tarea</span>
@@ -134,7 +135,7 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
     <div
       style={rowStyle}
       className={cn(
-        "grid grid-cols-[4.5rem_minmax(0,2fr)_minmax(0,1.2fr)_minmax(0,2.4fr)_minmax(0,2fr)_minmax(0,1.4fr)_minmax(0,1.6fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
+        "grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
         status === "late" ? "xt-flash-late border-[var(--line-pro-red)]" : "border-white/10",
       )}
     >
@@ -148,6 +149,11 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
         <h2 className="[font-family:var(--font-barlow-condensed)] truncate text-2xl font-bold leading-none">
           {machine.equipmentName}
         </h2>
+      </div>
+
+      {/* Client name */}
+      <div className="min-w-0">
+        <p className="truncate text-base font-semibold leading-none text-white/75">{machine.clientName}</p>
       </div>
 
       {/* Color */}
