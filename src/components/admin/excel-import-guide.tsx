@@ -1,18 +1,29 @@
 import Link from "next/link";
-import { Download, FileSpreadsheet } from "lucide-react";
+import { ChevronDown, Download, FileSpreadsheet } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
-          Plantilla y formato del Excel
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="grid gap-4 lg:grid-cols-[1.25fr_0.85fr]">
+    <details className="group border border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-black)] shadow-[var(--shadow-sm)]">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 p-5 [&::-webkit-details-marker]:hidden">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <FileSpreadsheet className="h-5 w-5" />
+            <h3 className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold leading-none tracking-normal">
+              Plantilla y formato del Excel
+            </h3>
+          </div>
+          <p className="mt-2 text-sm text-[var(--xt-steel)]">
+            Descarga la plantilla o despliega la guía cuando necesites revisar el formato esperado.
+          </p>
+        </div>
+        <div className="flex shrink-0 items-center gap-2 text-xs font-medium uppercase tracking-[0.12em] text-[var(--xt-steel)]">
+          <span className="hidden sm:inline">Ver guía</span>
+          <ChevronDown className="h-4 w-4 transition-transform group-open:rotate-180" />
+        </div>
+      </summary>
+
+      <div className="grid gap-4 border-t border-[var(--xt-cement)] p-5 lg:grid-cols-[1.25fr_0.85fr]">
         <div className="grid gap-3 text-sm text-[var(--xt-steel)]">
           <p>
             Usa la plantilla incluida para que el loader reconozca la cotización sin ajustes manuales. El archivo se lee
@@ -92,7 +103,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
             </Link>
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </details>
   );
 }
