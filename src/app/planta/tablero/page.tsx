@@ -1,10 +1,7 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
-import { lockFactoryAction } from "@/app/planta/actions";
-import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { PlantaNav } from "@/components/factory/planta-nav";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
-import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
@@ -14,6 +11,7 @@ import { listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
 import { formatDateEsNoYear } from "@/services/schedule";
 import { getSettings, mapSettings } from "@/services/settings";
+import { CellTooltip } from "@/components/ui/tooltip";
 import type { CalculatedMachineView } from "@/types/domain";
 
 export const dynamic = "force-dynamic";
@@ -47,30 +45,17 @@ export default async function FactoryBoardPage() {
     <main className="flex min-h-screen flex-col bg-[var(--xt-black)] text-[var(--xt-white)]">
       <RealtimeRefresh channelName="factory-board" tables={["machines", "machine_stages", "settings", "colors"]} />
 
-      <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[var(--xt-steel)] bg-[var(--xt-black)] px-8 py-5">
-        <div className="flex items-center gap-6">
-          <BrandLogo inverse />
-          <div className="border-l border-white/40 pl-6">
+      <header className="border-b border-[var(--xt-steel)] bg-[var(--xt-black)]">
+        <PlantaNav active="tablero" />
+        <div className="xt-hazard h-2" />
+        <div className="flex flex-wrap items-center justify-between gap-4 px-8 py-5">
+          <div>
             <p className="xt-eyebrow text-white/70">Estado de producción</p>
             <h1 className="[font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none">
               Cartelera
             </h1>
           </div>
-        </div>
-        <div className="flex items-center gap-6">
-          <div className="flex flex-wrap gap-3">
-            <Link href="/planta/operarios">
-              <Button type="button" variant="secondary" size="lg">
-                Ver usuarios
-              </Button>
-            </Link>
-            <form action={lockFactoryAction}>
-              <Button type="submit" variant="outline" size="lg">
-                Cerrar sesión
-              </Button>
-            </form>
-          </div>
-          <div className="flex items-center gap-8 text-right border-l border-white/20 pl-6">
+          <div className="flex items-center gap-8 text-right">
             <div>
               <p className="text-5xl font-bold tabular-nums leading-none">{orderedMachines.length}</p>
               <p className="xt-eyebrow text-white/70">En producción</p>
@@ -90,18 +75,16 @@ export default async function FactoryBoardPage() {
         </div>
       </header>
 
-      <div className="xt-hazard h-2" />
-
       {/* Column labels */}
-      <div className="grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 px-6 py-1.5 text-white/50">
-        <span className="xt-eyebrow text-center">COTI</span>
-        <span className="xt-eyebrow">Máquina</span>
-        <span className="xt-eyebrow">Cliente</span>
-        <span className="xt-eyebrow">Color</span>
-        <span className="xt-eyebrow">Avance</span>
-        <span className="xt-eyebrow">Siguiente tarea</span>
-        <span className="xt-eyebrow text-right">Prometido</span>
-        <span className="xt-eyebrow text-right">Estimado</span>
+      <div className="sticky top-0 z-10 grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 bg-[var(--xt-black)] px-6 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-extrabold uppercase tracking-widest text-white">
+        <span className="text-center">COTI</span>
+        <span>Máquina</span>
+        <span>Cliente</span>
+        <span>Color</span>
+        <span>Avance</span>
+        <span>Siguiente tarea</span>
+        <span className="text-right">Prometido</span>
+        <span className="text-right">Estimado</span>
       </div>
 
       <div className="flex flex-1 flex-col gap-1 px-6 pb-6">
@@ -146,14 +129,18 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
 
       {/* Machine name */}
       <div className="min-w-0">
-        <h2 className="[font-family:var(--font-barlow-condensed)] truncate text-2xl font-bold leading-none">
-          {machine.equipmentName}
-        </h2>
+        <CellTooltip text={machine.equipmentName} variant="light">
+          <h2 className="[font-family:var(--font-barlow-condensed)] truncate text-2xl font-bold leading-none">
+            {machine.equipmentName}
+          </h2>
+        </CellTooltip>
       </div>
 
       {/* Client name */}
       <div className="min-w-0">
-        <p className="truncate text-base font-semibold leading-none text-white/75">{machine.clientName}</p>
+        <CellTooltip text={machine.clientName} variant="light">
+          <p className="truncate text-base font-semibold leading-none text-white/75">{machine.clientName}</p>
+        </CellTooltip>
       </div>
 
       {/* Color */}
@@ -162,7 +149,9 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
           className="inline-block h-3 w-3 shrink-0 rounded-full border border-white/40"
           style={{ backgroundColor: swatch }}
         />
-        <span className="truncate text-sm text-white/70">{machine.colorName ?? "—"}</span>
+        <CellTooltip text={machine.colorName} variant="light">
+          <span className="truncate text-sm text-white/70">{machine.colorName ?? "—"}</span>
+        </CellTooltip>
       </div>
 
       {/* Progress bar */}
@@ -179,14 +168,16 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
 
       {/* Next task */}
       <div className="min-w-0">
-        <p
-          className={cn(
-            "[font-family:var(--font-barlow-condensed)] truncate text-2xl font-bold leading-none",
-            status === "done" && "text-[var(--line-bio-green)]",
-          )}
-        >
-          {nextTask}
-        </p>
+        <CellTooltip text={nextTask} variant="light">
+          <p
+            className={cn(
+              "[font-family:var(--font-barlow-condensed)] truncate text-2xl font-bold leading-none",
+              status === "done" && "text-[var(--line-bio-green)]",
+            )}
+          >
+            {nextTask}
+          </p>
+        </CellTooltip>
       </div>
 
       {/* Promised date */}
@@ -201,7 +192,7 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
           status === "late" ? "text-[var(--xt-yellow)]" : "text-white/55",
         )}
       >
-        est. {formatDateEsNoYear(machine.estimatedDate)}
+        {formatDateEsNoYear(machine.estimatedDate)}
       </p>
     </div>
   );

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { changeWorkerAction, lockFactoryAction } from "@/app/planta/actions";
+import { changeWorkerAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { PlantaNav } from "@/components/factory/planta-nav";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
@@ -52,11 +53,12 @@ export default async function FactoryMachinesPage({
   return (
     <main className="min-h-screen bg-[var(--xt-paper)]">
       <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages", "colors"]} />
-      <header
-        className="sticky top-0 z-10 border-b border-[var(--xt-graphite)] text-[var(--xt-white)]"
-        style={{ background: workerColor }}
-      >
-        <div className="flex flex-wrap items-center justify-between gap-4 px-5 py-4">
+      <header className="sticky top-0 z-10 border-b border-[var(--xt-graphite)]">
+        <PlantaNav />
+        <div
+          className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 text-[var(--xt-white)]"
+          style={{ background: workerColor }}
+        >
           <div className="flex items-center gap-5">
             <BrandLogo inverse />
             <div className="border-l border-white/60 pl-4">
@@ -64,20 +66,13 @@ export default async function FactoryMachinesPage({
               <h1 className="text-2xl font-bold">{worker?.full_name ?? "Operario"}</h1>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
-            <form action={changeWorkerAction}>
-              <Button type="submit" variant="outline" size="lg">
-                Cambiar de operario
-              </Button>
-            </form>
-            <form action={lockFactoryAction}>
-              <Button type="submit" variant="secondary" size="lg">
-                Cerrar sesión
-              </Button>
-            </form>
-          </div>
+          <form action={changeWorkerAction}>
+            <Button type="submit" variant="outline" size="lg">
+              Cambiar de operario
+            </Button>
+          </form>
         </div>
-        <div className="xt-hazard h-2" />
+        <div className="xt-hazard h-2" style={{ background: workerColor }} />
       </header>
 
       <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">

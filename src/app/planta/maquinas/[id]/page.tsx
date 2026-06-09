@@ -3,6 +3,7 @@ import Link from "next/link";
 import { updateStageAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { PlantaNav } from "@/components/factory/planta-nav";
 import { QueryToast } from "@/components/ui/query-toast";
 import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
@@ -63,6 +64,7 @@ export default async function FactoryMachineDetailPage({
       />
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
       <header className="mb-5 border-b border-[var(--xt-black)] bg-[var(--xt-white)]">
+        <PlantaNav />
         <div
           className="grid items-center gap-4 border-b border-[var(--xt-graphite)] px-5 py-4 text-[var(--xt-white)] md:grid-cols-[auto_1fr_auto]"
           style={{ background: workerColor }}
