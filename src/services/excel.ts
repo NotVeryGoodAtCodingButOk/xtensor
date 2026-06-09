@@ -150,8 +150,8 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
     { header: "Importe", key: "importe", width: 14 },
     { header: "Estado", key: "status", width: 14 },
     { header: "Progreso", key: "progress", width: 10 },
-    { header: "Fecha estimada", key: "estimated", width: 16 },
     { header: "Fecha ofrecida", key: "promised", width: 16 },
+    { header: "Fecha estimada", key: "estimated", width: 16 },
     { header: "Asignado", key: "assigned", width: 18 },
   ];
   sheet.columns = columns.map(({ key, width }) => ({ key, width }));
