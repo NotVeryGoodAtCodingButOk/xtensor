@@ -325,7 +325,7 @@ export function PreviosManager({
                 <TableHead>COTI</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Equipo</TableHead>
-                <TableHead>Ofrecido</TableHead>
+                <TableHead>Prometido</TableHead>
                 <TableHead>Previos</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -414,7 +414,7 @@ export function PreviosManager({
                   <TableHead>COTI</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Equipo</TableHead>
-                  <TableHead>Ofrecido</TableHead>
+                  <TableHead>Prometido</TableHead>
                   <TableHead>Previos</TableHead>
                 </TableRow>
               </TableHeader>

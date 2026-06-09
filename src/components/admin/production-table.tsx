@@ -345,8 +345,11 @@ export function ProductionTable({
             {!shipped && sh("remainingHumanDays", "D-H", `${C} text-right`, "Días-hombre restantes")}
             {sh("accumulatedHours", "Acum", `${C} text-right`, "Horas acumuladas en cola")}
             {sh("assignedTo", "Quién")}
-            {sh("promisedDate", "Ofrec.", C, "Fecha ofrecida")}
-            {sh("estimatedDate", "Estim.", C, "Fecha estimada")}
+            {sh("promisedDate", "Prom.", C, "Fecha prometida")}
+            {shipped && sh("shippedAt", "Despach.", C, "Fecha de despacho")}
+            {!shipped && sh("estimatedDate", "Act.", C, "Fecha actualizada")}
+            {sh("productionStartedAt", "Inicio", C, "Inicio en producción")}
+            {sh("completedAt", "Term.", C, "Fecha terminada")}
             {!shipped && <TableHead className={C} title="Fecha de la última etapa completada">Comp.</TableHead>}
             {!shipped && STAGES_SHORT.map((s, i) => (
               <TableHead key={s} className={`${C} text-center`} title={STAGES_FULL[i]}>{s}</TableHead>
@@ -489,13 +492,26 @@ export function ProductionTable({
                     className="w-full"
                     inputClassName="w-36"
                     display={formatDateEs(machine.promisedDate)}
-                    title="Doble clic para editar la fecha ofrecida"
+                    title="Doble clic para editar la fecha prometida"
                   />
                 </TableCell>
-                <TableCell
-                  className={cn(`${C} whitespace-nowrap`, isLate && "bg-red-50 text-[var(--line-pro-red)]")}
-                >
-                  {formatDateEs(machine.estimatedDate)}
+                {shipped && (
+                  <TableCell className={`${C} whitespace-nowrap`}>
+                    {machine.shippedAt ? formatDateEs(machine.shippedAt) : "—"}
+                  </TableCell>
+                )}
+                {!shipped && (
+                  <TableCell
+                    className={cn(`${C} whitespace-nowrap`, isLate && "bg-red-50 text-[var(--line-pro-red)]")}
+                  >
+                    {formatDateEs(machine.estimatedDate)}
+                  </TableCell>
+                )}
+                <TableCell className={`${C} whitespace-nowrap`}>
+                  {machine.productionStartedAt ? formatDateEs(machine.productionStartedAt) : "—"}
+                </TableCell>
+                <TableCell className={`${C} whitespace-nowrap`}>
+                  {machine.completedAt ? formatDateEs(machine.completedAt) : "—"}
                 </TableCell>
                 {!shipped && (
                   <TableCell className={`${C} whitespace-nowrap`}>

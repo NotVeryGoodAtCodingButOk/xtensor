@@ -93,7 +93,7 @@ export function ExcelImportManager({
       return;
     }
     if (!promisedDate) {
-      setError("Selecciona la fecha ofrecida.");
+      setError("Selecciona la fecha prometida.");
       return;
     }
 
@@ -189,7 +189,7 @@ export function ExcelImportManager({
                 <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
               </label>
               <label className="grid gap-2 text-sm font-medium">
-                Fecha ofrecida
+                Fecha prometida
                 <Input value={promisedDate} onChange={(e) => setPromisedDate(e.target.value)} type="date" />
                 <span className="text-xs font-normal text-[var(--xt-steel)]">
                   Estimación fin de cola actual: {formatDateEs(queueEndDate)}

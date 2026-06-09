@@ -53,7 +53,7 @@ export default async function EditMachinePage({
             <Field label="Quién">
               <Input name="assignedTo" defaultValue={machine.assignedTo ?? ""} />
             </Field>
-            <Field label="Ofrecido">
+            <Field label="Prometido">
               <Input name="promisedDate" type="date" defaultValue={machine.promisedDate} required />
             </Field>
             <Field label="Posición en cola">

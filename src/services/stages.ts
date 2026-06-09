@@ -62,7 +62,51 @@ export async function updateStageProgress(input: {
     throw new Error(`No se pudo actualizar la etapa: ${updateError.message}`);
   }
 
+  await syncMachineCompletion(supabase, input.machineId);
+
   return { stage, log };
+}
+
+/**
+ * Stamps `completed_at` when every stage of a machine reaches 100%, and clears
+ * it again if any stage drops below 100%. Safe to call after any stage change.
+ */
+async function syncMachineCompletion(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  machineId: string,
+) {
+  const { data: stages, error: stagesError } = await supabase
+    .from("machine_stages")
+    .select("completion")
+    .eq("machine_id", machineId);
+
+  if (stagesError) {
+    throw new Error(`No se pudo verificar el avance de la máquina: ${stagesError.message}`);
+  }
+
+  const allDone = stages.length > 0 && stages.every((stage) => stage.completion >= 100);
+
+  const { data: machine, error: machineError } = await supabase
+    .from("machines")
+    .select("completed_at")
+    .eq("id", machineId)
+    .single();
+
+  if (machineError) {
+    throw new Error(`No se pudo cargar la máquina: ${machineError.message}`);
+  }
+
+  if (allDone && !machine.completed_at) {
+    await supabase
+      .from("machines")
+      .update({ completed_at: new Date().toISOString() })
+      .eq("id", machineId);
+  } else if (!allDone && machine.completed_at) {
+    await supabase
+      .from("machines")
+      .update({ completed_at: null })
+      .eq("id", machineId);
+  }
 }
 
 export async function undoStageLog(input: { logId: string; workerId: string }) {
@@ -123,6 +167,8 @@ export async function undoStageLog(input: { logId: string; workerId: string }) {
   if (updateLogError) {
     throw new Error(`No se pudo marcar la acción como deshecha: ${updateLogError.message}`);
   }
+
+  await syncMachineCompletion(supabase, log.machine_id);
 
   return updatedLog;
 }

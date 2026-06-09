@@ -25,6 +25,8 @@ export type MachineView = {
   orderPosition: number;
   status: MachineStatus;
   shippedAt: string | null;
+  productionStartedAt: string | null;
+  completedAt: string | null;
   stages: StageView[];
 };
 

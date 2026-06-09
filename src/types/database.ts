@@ -231,6 +231,8 @@ export type Database = {
           order_position: number;
           status: MachineStatus;
           shipped_at: string | null;
+          production_started_at: string | null;
+          completed_at: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -249,6 +251,8 @@ export type Database = {
           order_position: number;
           status?: MachineStatus;
           shipped_at?: string | null;
+          production_started_at?: string | null;
+          completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -267,6 +271,8 @@ export type Database = {
           order_position?: number;
           status?: MachineStatus;
           shipped_at?: string | null;
+          production_started_at?: string | null;
+          completed_at?: string | null;
           created_at?: string;
           updated_at?: string;
         };

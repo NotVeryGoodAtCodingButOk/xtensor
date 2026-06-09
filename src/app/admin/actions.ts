@@ -473,7 +473,7 @@ export async function importQuoteAction(input: {
   if (!input.cotiNumber || !Number.isFinite(input.cotiNumber)) {
     throw new Error("El número de cotización (COTI) es inválido.");
   }
-  if (!input.promisedDate) throw new Error("La fecha ofrecida es requerida.");
+  if (!input.promisedDate) throw new Error("La fecha prometida es requerida.");
 
   const importable = input.lines.filter((line) => line.resolution !== "skip");
   if (importable.length === 0) {

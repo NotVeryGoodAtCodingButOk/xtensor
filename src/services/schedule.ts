@@ -70,7 +70,7 @@ export function estimateDeliveryDate(
     days *= 2;
   }
 
-  throw new Error("No se pudo calcular la fecha estimada con el calendario disponible.");
+  throw new Error("No se pudo calcular la fecha actualizada con el calendario disponible.");
 }
 
 export function addClientBuffer(internalDate: string, bufferDays: number) {

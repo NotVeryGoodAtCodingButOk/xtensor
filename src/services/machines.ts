@@ -321,6 +321,18 @@ export async function sendMachineToPrevios(id: string) {
 }
 
 export async function sendMachineToProduction(id: string) {
+  const supabase = createSupabaseAdminClient();
+  // Stamp the production start the first time the machine enters production,
+  // preserving the original date if it ever bounces back and forth.
+  const { error: startError } = await supabase
+    .from("machines")
+    .update({ production_started_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("production_started_at", null);
+  if (startError) {
+    throw new Error(`No se pudo registrar el inicio en producción: ${startError.message}`);
+  }
+
   return updateMachine(id, {
     status: "in_production",
     shipped_at: null,
@@ -381,6 +393,15 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
 export async function bulkSendToProduction(ids: string[]) {
   const supabase = createSupabaseAdminClient();
+  // Stamp production start only for machines that don't have one yet.
+  const { error: startError } = await supabase
+    .from("machines")
+    .update({ production_started_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("status", "pending")
+    .is("production_started_at", null);
+  if (startError) throw new Error(`No se pudo registrar el inicio en producción: ${startError.message}`);
+
   const { error } = await supabase
     .from("machines")
     .update({ status: "in_production", shipped_at: null })
@@ -431,6 +452,8 @@ function mapMachineRow(row: MachineRow): MachineView {
     orderPosition: row.order_position,
     status: row.status,
     shippedAt: row.shipped_at,
+    productionStartedAt: row.production_started_at,
+    completedAt: row.completed_at,
     stages,
   };
 }

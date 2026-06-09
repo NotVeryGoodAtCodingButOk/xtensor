@@ -70,7 +70,7 @@ export default async function NewMachinePage() {
             <Field label="Quién">
               <Input name="assignedTo" />
             </Field>
-            <Field label="Ofrecido">
+            <Field label="Prometido">
               <Input name="promisedDate" type="date" required />
             </Field>
             <Field label="Posición en cola">

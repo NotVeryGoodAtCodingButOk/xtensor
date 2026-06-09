@@ -84,7 +84,7 @@ export default async function FactoryBoardPage() {
         <span>Avance</span>
         <span>Siguiente tarea</span>
         <span className="text-right">Prometido</span>
-        <span className="text-right">Estimado</span>
+        <span className="text-right">Actualizada</span>
       </div>
 
       <div className="flex flex-1 flex-col gap-1 px-6 pb-6">
