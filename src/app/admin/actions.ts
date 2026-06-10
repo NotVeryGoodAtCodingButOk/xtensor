@@ -78,7 +78,7 @@ export async function markFinishedAction(formData: FormData) {
   await requireAdmin();
   await markMachineFinished(String(formData.get("machineId") ?? ""));
   revalidateFactoryData();
-  redirect("/admin/terminados?toast=finished");
+  redirect("/admin?toast=finished");
 }
 
 export async function markShippedAction(formData: FormData) {
@@ -676,7 +676,7 @@ export async function bulkDespacharTerminadosAction(formData: FormData) {
   if (machineIds.length > 0) await bulkMarkShipped(machineIds);
   revalidateFactoryData();
   revalidatePath("/admin/terminados");
-  redirect(`/admin/despachados?toast=shipped&count=${machineIds.length || 1}`);
+  redirect(`/admin/terminados?toast=shipped&count=${machineIds.length || 1}`);
 }
 
 export async function reprocesarMaquinaAction(formData: FormData) {

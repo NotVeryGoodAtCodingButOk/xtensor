@@ -27,7 +27,10 @@ export async function GET(request: Request) {
   const filtered = requestedIds ? machines.filter((m) => requestedIds.has(m.id)) : machines;
 
   const buffer = await buildShippedWorkbook(filtered);
-  const filename = `despachados-${new Date().toISOString().slice(0, 10)}.xlsx`;
+  const now = new Date();
+  const month = now.toLocaleString("es-CO", { month: "long" }).toUpperCase();
+  const date = now.toISOString().slice(0, 10);
+  const filename = `${month} - despachados - ${date}.xlsx`;
 
   return new Response(new Uint8Array(buffer), {
     headers: {
