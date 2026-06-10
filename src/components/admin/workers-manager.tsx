@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { formatCurrencyCop } from "@/lib/utils";
+import { formatCurrencyCop, formatDecimalInput } from "@/lib/utils";
 
 type Worker = {
   id: string;
@@ -24,6 +24,8 @@ const selectCls =
 
 function WorkerEditRow({ worker, onCancel }: { worker?: Worker; onCancel: () => void }) {
   const action = worker ? updateWorkerAction : addWorkerAction;
+  const [displayColor, setDisplayColor] = useState(worker?.display_color ?? "#d6d3d1");
+
   return (
     <TableRow className="bg-[var(--xt-yellow-soft)]">
       <TableCell colSpan={7}>
@@ -48,18 +50,22 @@ function WorkerEditRow({ worker, onCancel }: { worker?: Worker; onCancel: () => 
             name="hourly_cost_cop"
             type="number"
             min="0"
-            defaultValue={worker?.hourly_cost_cop ?? ""}
+            step="0.01"
+            defaultValue={formatDecimalInput(worker?.hourly_cost_cop)}
             placeholder="Costo/hora"
             className="h-8 w-28 text-sm"
           />
-          <div className="flex items-center gap-1.5 text-sm">
+          <div className="flex items-center gap-2 text-sm">
             <span className="text-[var(--xt-steel)]">Color</span>
             <input
               name="display_color"
               type="color"
-              defaultValue={worker?.display_color ?? "#d6d3d1"}
+              value={displayColor}
+              onChange={(event) => setDisplayColor(event.target.value)}
               className="h-8 w-10 cursor-pointer rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] p-0.5"
+              aria-label="Color del operario"
             />
+            <span className="min-w-20 font-mono text-xs uppercase text-[var(--xt-steel)]">{displayColor}</span>
           </div>
           <select
             name="is_active"

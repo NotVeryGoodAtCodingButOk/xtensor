@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { revalidateFactoryData } from "@/lib/factory-cache";
+import { roundToFractionDigits } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { normalizeMachineLine } from "@/lib/machine-lines";
@@ -269,7 +270,7 @@ export async function addWorkerAction(formData: FormData) {
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "").trim();
   const raw_cost = formData.get("hourly_cost_cop");
-  const hourly_cost_cop = raw_cost ? Number(raw_cost) || null : null;
+  const hourly_cost_cop = raw_cost ? roundToFractionDigits(Number(raw_cost)) : null;
   const display_color = String(formData.get("display_color") ?? "").trim() || null;
   const is_active = formData.get("is_active") !== "false";
   if (full_name && role) await createWorker({ full_name, role, hourly_cost_cop, display_color, is_active });
@@ -283,7 +284,7 @@ export async function updateWorkerAction(formData: FormData) {
   const full_name = String(formData.get("full_name") ?? "").trim();
   const role = String(formData.get("role") ?? "").trim();
   const raw_cost = formData.get("hourly_cost_cop");
-  const hourly_cost_cop = raw_cost ? Number(raw_cost) || null : null;
+  const hourly_cost_cop = raw_cost ? roundToFractionDigits(Number(raw_cost)) : null;
   const display_color = String(formData.get("display_color") ?? "").trim() || null;
   const is_active = formData.get("is_active") !== "false";
   if (id) await updateWorker(id, { full_name, role, hourly_cost_cop, display_color, is_active });
