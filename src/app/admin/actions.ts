@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { revalidateFactoryData } from "@/lib/factory-cache";
 import { roundToFractionDigits } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { requireAdmin } from "@/lib/admin-auth";
+import { requireAdmin, getAdminOrAuthError } from "@/lib/admin-auth";
 import { normalizeMachineLine } from "@/lib/machine-lines";
 import {
   createCustomEquipment,
@@ -460,8 +460,13 @@ export async function deleteHolidayAction(formData: FormData) {
 
 export type { QuotePreview, QuotePreviewLine };
 
-export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePreview> {
-  await requireAdmin();
+/** Returned by the import actions when the admin session has expired. */
+export type SessionExpired = { sessionExpired: true };
+
+export async function parseQuoteExcelAction(
+  formData: FormData,
+): Promise<QuotePreview | SessionExpired> {
+  if (!(await getAdminOrAuthError())) return { sessionExpired: true };
   const file = formData.get("file");
   if (!(file instanceof File) || file.size === 0) {
     throw new Error("Selecciona un archivo de Excel.");
@@ -492,8 +497,8 @@ export async function importQuoteAction(input: {
   clientName: string;
   promisedDate: string;
   lines: ImportQuoteLineInput[];
-}) {
-  await requireAdmin();
+}): Promise<{ created: number } | SessionExpired> {
+  if (!(await getAdminOrAuthError())) return { sessionExpired: true };
   const clientName = input.clientName.trim();
   if (!clientName) throw new Error("El cliente es requerido.");
   if (!input.promisedDate) throw new Error("La fecha prometida es requerida.");

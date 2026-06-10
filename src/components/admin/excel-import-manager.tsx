@@ -51,6 +51,12 @@ export function ExcelImportManager({
   const [parsing, startParse] = useTransition();
   const [importing, startImport] = useTransition();
 
+  function handleSessionExpired() {
+    setPreview(null);
+    setError("Tu sesión expiró. Te llevaremos a iniciar sesión para continuar…");
+    router.push("/admin/login?reason=session-expired&next=/admin/importar");
+  }
+
   function handleFile(file: File) {
     setError(null);
     const formData = new FormData();
@@ -58,6 +64,10 @@ export function ExcelImportManager({
     startParse(async () => {
       try {
         const result = await parseQuoteExcelAction(formData);
+        if ("sessionExpired" in result) {
+          handleSessionExpired();
+          return;
+        }
         setPreview(result);
         setClientName(result.clientName ?? "");
         setLineState(initialLineState(result));
@@ -124,6 +134,10 @@ export function ExcelImportManager({
           promisedDate,
           lines,
         });
+        if ("sessionExpired" in result) {
+          handleSessionExpired();
+          return;
+        }
         router.push(`/admin/previos?imported=${result.created}`);
         router.refresh();
       } catch (caught) {

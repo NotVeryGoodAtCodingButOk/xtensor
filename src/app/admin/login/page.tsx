@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 export default function AdminLoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reason?: string }>;
 }) {
   return (
     <main className="xt-brand-photo grid min-h-screen place-items-center px-4 py-10">
@@ -44,8 +44,11 @@ export default function AdminLoginPage({
   );
 }
 
-async function LoginError({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+async function LoginError({ searchParams }: { searchParams: Promise<{ error?: string; reason?: string }> }) {
   const params = await searchParams;
+  if (params.reason === "session-expired") {
+    return <p className="mb-4 border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] p-3 text-sm text-[var(--xt-black)]">Tu sesión expiró. Vuelve a iniciar sesión para continuar.</p>;
+  }
   if (!params.error) {
     return null;
   }

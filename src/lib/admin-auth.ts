@@ -45,3 +45,22 @@ export async function requireAdmin(): Promise<AdminUser> {
 
   return { id: user.id, email: user.email };
 }
+
+/**
+ * Like {@link requireAdmin} but returns `null` when the caller is simply not
+ * authenticated/authorized (expired session) instead of throwing. Use this in
+ * interactive Server Actions so an expired session surfaces as a friendly
+ * "vuelve a iniciar sesión" prompt rather than an opaque, redacted 500.
+ *
+ * Genuine failures (e.g. a profile lookup error) are still thrown.
+ */
+export async function getAdminOrAuthError(): Promise<AdminUser | null> {
+  try {
+    return await requireAdmin();
+  } catch (error) {
+    if (error instanceof Error && error.message.startsWith("No autorizado")) {
+      return null;
+    }
+    throw error;
+  }
+}
