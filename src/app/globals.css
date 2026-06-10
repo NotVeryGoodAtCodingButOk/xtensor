@@ -761,7 +761,7 @@ select {
   text-align: left;
   cursor: pointer;
   border: 1px solid var(--xt-black);
-  background: var(--xt-white);
+  background: #fefce8;
   color: var(--xt-black);
   -webkit-tap-highlight-color: transparent;
   transition: opacity 0.12s;
@@ -1239,8 +1239,8 @@ select {
   }
 }
 
-/* iPad: 768px–1023px — 4 task cards per row */
-@media (min-width: 768px) and (max-width: 1023px) {
+/* iPad + medium desktop: 768px–1535px — 4 task cards per row */
+@media (min-width: 768px) and (max-width: 1535px) {
   .xt-task-grid {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0.75rem;
