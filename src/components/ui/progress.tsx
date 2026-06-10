@@ -12,8 +12,8 @@ export function Progress({
   const width = `${Math.round(Math.max(0, Math.min(1, value)) * 100)}%`;
 
   return (
-    <div className={cn("h-2 w-full overflow-hidden rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-cement)]", className)}>
-      <div className={cn("h-full bg-[var(--xt-yellow)] transition-all", indicatorClassName)} style={{ width }} />
+    <div className={cn("xt-progress h-2 w-full overflow-hidden rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-cement)]", className)}>
+      <div className={cn("xt-progress-indicator h-full bg-[var(--xt-yellow)] transition-all", indicatorClassName)} style={{ width }} />
     </div>
   );
 }

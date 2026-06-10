@@ -127,6 +127,1119 @@ select {
   background-size: cover;
 }
 
+/* Legacy iPad fallback: Tailwind v4 utilities are ignored by iPadOS 15.3 Safari
+   because they are emitted inside CSS cascade layers. Planta is the deployed iPad
+   surface, so these unlayered classes mirror the Tailwind layout there. */
+.xt-planta {
+  min-height: 100vh;
+  background-color: var(--xt-paper);
+  color: var(--xt-black);
+}
+
+.xt-planta a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.xt-planta .xt-hazard {
+  height: 0.5rem;
+}
+
+.xt-planta .xt-brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+
+.xt-planta .xt-brand-logo-mark {
+  display: block;
+  width: 2.25rem;
+  height: 2.25rem;
+  flex-shrink: 0;
+}
+
+.xt-planta .xt-brand-logo-text {
+  display: grid;
+  line-height: 1;
+}
+
+.xt-planta .xt-brand-logo-title {
+  color: var(--xt-black);
+  font-size: 2rem;
+}
+
+.xt-planta .xt-brand-logo-inverse .xt-brand-logo-title {
+  color: var(--xt-yellow);
+}
+
+.xt-planta .xt-brand-logo-subtitle {
+  margin-top: 0.125rem;
+  color: var(--xt-steel);
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.xt-planta .xt-brand-logo-inverse .xt-brand-logo-subtitle {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.xt-planta .xt-brand-stamp {
+  display: inline-grid;
+  width: 5rem;
+  height: 5rem;
+  place-items: center;
+  border: 1px solid var(--xt-black);
+  background: var(--xt-yellow);
+  box-shadow: var(--shadow-stamp);
+}
+
+.xt-planta .xt-brand-stamp-mark {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.xt-planta .xt-card {
+  border: 1px solid var(--xt-cement);
+  background: var(--xt-white);
+  color: var(--xt-black);
+  box-shadow: var(--shadow-sm);
+}
+
+.xt-planta .xt-card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  border-bottom: 1px solid var(--xt-cement);
+  padding: 1.25rem;
+}
+
+.xt-planta .xt-card-title {
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.xt-planta .xt-card-description {
+  color: var(--xt-steel);
+  font-size: 0.875rem;
+}
+
+.xt-planta .xt-card-content {
+  padding: 0 1.25rem 1.25rem;
+}
+
+.xt-planta .xt-input {
+  display: flex;
+  width: 100%;
+  height: 2.5rem;
+  border: 1px solid var(--xt-aluminum);
+  border-radius: 2px;
+  background: var(--xt-white);
+  padding: 0.5rem 0.75rem;
+  color: var(--xt-black);
+  font: inherit;
+}
+
+.xt-planta .xt-input:focus {
+  border-color: var(--xt-black);
+  outline: 2px solid var(--xt-yellow);
+  outline-offset: 0;
+}
+
+.xt-planta .xt-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 0.5rem 1rem;
+  color: var(--xt-black);
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  transition: background-color 200ms var(--ease-snap), border-color 200ms var(--ease-snap), color 200ms var(--ease-snap), transform 200ms var(--ease-snap);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.xt-planta .xt-button-default {
+  background: var(--xt-yellow);
+  box-shadow: var(--shadow-stamp);
+  color: var(--xt-black);
+}
+
+.xt-planta .xt-button-secondary {
+  border-color: var(--xt-steel);
+  background: var(--xt-graphite);
+  color: var(--xt-white);
+}
+
+.xt-planta .xt-button-outline {
+  border-color: var(--xt-black);
+  background: var(--xt-white);
+  color: var(--xt-black);
+}
+
+.xt-planta .xt-button-ghost {
+  background: transparent;
+  color: inherit;
+}
+
+.xt-planta .xt-button-danger {
+  background: var(--line-pro-red);
+  color: var(--xt-white);
+}
+
+.xt-planta .xt-button-sm {
+  min-height: 2.75rem;
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+}
+
+.xt-planta .xt-button-lg {
+  min-height: 3.5rem;
+  padding-inline: 1.5rem;
+  font-size: 1rem;
+}
+
+.xt-planta .xt-button-touch {
+  min-height: 3.75rem;
+  padding-inline: 1.5rem;
+  font-size: 1.125rem;
+}
+
+.xt-planta .xt-button-icon {
+  width: 2.5rem;
+  min-height: 2.5rem;
+  padding: 0;
+}
+
+.xt-planta .xt-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.25rem 0.625rem;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.xt-planta .xt-badge-default {
+  background: var(--xt-black);
+  color: var(--xt-yellow);
+}
+
+.xt-planta .xt-badge-success {
+  background: var(--line-bio-green);
+  color: var(--xt-white);
+}
+
+.xt-planta .xt-badge-warning {
+  background: var(--xt-yellow);
+  color: var(--xt-black);
+}
+
+.xt-planta .xt-badge-muted {
+  background: var(--xt-cement);
+  color: var(--xt-steel);
+}
+
+.xt-planta .xt-badge-danger {
+  background: var(--line-pro-red);
+  color: var(--xt-white);
+}
+
+.xt-planta .xt-progress {
+  width: 100%;
+  height: 0.625rem;
+  overflow: hidden;
+  border: 1px solid var(--xt-black);
+  border-radius: 2px;
+  background: var(--xt-cement);
+}
+
+.xt-planta .xt-progress-indicator {
+  height: 100%;
+  background: var(--xt-yellow);
+}
+
+.xt-planta-lock {
+  display: flex;
+  min-height: 100vh;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.xt-planta-lock-card {
+  width: 100%;
+  max-width: 36rem;
+  border-color: var(--xt-black);
+  background: var(--xt-paper);
+}
+
+.xt-planta-lock-header {
+  align-items: center;
+  text-align: center;
+}
+
+.xt-planta-lock-logo {
+  margin-bottom: 0.75rem;
+}
+
+.xt-planta-lock-stamp {
+  margin-bottom: 0.5rem;
+}
+
+.xt-planta-lock-title {
+  font-size: 1.875rem;
+}
+
+.xt-planta-error {
+  margin-bottom: 1rem;
+  border: 1px solid var(--line-pro-red);
+  background: #fef2f2;
+  padding: 1rem;
+  color: var(--line-pro-red);
+  text-align: center;
+}
+
+.xt-planta-lock-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.xt-planta-lock-input {
+  height: 4rem;
+  font-size: 1.25rem;
+}
+
+.xt-planta-lock-submit {
+  width: 100%;
+}
+
+.xt-planta-topbar,
+.xt-board-header {
+  border-bottom: 1px solid var(--xt-graphite);
+  background: var(--xt-black);
+  color: var(--xt-white);
+}
+
+.xt-planta-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--xt-black);
+  color: var(--xt-white);
+}
+
+.xt-planta-nav-links,
+.xt-planta-worker-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.xt-planta .xt-planta-nav-button {
+  min-height: 2.75rem;
+  border-color: transparent;
+  background: transparent;
+  color: var(--xt-white);
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+}
+
+.xt-planta .xt-planta-nav-button.xt-button-secondary {
+  border-color: var(--xt-steel);
+  background: var(--xt-graphite);
+}
+
+.xt-planta .xt-planta-nav-button.xt-button-outline {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: transparent;
+  color: var(--xt-white);
+}
+
+.xt-planta-section {
+  padding: 1.5rem;
+}
+
+.xt-planta-page-title {
+  margin-bottom: 1.5rem;
+}
+
+.xt-planta-heading {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.xt-worker-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.xt-worker-card {
+  display: flex;
+  min-height: 11.25rem;
+  flex-direction: column;
+  justify-content: flex-end;
+  border: 1px solid var(--xt-black);
+  padding: 1.5rem;
+  color: var(--xt-white);
+  text-align: left;
+  box-shadow: var(--shadow-stamp);
+}
+
+.xt-planta .xt-worker-card {
+  color: var(--xt-white);
+}
+
+.xt-worker-name {
+  color: inherit;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.xt-worker-role {
+  margin-top: 0.5rem;
+  color: inherit;
+  font-size: 1.125rem;
+  line-height: 1.25;
+  opacity: 0.9;
+}
+
+.xt-planta-worker-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--xt-graphite);
+}
+
+.xt-planta-worker-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.75rem 1.25rem;
+  color: var(--xt-white);
+}
+
+.xt-planta-worker-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.xt-planta-worker-identity {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 1rem;
+}
+
+.xt-planta-worker-name-wrap {
+  min-width: 0;
+  border-left: 1px solid rgba(255, 255, 255, 0.4);
+  padding-left: 1rem;
+}
+
+.xt-planta-worker-name {
+  margin: 0;
+  overflow: hidden;
+  font-size: 1.125rem;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xt-planta-worker-nav {
+  width: 100%;
+  justify-content: flex-start;
+}
+
+.xt-planta-empty {
+  display: grid;
+  min-height: calc(100vh - 7rem);
+  place-items: center;
+  padding: 3rem 1.25rem;
+  text-align: center;
+}
+
+.xt-planta-empty-inner {
+  max-width: 36rem;
+}
+
+.xt-planta-empty-title {
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.xt-planta-empty-copy {
+  margin-top: 0.75rem;
+  color: var(--xt-steel);
+  font-size: 1.125rem;
+}
+
+.xt-machine-grid {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.xt-machine-card {
+  display: flex;
+  min-height: 14.375rem;
+  flex-direction: column;
+  border: 1px solid var(--xt-black);
+  background: var(--xt-white);
+  box-shadow: var(--shadow-sm);
+}
+
+.xt-machine-card-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.xt-machine-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.xt-machine-card-title-wrap {
+  min-width: 0;
+}
+
+.xt-machine-card-title {
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.xt-machine-chevron {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  margin-top: 0.5rem;
+  color: var(--xt-steel);
+}
+
+.xt-machine-meta {
+  display: grid;
+  gap: 0.25rem;
+  color: var(--xt-steel);
+  font-size: 1rem;
+}
+
+.xt-machine-meta-line {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xt-machine-status {
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+
+.xt-machine-stage-strip {
+  border-top: 1px solid var(--xt-cement);
+  padding: 0.75rem 1.25rem;
+}
+
+.xt-stage-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.xt-machine-detail {
+  padding-bottom: 7rem;
+}
+
+.xt-machine-detail-header {
+  margin-bottom: 1.25rem;
+  border-bottom: 1px solid var(--xt-black);
+}
+
+.xt-machine-detail-hero {
+  display: grid;
+  gap: 1rem;
+  padding: 1.5rem 1.25rem;
+  text-align: center;
+}
+
+.xt-machine-detail-meta {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.xt-machine-detail-subtitle {
+  max-width: 56rem;
+  margin: 0 auto;
+  color: var(--xt-steel);
+  font-size: 1.125rem;
+}
+
+.xt-machine-detail-title {
+  max-width: 64rem;
+  margin: 0 auto;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.xt-machine-detail-count {
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.xt-planta .xt-planta-back-button {
+  min-height: 2.75rem;
+  border-color: var(--xt-black);
+  background: var(--xt-yellow);
+  color: var(--xt-black);
+  padding-inline: 1rem;
+  font-size: 0.875rem;
+}
+
+.xt-task-grid {
+  display: grid;
+  gap: 1rem;
+  padding-inline: 1.25rem;
+}
+
+.xt-task-card {
+  border: 1px solid var(--xt-black);
+  background: var(--xt-white);
+}
+
+.xt-task-card-done {
+  border-color: #bfd8c0;
+  background: #eef8ee;
+}
+
+.xt-task-card-body {
+  display: grid;
+  min-height: 13.125rem;
+  gap: 1rem;
+  padding: 1.25rem;
+}
+
+.xt-task-title {
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+
+.xt-task-meta {
+  margin: 0;
+  color: var(--xt-steel);
+  font-size: 0.875rem;
+}
+
+.xt-task-form {
+  align-self: end;
+}
+
+.xt-task-button {
+  width: 100%;
+}
+
+.xt-return-bar {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  z-index: 20;
+  border: 1px solid var(--xt-black);
+  background: var(--xt-white);
+  padding: 1rem;
+  color: var(--xt-black);
+  box-shadow: 0 10px 15px rgba(0, 0, 0, 0.18);
+}
+
+.xt-return-progress {
+  height: 0.5rem;
+  margin-bottom: 0.75rem;
+  overflow: hidden;
+  background: var(--xt-cement);
+}
+
+.xt-return-progress-bar {
+  height: 100%;
+  transform-origin: left;
+  background: var(--xt-yellow);
+  animation: xt-countdown 20s linear forwards;
+}
+
+.xt-return-body {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.xt-return-message {
+  min-width: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.xt-return-continue {
+  flex-shrink: 0;
+}
+
+.xt-toast {
+  position: fixed;
+  right: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 50;
+  width: 100%;
+  max-width: 26rem;
+  pointer-events: none;
+}
+
+.xt-toast-panel {
+  border: 1px solid var(--xt-black);
+  background: var(--xt-white);
+  color: var(--xt-black);
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
+}
+
+.xt-toast-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.xt-toast-content {
+  min-width: 0;
+  flex: 1;
+}
+
+.xt-toast-message {
+  margin: 0;
+  color: var(--xt-black);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.xt-toast-description {
+  margin: 0.375rem 0 0;
+  color: var(--xt-steel);
+  font-size: 0.875rem;
+}
+
+.xt-toast-close {
+  display: inline-flex;
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  background: transparent;
+  color: var(--xt-steel);
+}
+
+.xt-board {
+  display: flex;
+  min-height: 100vh;
+  flex-direction: column;
+  background: var(--xt-black);
+  color: var(--xt-white);
+}
+
+.xt-board-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 2rem;
+}
+
+.xt-board-title {
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 2.25rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.xt-board-metrics {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  text-align: right;
+}
+
+.xt-board-metric-value {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.xt-board-metric:last-child .xt-board-metric-value {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.xt-board-metric.xt-flash-late .xt-board-metric-value {
+  color: var(--xt-white);
+}
+
+.xt-board-columns,
+.xt-board-row {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1.8fr) minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, 2.1fr) minmax(0, 1.7fr) minmax(0, 1.3fr) minmax(0, 1.5fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.xt-board-columns {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: var(--xt-black);
+  padding: 0.5rem 1.5rem;
+  color: var(--xt-white);
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.xt-board-columns span:first-child {
+  text-align: center;
+}
+
+.xt-board-columns span:nth-last-child(-n + 2) {
+  text-align: right;
+}
+
+.xt-board-rows {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0 1.5rem 1.5rem;
+}
+
+.xt-board-empty {
+  display: grid;
+  flex: 1;
+  place-items: center;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 1.5rem;
+}
+
+.xt-board-row {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  padding: 0.375rem 1rem;
+}
+
+.xt-board-row.xt-flash-late {
+  border-color: var(--line-pro-red);
+}
+
+.xt-board-row-done .xt-progress-indicator {
+  background: var(--line-bio-green);
+}
+
+.xt-board-row-done .xt-board-next {
+  color: var(--line-bio-green);
+}
+
+.xt-board-row-late .xt-board-estimated {
+  color: var(--xt-yellow);
+}
+
+.xt-board-placa {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.xt-board-cell,
+.xt-board-color,
+.xt-board-progress {
+  min-width: 0;
+}
+
+.xt-board-machine,
+.xt-board-next {
+  overflow: hidden;
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xt-board-client,
+.xt-board-color-name {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xt-board-client {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.xt-board-color {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.xt-board-swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 999px;
+}
+
+.xt-board-color-name {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.875rem;
+}
+
+.xt-board-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.xt-board-progress .xt-progress {
+  flex: 1;
+  height: 0.625rem;
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.xt-board-percent {
+  width: 3rem;
+  flex-shrink: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.xt-board-date {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.xt-board-estimated {
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.xt-planta-loading-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 1px solid var(--xt-graphite);
+  background: var(--xt-black);
+  color: var(--xt-white);
+}
+
+.xt-planta-loading-bar,
+.xt-loading-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+}
+
+.xt-loading-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.xt-loading-logo {
+  width: 14rem;
+  height: 2.5rem;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.xt-loading-button {
+  width: 10rem;
+  height: 2.75rem;
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.xt-loading-button:last-child {
+  width: 8rem;
+}
+
+.xt-loading-card {
+  padding: 1.25rem;
+}
+
+.xt-loading-card-body {
+  display: grid;
+  height: 100%;
+  gap: 1rem;
+}
+
+.xt-skeleton {
+  background: var(--xt-cement);
+}
+
+.xt-skeleton-small {
+  width: 5rem;
+  height: 1rem;
+}
+
+.xt-skeleton-title {
+  width: 75%;
+  height: 3rem;
+}
+
+.xt-skeleton-stack {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.xt-skeleton-line,
+.xt-skeleton-stack .xt-skeleton {
+  width: 100%;
+  height: 1rem;
+}
+
+.xt-skeleton-stack .xt-skeleton-line {
+  width: 83.333%;
+}
+
+.xt-skeleton-status {
+  width: 50%;
+  height: 1.5rem;
+  margin-top: auto;
+}
+
+@media (min-width: 1024px) {
+  .xt-planta-worker-nav {
+    width: auto;
+    justify-content: flex-end;
+  }
+
+  .xt-worker-name {
+    font-size: 1.875rem;
+  }
+
+  .xt-machine-detail-title {
+    font-size: 3.75rem;
+  }
+}
+
+@media (min-width: 1280px) {
+  .xt-machine-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xt-machine-detail-title {
+    font-size: 4.5rem;
+  }
+}
+
+@media (min-width: 1536px) {
+  .xt-machine-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .xt-task-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767px) {
+  .xt-worker-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .xt-worker-card {
+    padding: 1.25rem;
+  }
+}
+
 .xt-container {
   margin-inline: auto;
   width: min(100% - 32px, 1280px);

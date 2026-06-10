@@ -65,20 +65,20 @@ export function QueryToast({
   if (!toast) return null;
 
   return (
-    <div className="pointer-events-none fixed bottom-5 right-5 z-50 w-full max-w-[26rem] px-3 sm:px-0">
-      <div className="pointer-events-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-xl">
+    <div className="xt-toast pointer-events-none fixed bottom-5 right-5 z-50 w-full max-w-[26rem] px-3 sm:px-0">
+      <div className="xt-toast-panel pointer-events-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-xl">
         <div className="xt-hazard h-2" />
-        <div className="flex items-start gap-4 px-5 py-4">
-          <div className="min-w-0 flex-1">
-            <p className="text-base font-semibold text-[var(--xt-black)]">{toast.message}</p>
+        <div className="xt-toast-body flex items-start gap-4 px-5 py-4">
+          <div className="xt-toast-content min-w-0 flex-1">
+            <p className="xt-toast-message text-base font-semibold text-[var(--xt-black)]">{toast.message}</p>
             {toast.description ? (
-              <p className="mt-1.5 text-sm text-[var(--xt-steel)]">{toast.description}</p>
+              <p className="xt-toast-description mt-1.5 text-sm text-[var(--xt-steel)]">{toast.description}</p>
             ) : null}
           </div>
           <button
             type="button"
             onClick={() => setToast(null)}
-            className="inline-flex h-8 w-8 items-center justify-center rounded-[2px] border border-transparent text-[var(--xt-steel)] transition-colors hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
+            className="xt-toast-close inline-flex h-8 w-8 items-center justify-center rounded-[2px] border border-transparent text-[var(--xt-steel)] transition-colors hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
             aria-label="Cerrar notificación"
           >
             <X className="h-4 w-4" />

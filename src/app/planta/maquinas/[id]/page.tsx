@@ -57,38 +57,38 @@ export default async function FactoryMachineDetailPage({
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
 
   return (
-    <main className="min-h-screen bg-[var(--xt-paper)] pb-28">
+    <main className="xt-planta xt-planta-page xt-machine-detail min-h-screen bg-[var(--xt-paper)] pb-28">
       <QueryToast
         message={toastMessage}
         description={toastMessage ? "Todas las etapas quedaron hechas." : null}
         clearKeys={["toast"]}
       />
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
-      <header className="mb-5 border-b border-[var(--xt-black)]">
+      <header className="xt-machine-detail-header mb-5 border-b border-[var(--xt-black)]">
         <div
-          className="px-5 py-3 text-[var(--xt-white)]"
+          className="xt-planta-worker-bar px-5 py-3 text-[var(--xt-white)]"
           style={{ background: workerHeaderBackground }}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="flex min-w-0 items-center gap-4">
+          <div className="xt-planta-worker-row flex flex-wrap items-center justify-between gap-3">
+            <div className="xt-planta-worker-identity flex min-w-0 items-center gap-4">
               <BrandLogo inverse />
-              <div className="min-w-0">
+              <div className="xt-planta-worker-name-wrap min-w-0">
                 <p className="xt-eyebrow xt-eyebrow-light leading-none mb-0.5">Operario activo</p>
-                <p className="truncate text-lg font-bold leading-none">{worker?.full_name ?? "Operario"}</p>
+                <p className="xt-planta-worker-name truncate text-lg font-bold leading-none">{worker?.full_name ?? "Operario"}</p>
               </div>
             </div>
-            <nav className="flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
-              <Button asChild variant="ghost" size="sm" className={navButtonClass}>
+            <nav className="xt-planta-worker-nav flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
+              <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
                 <Link href="/planta/operarios">Operarios</Link>
               </Button>
-              <Button asChild variant="ghost" size="sm" className={navButtonClass}>
+              <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
                 <Link href="/planta/tablero">Cartelera</Link>
               </Button>
               <Button
                 asChild
                 variant="outline"
                 size="sm"
-                className="min-h-11 border-[var(--xt-black)] bg-[var(--xt-yellow)] px-4 text-sm text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)]"
+                className="xt-planta-back-button min-h-11 border-[var(--xt-black)] bg-[var(--xt-yellow)] px-4 text-sm text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)]"
               >
                 <Link href={`/planta/maquinas${workerQuery}`}>Volver a máquinas</Link>
               </Button>
@@ -96,47 +96,47 @@ export default async function FactoryMachineDetailPage({
           </div>
         </div>
         <div className="xt-hazard h-2" />
-        <div className="grid gap-4 px-5 py-6 text-center">
-          <div className="grid gap-1">
+        <div className="xt-machine-detail-hero grid gap-4 px-5 py-6 text-center">
+          <div className="xt-machine-detail-meta grid gap-1">
             <p className="xt-eyebrow">Detalle de máquina</p>
-            <p className="mx-auto max-w-4xl text-lg text-[var(--xt-steel)]">
+            <p className="xt-machine-detail-subtitle mx-auto max-w-4xl text-lg text-[var(--xt-steel)]">
               PLACA {machine.placaNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"}
             </p>
           </div>
-          <h2 className="mx-auto max-w-5xl [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words lg:text-6xl xl:text-7xl">
+          <h2 className="xt-machine-detail-title mx-auto max-w-5xl [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words lg:text-6xl xl:text-7xl">
             {machine.equipmentName}
           </h2>
-          <p className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold">
+          <p className="xt-machine-detail-count [font-family:var(--font-barlow-condensed)] text-2xl font-bold">
             {machine.stages.filter((stage) => stage.completion === 100).length} de {machine.stages.length} tareas hechas
           </p>
         </div>
       </header>
 
-      <div className="grid gap-4 px-5 2xl:grid-cols-2">
+      <div className="xt-task-grid grid gap-4 px-5 2xl:grid-cols-2">
         {orderedStages.map((stage) => {
           const isDone = stage.completion === 100;
 
           return (
             <Card
               key={stage.id}
-              className={isDone ? "border-[#bfd8c0] bg-[#eef8ee]" : "border-[var(--xt-black)] bg-[var(--xt-white)]"}
+              className={isDone ? "xt-task-card xt-task-card-done border-[#bfd8c0] bg-[#eef8ee]" : "xt-task-card border-[var(--xt-black)] bg-[var(--xt-white)]"}
             >
-              <div className="grid min-h-[210px] gap-4 p-5">
-                <div>
+              <div className="xt-task-card-body grid min-h-[210px] gap-4 p-5">
+                <div className="xt-task-card-heading">
                   <p className="xt-eyebrow">{isDone ? "Hecha" : "Pendiente"}</p>
-                  <h2 className="[font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words">
+                  <h2 className="xt-task-title [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words">
                     {stage.name}
                   </h2>
                 </div>
-                <p className="text-sm text-[var(--xt-steel)]">
+                <p className="xt-task-meta text-sm text-[var(--xt-steel)]">
                   Último cambio: {stage.lastWorkerName ?? "Sin registro"}
                   {stage.lastUpdatedAt ? ` · ${stage.lastUpdatedAt.slice(0, 16).replace("T", " ")}` : ""}
                 </p>
-                <form action={updateStageAction} className="self-end">
+                <form action={updateStageAction} className="xt-task-form self-end">
                   <input type="hidden" name="machineId" value={machine.id} />
                   <input type="hidden" name="stageId" value={stage.id} />
                   <input type="hidden" name="completion" value={isDone ? 0 : 100} />
-                  <Button type="submit" size="touch" variant={isDone ? "outline" : "default"} className="w-full">
+                  <Button type="submit" size="touch" variant={isDone ? "outline" : "default"} className="xt-task-button w-full">
                     {isDone ? "Reproceso" : "Marcar como hecha"}
                   </Button>
                 </form>

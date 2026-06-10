@@ -22,15 +22,15 @@ export default async function FactoryWorkersPage() {
   const workers = await listWorkers(true);
 
   return (
-    <main className="min-h-screen bg-[var(--xt-paper)]">
-      <header className="border-b border-[var(--xt-graphite)] bg-[var(--xt-black)]">
+    <main className="xt-planta xt-planta-page min-h-screen bg-[var(--xt-paper)]">
+      <header className="xt-planta-topbar border-b border-[var(--xt-graphite)] bg-[var(--xt-black)]">
         <PlantaNav active="operarios" />
         <div className="xt-hazard h-2" />
       </header>
-      <section className="p-6">
-        <div className="mb-6">
+      <section className="xt-planta-section p-6">
+        <div className="xt-planta-page-title mb-6">
           <p className="xt-eyebrow">Operarios</p>
-          <h1 className="text-4xl font-bold">¿Quién eres?</h1>
+          <h1 className="xt-planta-heading text-4xl font-bold">¿Quién eres?</h1>
         </div>
         <WorkerPicker workers={workers} />
       </section>
