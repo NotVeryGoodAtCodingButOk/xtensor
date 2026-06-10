@@ -325,7 +325,8 @@ export function PreviosManager({
                 </TableHead>
                 <TableHead>COTI</TableHead>
                 <TableHead>Cliente</TableHead>
-                <TableHead>Equipo</TableHead>
+                <TableHead>Código</TableHead>
+                <TableHead>Máquina</TableHead>
                 <TableHead>Prometido</TableHead>
                 <TableHead>Previos</TableHead>
                 <TableHead className="w-10" />
@@ -334,7 +335,7 @@ export function PreviosManager({
             <TableBody>
               {filteredPending.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-6 text-center text-[var(--xt-steel)]">
+                  <TableCell colSpan={8} className="py-6 text-center text-[var(--xt-steel)]">
                     No hay máquinas en previos.
                   </TableCell>
                 </TableRow>
@@ -367,14 +368,12 @@ export function PreviosManager({
                     <TableCell>
                       <InlineClientEdit machineId={machine.machineId} clientName={machine.clientName} />
                     </TableCell>
+                    <TableCell className="whitespace-nowrap font-mono text-[10px] text-[var(--xt-steel)]">
+                      {machine.equipmentCode ?? "—"}
+                    </TableCell>
                     <TableCell className="max-w-[160px]">
-                      <CellTooltip text={[machine.equipmentCode, machine.equipmentName].filter(Boolean).join(" · ")}>
-                        <div className="grid gap-0.5">
-                          <span className="line-clamp-1">{machine.equipmentName}</span>
-                          {machine.equipmentCode ? (
-                            <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
-                          ) : null}
-                        </div>
+                      <CellTooltip text={machine.equipmentName}>
+                        <span className="line-clamp-1">{machine.equipmentName}</span>
                       </CellTooltip>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
@@ -416,7 +415,8 @@ export function PreviosManager({
                 <TableRow>
                   <TableHead>COTI</TableHead>
                   <TableHead>Cliente</TableHead>
-                  <TableHead>Equipo</TableHead>
+                  <TableHead>Código</TableHead>
+                  <TableHead>Máquina</TableHead>
                   <TableHead>Prometido</TableHead>
                   <TableHead>Previos</TableHead>
                 </TableRow>
@@ -439,14 +439,12 @@ export function PreviosManager({
                     <TableCell>
                       <InlineClientEdit machineId={machine.machineId} clientName={machine.clientName} />
                     </TableCell>
+                    <TableCell className="whitespace-nowrap font-mono text-[10px] text-[var(--xt-steel)]">
+                      {machine.equipmentCode ?? "—"}
+                    </TableCell>
                     <TableCell className="max-w-[160px]">
-                      <CellTooltip text={[machine.equipmentCode, machine.equipmentName].filter(Boolean).join(" · ")}>
-                        <div className="grid gap-0.5">
-                          <span className="line-clamp-1">{machine.equipmentName}</span>
-                          {machine.equipmentCode ? (
-                            <span className="font-mono text-[10px] text-[var(--xt-steel)]">{machine.equipmentCode}</span>
-                          ) : null}
-                        </div>
+                      <CellTooltip text={machine.equipmentName}>
+                        <span className="line-clamp-1">{machine.equipmentName}</span>
                       </CellTooltip>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>

@@ -45,7 +45,8 @@ function filterMachines(machines: CalculatedMachineView[], f: FilterState): Calc
       const hit =
         m.cotiNumber.toString().includes(q) ||
         m.clientName.toLowerCase().includes(q) ||
-        m.equipmentName.toLowerCase().includes(q);
+        m.equipmentName.toLowerCase().includes(q) ||
+        (m.equipmentCode ?? "").toLowerCase().includes(q);
       if (!hit) return false;
     }
     if (f.clients.length > 0 && !f.clients.includes(m.clientName)) return false;

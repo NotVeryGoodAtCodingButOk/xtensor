@@ -68,7 +68,7 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
       )}
 
       <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-        <Table className="min-w-[800px] text-xs">
+        <Table className="min-w-[900px] text-xs">
           <TableHeader>
             <TableRow>
               <TableHead className="w-8 px-3 py-2">
@@ -82,7 +82,8 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
               </TableHead>
               <TableHead className={C}>COTI</TableHead>
               <TableHead className={C}>Cliente</TableHead>
-              <TableHead className={C}>Equipo</TableHead>
+              <TableHead className={C}>Código</TableHead>
+              <TableHead className={C}>Máquina</TableHead>
               <TableHead className={C}>Color</TableHead>
               <TableHead className={C}>Ciudad</TableHead>
               <TableHead className={C}>Terminada</TableHead>
@@ -103,15 +104,11 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
                 </TableCell>
                 <TableCell className={`${C} font-semibold tabular-nums`}>{machine.cotiNumber}</TableCell>
                 <TableCell className={`${C} max-w-[120px] truncate`}>{machine.clientName}</TableCell>
+                <TableCell className={`${C} whitespace-nowrap font-mono text-[10px] text-[var(--xt-steel)]`}>
+                  {machine.equipmentCode ?? "—"}
+                </TableCell>
                 <TableCell className={`${C} max-w-[180px]`}>
-                  <span className="line-clamp-1">
-                    {machine.equipmentCode && (
-                      <span className="mr-1 font-mono text-[10px] text-[var(--xt-steel)]">
-                        {machine.equipmentCode}
-                      </span>
-                    )}
-                    {machine.equipmentName}
-                  </span>
+                  <span className="line-clamp-1">{machine.equipmentName}</span>
                 </TableCell>
                 <TableCell className={C}>{machine.colorName ?? "—"}</TableCell>
                 <TableCell className={C}>{machine.city ?? "—"}</TableCell>

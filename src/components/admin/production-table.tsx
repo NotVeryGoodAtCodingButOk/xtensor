@@ -338,7 +338,8 @@ export function ProductionTable({
             {!shipped && sh("progressPct", "%")}
             {sh("cotiNumber", "COTI")}
             {sh("clientName", "Cliente")}
-            {sh("equipmentName", "Equipo")}
+            {sh("equipmentCode", "Código")}
+            {sh("equipmentName", "Máquina")}
             {sh("colorName", "Color")}
             {sh("city", "Ciudad")}
             {sh("line", "Línea")}
@@ -430,16 +431,13 @@ export function ProductionTable({
                   </CellTooltip>
                 </TableCell>
 
+                <TableCell className={`${C} whitespace-nowrap font-mono text-[10px] text-[var(--xt-steel)]`}>
+                  {machine.equipmentCode ?? "—"}
+                </TableCell>
+
                 <TableCell className={`${C} max-w-[160px]`}>
-                  <CellTooltip text={[machine.equipmentCode, machine.equipmentName].filter(Boolean).join(" · ")}>
-                    <span className="line-clamp-1">
-                      {machine.equipmentCode && (
-                        <span className="mr-1 font-mono text-[10px] text-[var(--xt-steel)]">
-                          {machine.equipmentCode}
-                        </span>
-                      )}
-                      {machine.equipmentName}
-                    </span>
+                  <CellTooltip text={machine.equipmentName}>
+                    <span className="line-clamp-1">{machine.equipmentName}</span>
                   </CellTooltip>
                 </TableCell>
 
