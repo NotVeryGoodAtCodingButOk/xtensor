@@ -64,6 +64,21 @@ describe("parseQuoteWorkbook", () => {
     });
   });
 
+  it("accepts a Node Buffer or Uint8Array, not just an ArrayBuffer", async () => {
+    // exceljs/jszip reject cross-realm ArrayBuffers ("Can't read the data of
+    // 'the loaded zip file'"), which is what File.arrayBuffer() can hand us in a
+    // Server Action. The loader must normalize whatever buffer flavor it receives.
+    const arrayBuffer = await buildQuoteFixture();
+    const nodeBuffer = Buffer.from(arrayBuffer);
+    const uint8 = new Uint8Array(arrayBuffer);
+
+    for (const input of [nodeBuffer, uint8]) {
+      const quote = await parseQuoteWorkbook(input);
+      expect(quote.reference).toBe("6878");
+      expect(quote.lines).toHaveLength(2);
+    }
+  });
+
   it("stops at the Suma totals block", async () => {
     const buffer = await buildQuoteFixture();
     const quote = await parseQuoteWorkbook(buffer);

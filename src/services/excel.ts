@@ -68,6 +68,12 @@ const DEFAULT_PRODUCT_COLUMNS: ProductTableColumns = {
   placaNumber: null,
 };
 
+function toNodeBuffer(input: ArrayBuffer | Uint8Array | Buffer): Buffer {
+  if (Buffer.isBuffer(input)) return input;
+  if (input instanceof Uint8Array) return Buffer.from(input.buffer, input.byteOffset, input.byteLength);
+  return Buffer.from(input);
+}
+
 function normalizeLabel(value: string): string {
   return value
     .toLowerCase()
@@ -140,11 +146,17 @@ function rowContainsTotalMarker(row: ExcelJS.Row): boolean {
   return containsMarker;
 }
 
-export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuote> {
+export async function parseQuoteWorkbook(
+  buffer: ArrayBuffer | Uint8Array | Buffer,
+): Promise<ParsedQuote> {
   const workbook = new ExcelJS.Workbook();
-  // exceljs's typings declare `Buffer extends ArrayBuffer`, so an ArrayBuffer is what
-  // it actually wants; jszip accepts it at runtime too.
-  await workbook.xlsx.load(buffer);
+  // `File.arrayBuffer()` in the Server Action runtime (undici's File) can return a
+  // cross-realm ArrayBuffer that jszip's internal `instanceof` checks reject with
+  // "Can't read the data of 'the loaded zip file'". Normalizing to a Node Buffer
+  // makes exceljs accept it regardless of where the bytes came from.
+  // exceljs ships its own `Buffer` typing that doesn't line up with Node's; the
+  // value is a real Node Buffer at runtime, which is what `load` actually wants.
+  await workbook.xlsx.load(toNodeBuffer(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
   const sheet = workbook.worksheets[0];
   if (!sheet) {
     throw new Error("El archivo no contiene hojas.");
