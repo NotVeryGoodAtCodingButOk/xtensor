@@ -44,7 +44,7 @@ export default async function FactoryLockPage({
           <form action={unlockFactoryAction} className="grid gap-4">
             <Input name="password" type="password" className="h-16 text-xl" autoFocus required />
             <Button type="submit" size="touch">
-              Desbloquear tablero
+              Iniciar sesión
             </Button>
           </form>
         </CardContent>
