@@ -7,7 +7,6 @@ import { QueryToast } from "@/components/ui/query-toast";
 import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
@@ -117,31 +116,31 @@ export default async function FactoryMachineDetailPage({
           const isDone = stage.completion === 100;
 
           return (
-            <Card
-              key={stage.id}
-              className={isDone ? "xt-task-card xt-task-card-done border-[#bfd8c0] bg-[#eef8ee]" : "xt-task-card border-[var(--xt-black)] bg-[var(--xt-white)]"}
-            >
-              <div className="xt-task-card-body grid min-h-[210px] gap-4 p-5">
-                <div className="xt-task-card-heading">
-                  <p className="xt-eyebrow">{isDone ? "Hecha" : "Pendiente"}</p>
-                  <h2 className="xt-task-title [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words">
-                    {stage.name}
-                  </h2>
-                </div>
-                <p className="xt-task-meta text-sm text-[var(--xt-steel)]">
-                  Último cambio: {stage.lastWorkerName ?? "Sin registro"}
-                  {stage.lastUpdatedAt ? ` · ${stage.lastUpdatedAt.slice(0, 16).replace("T", " ")}` : ""}
-                </p>
-                <form action={updateStageAction} className="xt-task-form self-end">
-                  <input type="hidden" name="machineId" value={machine.id} />
-                  <input type="hidden" name="stageId" value={stage.id} />
-                  <input type="hidden" name="completion" value={isDone ? 0 : 100} />
-                  <Button type="submit" size="touch" variant={isDone ? "outline" : "default"} className="xt-task-button w-full">
+            <form key={stage.id} action={updateStageAction}>
+              <input type="hidden" name="machineId" value={machine.id} />
+              <input type="hidden" name="stageId" value={stage.id} />
+              <input type="hidden" name="completion" value={isDone ? 0 : 100} />
+              <button
+                type="submit"
+                className={`xt-task-card ${isDone ? "xt-task-card-done" : ""}`}
+              >
+                <div className="xt-task-card-body">
+                  <div className="xt-task-card-heading">
+                    <p className="xt-eyebrow">{isDone ? "Hecha" : "Pendiente"}</p>
+                    <h2 className="xt-task-title [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words">
+                      {stage.name}
+                    </h2>
+                  </div>
+                  <p className="xt-task-meta text-sm text-[var(--xt-steel)]">
+                    Último cambio: {stage.lastWorkerName ?? "Sin registro"}
+                    {stage.lastUpdatedAt ? ` · ${stage.lastUpdatedAt.slice(0, 16).replace("T", " ")}` : ""}
+                  </p>
+                  <div className="xt-task-action">
                     {isDone ? "Reproceso" : "Marcar como hecha"}
-                  </Button>
-                </form>
-              </div>
-            </Card>
+                  </div>
+                </div>
+              </button>
+            </form>
           );
         })}
       </div>

@@ -754,13 +754,27 @@ select {
 }
 
 .xt-task-card {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
   border: 1px solid var(--xt-black);
   background: var(--xt-white);
+  color: var(--xt-black);
+  -webkit-tap-highlight-color: transparent;
+  transition: opacity 0.12s;
+}
+
+.xt-task-card:active {
+  opacity: 0.75;
 }
 
 .xt-task-card-done {
-  border-color: #bfd8c0;
-  background: #eef8ee;
+  border-color: #43a047;
+  background: #a5d6a7;
+  color: #1b5e20;
 }
 
 .xt-task-card-body {
@@ -785,12 +799,17 @@ select {
   font-size: 0.875rem;
 }
 
-.xt-task-form {
-  align-self: end;
+.xt-task-card-done .xt-task-meta {
+  color: #2e7d32;
 }
 
-.xt-task-button {
-  width: 100%;
+.xt-task-action {
+  align-self: end;
+  font-size: 0.875rem;
+  font-weight: 600;
+  padding: 0.5rem 0.875rem;
+  border: 1px solid currentColor;
+  text-align: center;
 }
 
 .xt-return-bar {
@@ -1217,6 +1236,23 @@ select {
 
   .xt-machine-detail-title {
     font-size: 4.5rem;
+  }
+}
+
+/* iPad: 768px–1023px — 4 task cards per row */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .xt-task-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .xt-task-card-body {
+    min-height: 10rem;
+    padding: 0.875rem;
+  }
+
+  .xt-task-title {
+    font-size: 2rem;
   }
 }
 
