@@ -34,7 +34,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
             <ul className="grid gap-1">
               <li>
                 <span className="font-medium text-[var(--xt-black)]">A3/B3:</span> Referencia/COTI opcional. Si no
-                viene, el sistema asigna PLACAS automáticas editables.
+                viene, el sistema asigna una PLACA automática editable por máquina.
               </li>
               <li>
                 <span className="font-medium text-[var(--xt-black)]">A4/B4:</span> Fecha

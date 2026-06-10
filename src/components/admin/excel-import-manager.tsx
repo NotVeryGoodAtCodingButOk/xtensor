@@ -9,6 +9,17 @@ import {
   type ImportQuoteLineInput,
   type QuotePreview,
 } from "@/app/admin/actions";
+import {
+  buildAutoMachineRows,
+  collectUsedPlacasForOtherLines,
+  findAutoPlacaIssue,
+  getLinePlacaNumbers,
+  getLineResolution,
+  getLineUnitCount,
+  initialLineState,
+  resizePlacaNumbers,
+  type LineState,
+} from "@/components/admin/excel-import-state";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,47 +27,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDateEs } from "@/services/schedule";
 
 type CatalogOption = { id: string; code: string; name: string };
+type PreviewLine = QuotePreview["lines"][number];
 
 const selectCls =
   "h-9 w-full rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
 const peso = new Intl.NumberFormat("es-CO");
-
-// Resolution select value: "skip", "custom", or a catalog id.
-type LineState = {
-  resolution: string;
-  unidades: number;
-  placaNumbers: number[];
-};
-
-function nextAvailablePlaca(start: number, used: Set<number>) {
-  let candidate = start;
-  for (let attempts = 0; attempts < 999; attempts += 1) {
-    candidate = candidate >= 999 ? 1 : candidate + 1;
-    if (!used.has(candidate)) return candidate;
-  }
-  return 1;
-}
-
-function resizePlacaNumbers(
-  current: number[],
-  units: number,
-  usedByOtherLines: Set<number>,
-) {
-  const target = Math.max(1, Math.round(units) || 1);
-  const next = current.slice(0, target);
-  const used = new Set([...usedByOtherLines, ...next.filter((placa) => Number.isInteger(placa) && placa > 0)]);
-  let cursor = used.size > 0 ? Math.max(...used) : 0;
-
-  while (next.length < target) {
-    const placa = nextAvailablePlaca(cursor, used);
-    next.push(placa);
-    used.add(placa);
-    cursor = placa;
-  }
-
-  return next;
-}
 
 export function ExcelImportManager({
   catalog,
@@ -86,18 +62,7 @@ export function ExcelImportManager({
         setPreview(result);
         setClientName(result.clientName ?? "");
         setPlacaNumber(result.placaNumber ? String(result.placaNumber) : "");
-        setLineState(
-          Object.fromEntries(
-            result.lines.map((line) => [
-              line.rowIndex,
-              {
-                resolution: line.matchedCatalogId ?? "custom",
-                unidades: line.unidades,
-                placaNumbers: line.placaNumbers,
-              },
-            ]),
-          ),
-        );
+        setLineState(initialLineState(result));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "No se pudo leer el archivo.");
         setPreview(null);
@@ -109,10 +74,13 @@ export function ExcelImportManager({
     if (!preview) return 0;
     return preview.lines.reduce((sum, line) => {
       const state = lineState[line.rowIndex];
-      if (!state || state.resolution === "skip") return sum;
-      return sum + Math.max(1, Math.round(state.unidades) || 1);
+      if (getLineResolution(line, state) === "skip") return sum;
+      return sum + getLineUnitCount(line, state);
     }, 0);
   }, [preview, lineState]);
+
+  const autoMachineRows = useMemo(() => buildAutoMachineRows(preview, lineState), [preview, lineState]);
+  const autoPlacaIssue = useMemo(() => findAutoPlacaIssue(preview, lineState), [preview, lineState]);
 
   function handleImport() {
     if (!preview) return;
@@ -130,15 +98,19 @@ export function ExcelImportManager({
       setError("Selecciona la fecha prometida.");
       return;
     }
+    if (preview.placaMode === "auto" && autoPlacaIssue) {
+      setError(autoPlacaIssue);
+      return;
+    }
 
     const lines: ImportQuoteLineInput[] = preview.lines.map((line) => {
       const state = lineState[line.rowIndex];
-      const resolution = state?.resolution ?? "skip";
-      const units = Math.max(1, Math.round(state?.unidades ?? line.unidades) || 1);
+      const resolution = getLineResolution(line, state);
+      const units = getLineUnitCount(line, state);
       const placaNumbers =
         preview.placaMode === "reference"
           ? Array.from({ length: units }, () => placa)
-          : resizePlacaNumbers(state?.placaNumbers ?? line.placaNumbers, units, new Set());
+          : getLinePlacaNumbers(line, state);
       const base = {
         producto: line.producto || line.clave,
         unidades: units,
@@ -168,6 +140,70 @@ export function ExcelImportManager({
         setError(caught instanceof Error ? caught.message : "No se pudo importar la cotización.");
       }
     });
+  }
+
+  function updateLineUnits(line: PreviewLine, unidades: number) {
+    setLineState((prev) => {
+      const state = prev[line.rowIndex];
+      return {
+        ...prev,
+        [line.rowIndex]: {
+          resolution: getLineResolution(line, state),
+          unidades,
+          placaNumbers: resizePlacaNumbers(
+            state?.placaNumbers ?? line.placaNumbers,
+            unidades,
+            collectUsedPlacasForOtherLines(prev, line.rowIndex),
+          ),
+        },
+      };
+    });
+  }
+
+  function updateLinePlacaNumber(line: PreviewLine, machineIndex: number, placaNumber: number) {
+    setLineState((prev) => {
+      const state = prev[line.rowIndex];
+      const current = getLinePlacaNumbers(line, state);
+      current[machineIndex] = placaNumber;
+      return {
+        ...prev,
+        [line.rowIndex]: {
+          resolution: getLineResolution(line, state),
+          unidades: getLineUnitCount(line, state),
+          placaNumbers: current,
+        },
+      };
+    });
+  }
+
+  function updateLineResolution(line: PreviewLine, resolution: string) {
+    setLineState((prev) => {
+      const state = prev[line.rowIndex];
+      return {
+        ...prev,
+        [line.rowIndex]: {
+          resolution,
+          unidades: getLineUnitCount(line, state),
+          placaNumbers: getLinePlacaNumbers(line, state),
+        },
+      };
+    });
+  }
+
+  function renderResolutionSelect(line: PreviewLine, resolution: string) {
+    return (
+      <select className={selectCls} value={resolution} onChange={(e) => updateLineResolution(line, e.target.value)}>
+        <option value="custom">Crear nueva (personalizada)</option>
+        <option value="skip">Omitir línea</option>
+        <optgroup label="Catálogo">
+          {catalog.map((item) => (
+            <option key={item.id} value={item.id}>
+              {item.code} · {item.name}
+            </option>
+          ))}
+        </optgroup>
+      </select>
+    );
   }
 
   return (
@@ -229,7 +265,7 @@ export function ExcelImportManager({
                 <div className="grid gap-2 text-sm font-medium">
                   PLACA
                   <div className="rounded-[2px] border border-[var(--xt-cement)] bg-[var(--xt-yellow-soft)] px-3 py-2 text-sm font-normal text-[var(--xt-black)]">
-                    Sin COTI detectada. Se asignó una PLACA por máquina; puedes editarlas en la tabla.
+                    Sin COTI detectada. Se asignó una PLACA por máquina; edítalas fila por fila en la tabla.
                   </div>
                 </div>
               )}
@@ -251,132 +287,141 @@ export function ExcelImportManager({
             <CardHeader>
               <CardTitle>Líneas ({totalMachines} máquinas)</CardTitle>
             </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Producto</TableHead>
-                    <TableHead>Código</TableHead>
-                    <TableHead className="w-20">UNID.</TableHead>
-                    {preview.placaMode === "auto" ? <TableHead className="w-56">PLACA(s)</TableHead> : null}
-                    <TableHead className="text-right">P.UNIT.</TableHead>
-                    <TableHead className="w-72">Acción</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {preview.lines.map((line) => {
-                    const state = lineState[line.rowIndex];
-                    const resolution = state?.resolution ?? "skip";
-                    return (
-                      <TableRow key={line.rowIndex}>
-                        <TableCell>
-                          <span className="font-medium">{line.producto || "—"}</span>
-                          {!line.matchedCatalogId ? (
-                            <span className="ml-2 rounded-[2px] bg-[var(--xt-yellow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
-                              sin catálogo
-                            </span>
-                          ) : null}
-                        </TableCell>
-                        <TableCell className="text-[var(--xt-steel)]">{line.clave || "—"}</TableCell>
-                        <TableCell>
-                          <Input
-                            type="number"
-                            min="1"
-                            value={state?.unidades ?? line.unidades}
-                            onChange={(e) =>
-                              setLineState((prev) => {
-                                const units = Number(e.target.value);
-                                const usedByOtherLines = new Set(
-                                  Object.entries(prev)
-                                    .filter(([rowIndex]) => Number(rowIndex) !== line.rowIndex)
-                                    .flatMap(([, item]) => item.placaNumbers),
-                                );
-                                return {
-                                  ...prev,
-                                  [line.rowIndex]: {
-                                    resolution: prev[line.rowIndex]?.resolution ?? resolution,
-                                    unidades: units,
-                                    placaNumbers: resizePlacaNumbers(
-                                      prev[line.rowIndex]?.placaNumbers ?? line.placaNumbers,
-                                      units,
-                                      usedByOtherLines,
-                                    ),
-                                  },
-                                };
-                              })
-                            }
-                            className="h-9"
-                          />
-                        </TableCell>
-                        {preview.placaMode === "auto" ? (
-                          <TableCell>
-                            <div className="grid max-h-28 gap-1 overflow-y-auto pr-1">
-                              {resizePlacaNumbers(state?.placaNumbers ?? line.placaNumbers, state?.unidades ?? line.unidades, new Set()).map(
-                                (placa, index) => (
-                                  <Input
-                                    key={`${line.rowIndex}-${index}`}
-                                    type="number"
-                                    min="1"
-                                    max="999"
-                                    value={placa}
-                                    onChange={(e) =>
-                                      setLineState((prev) => {
-                                        const current = resizePlacaNumbers(
-                                          prev[line.rowIndex]?.placaNumbers ?? line.placaNumbers,
-                                          prev[line.rowIndex]?.unidades ?? line.unidades,
-                                          new Set(),
-                                        );
-                                        current[index] = Number(e.target.value);
-                                        return {
-                                          ...prev,
-                                          [line.rowIndex]: {
-                                            resolution: prev[line.rowIndex]?.resolution ?? resolution,
-                                            unidades: prev[line.rowIndex]?.unidades ?? line.unidades,
-                                            placaNumbers: current,
-                                          },
-                                        };
-                                      })
-                                    }
-                                    className="h-8"
-                                    aria-label={`PLACA ${index + 1} para ${line.producto || line.clave}`}
-                                  />
-                                ),
-                              )}
-                            </div>
-                          </TableCell>
-                        ) : null}
-                        <TableCell className="text-right tabular-nums">{peso.format(line.pUnitCop)}</TableCell>
-                        <TableCell>
-                          <select
-                            className={selectCls}
-                            value={resolution}
-                            onChange={(e) =>
-                              setLineState((prev) => ({
-                                ...prev,
-                                [line.rowIndex]: {
-                                  resolution: e.target.value,
-                                  unidades: prev[line.rowIndex]?.unidades ?? line.unidades,
-                                  placaNumbers: prev[line.rowIndex]?.placaNumbers ?? line.placaNumbers,
-                                },
-                              }))
-                            }
-                          >
-                            <option value="custom">Crear nueva (personalizada)</option>
-                            <option value="skip">Omitir línea</option>
-                            <optgroup label="Catálogo">
-                              {catalog.map((item) => (
-                                <option key={item.id} value={item.id}>
-                                  {item.code} · {item.name}
-                                </option>
-                              ))}
-                            </optgroup>
-                          </select>
-                        </TableCell>
+            <CardContent className="grid gap-3">
+              {autoPlacaIssue ? (
+                <div className="rounded-[2px] border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
+                  {autoPlacaIssue}
+                </div>
+              ) : null}
+
+              <div className="overflow-x-auto">
+                {preview.placaMode === "auto" ? (
+                  <Table className="min-w-[920px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Código</TableHead>
+                        <TableHead className="w-24">Unidad</TableHead>
+                        <TableHead className="w-36">PLACA</TableHead>
+                        <TableHead className="text-right">P.UNIT.</TableHead>
+                        <TableHead className="w-72">Acción</TableHead>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {preview.lines.flatMap((line) => {
+                        const state = lineState[line.rowIndex];
+                        const resolution = getLineResolution(line, state);
+                        const unitCount = getLineUnitCount(line, state);
+                        const rows = autoMachineRows.filter((row) => row.rowIndex === line.rowIndex);
+
+                        return rows.map((row) => (
+                          <TableRow
+                            key={`${line.rowIndex}-${row.machineIndex}`}
+                            className={resolution === "skip" ? "opacity-60" : undefined}
+                          >
+                            {row.machineIndex === 0 ? (
+                              <TableCell rowSpan={unitCount} className="min-w-[240px] align-top">
+                                <div className="grid gap-2">
+                                  <div>
+                                    <span className="font-medium">{line.producto || "—"}</span>
+                                    {!line.matchedCatalogId ? (
+                                      <span className="ml-2 rounded-[2px] bg-[var(--xt-yellow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                                        sin catálogo
+                                      </span>
+                                    ) : null}
+                                  </div>
+                                  <label className="flex items-center gap-2 text-xs font-medium text-[var(--xt-steel)]">
+                                    UNID.
+                                    <Input
+                                      type="number"
+                                      min="1"
+                                      value={state?.unidades ?? line.unidades}
+                                      onChange={(e) => updateLineUnits(line, Number(e.target.value))}
+                                      className="h-8 w-20"
+                                    />
+                                  </label>
+                                </div>
+                              </TableCell>
+                            ) : null}
+                            {row.machineIndex === 0 ? (
+                              <TableCell rowSpan={unitCount} className="align-top text-[var(--xt-steel)]">
+                                {line.clave || "—"}
+                              </TableCell>
+                            ) : null}
+                            <TableCell className="tabular-nums">
+                              {row.machineIndex + 1} / {unitCount}
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="1"
+                                max="999"
+                                value={row.placaNumber}
+                                disabled={resolution === "skip"}
+                                onChange={(e) => updateLinePlacaNumber(line, row.machineIndex, Number(e.target.value))}
+                                className="h-9"
+                                aria-label={`PLACA ${row.machineIndex + 1} para ${line.producto || line.clave}`}
+                              />
+                            </TableCell>
+                            {row.machineIndex === 0 ? (
+                              <TableCell rowSpan={unitCount} className="align-top text-right tabular-nums">
+                                {peso.format(line.pUnitCop)}
+                              </TableCell>
+                            ) : null}
+                            {row.machineIndex === 0 ? (
+                              <TableCell rowSpan={unitCount} className="align-top">
+                                {renderResolutionSelect(line, resolution)}
+                              </TableCell>
+                            ) : null}
+                          </TableRow>
+                        ));
+                      })}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <Table className="min-w-[760px]">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Producto</TableHead>
+                        <TableHead>Código</TableHead>
+                        <TableHead className="w-20">UNID.</TableHead>
+                        <TableHead className="text-right">P.UNIT.</TableHead>
+                        <TableHead className="w-72">Acción</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {preview.lines.map((line) => {
+                        const state = lineState[line.rowIndex];
+                        const resolution = getLineResolution(line, state);
+                        return (
+                          <TableRow key={line.rowIndex}>
+                            <TableCell>
+                              <span className="font-medium">{line.producto || "—"}</span>
+                              {!line.matchedCatalogId ? (
+                                <span className="ml-2 rounded-[2px] bg-[var(--xt-yellow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                                  sin catálogo
+                                </span>
+                              ) : null}
+                            </TableCell>
+                            <TableCell className="text-[var(--xt-steel)]">{line.clave || "—"}</TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="1"
+                                value={state?.unidades ?? line.unidades}
+                                onChange={(e) => updateLineUnits(line, Number(e.target.value))}
+                                className="h-9"
+                              />
+                            </TableCell>
+                            <TableCell className="text-right tabular-nums">{peso.format(line.pUnitCop)}</TableCell>
+                            <TableCell>{renderResolutionSelect(line, resolution)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
             </CardContent>
           </Card>
 
