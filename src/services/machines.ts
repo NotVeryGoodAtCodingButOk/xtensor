@@ -299,6 +299,13 @@ export function buildMovedQueueOrder(
   return ordered;
 }
 
+export async function markMachineFinished(id: string) {
+  return updateMachine(id, {
+    status: "finished",
+    completed_at: new Date().toISOString(),
+  });
+}
+
 export async function markMachineShipped(id: string) {
   return updateMachine(id, {
     status: "shipped",

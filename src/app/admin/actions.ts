@@ -28,6 +28,7 @@ import {
   createMachine,
   deleteMachine,
   getMaxOrderPosition,
+  markMachineFinished,
   markMachineShipped,
   reorderMachines,
   sendFinishedToProduction,
@@ -70,6 +71,13 @@ export async function signOutAction() {
   const supabase = await createSupabaseServerClient();
   await supabase.auth.signOut();
   redirect("/admin/login");
+}
+
+export async function markFinishedAction(formData: FormData) {
+  await requireAdmin();
+  await markMachineFinished(String(formData.get("machineId") ?? ""));
+  revalidateFactoryData();
+  redirect("/admin/terminados?toast=finished");
 }
 
 export async function markShippedAction(formData: FormData) {

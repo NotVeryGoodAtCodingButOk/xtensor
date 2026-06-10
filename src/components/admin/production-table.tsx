@@ -3,10 +3,10 @@
 import Link from "next/link";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Pencil, Trash2, Truck } from "lucide-react";
+import { Check, Pencil, Trash2 } from "lucide-react";
 import {
   updateMachineInlineAction,
-  markShippedAction,
+  markFinishedAction,
   warrantyMachineAction,
 } from "@/app/admin/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -552,14 +552,14 @@ export function ProductionTable({
                         )}
                       </>
                     ) : (
-                      <form action={markShippedAction}>
+                      <form action={markFinishedAction}>
                         <input type="hidden" name="machineId" value={machine.id} />
                         <button
                           type="submit"
-                          title="Despachar"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
+                          title="Marcar como terminado"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--line-bio-green)] bg-[var(--xt-white)] text-[var(--line-bio-green)] hover:bg-green-50"
                         >
-                          <Truck className="h-3 w-3" />
+                          <Check className="h-3 w-3" />
                         </button>
                       </form>
                     )}
