@@ -6,6 +6,7 @@ import { bulkMarkShippedAction } from "@/app/admin/actions";
 import { ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
 import { Button } from "@/components/ui/button";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -112,24 +113,26 @@ function FilterDropdown({
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "inline-flex h-7 items-center gap-1 border px-2 text-xs transition-colors",
-          active
-            ? "border-[var(--xt-black)] bg-[var(--xt-yellow)] font-medium text-[var(--xt-black)]"
-            : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)] hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]",
-        )}
-      >
-        {label}
-        {active && (
-          <span className="rounded-sm bg-[var(--xt-black)] px-1 py-px text-[9px] leading-none text-[var(--xt-yellow)]">
-            {selected.length}
-          </span>
-        )}
-        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-      </button>
+      <ActionTooltip text={`Abre el filtro por ${label.toLowerCase()}.`}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className={cn(
+            "inline-flex h-7 items-center gap-1 border px-2 text-xs transition-colors",
+            active
+              ? "border-[var(--xt-black)] bg-[var(--xt-yellow)] font-medium text-[var(--xt-black)]"
+              : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)] hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]",
+          )}
+        >
+          {label}
+          {active && (
+            <span className="rounded-sm bg-[var(--xt-black)] px-1 py-px text-[9px] leading-none text-[var(--xt-yellow)]">
+              {selected.length}
+            </span>
+          )}
+          <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+        </button>
+      </ActionTooltip>
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-0.5 min-w-[160px] max-h-64 overflow-y-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-md">
@@ -208,13 +211,15 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
             className="h-7 w-48 border border-[var(--xt-cement)] bg-[var(--xt-white)] pl-6 pr-2 text-xs placeholder:text-[var(--xt-aluminum)] focus:border-[var(--xt-black)] focus:outline-none"
           />
           {filters.search && (
-            <button
-              type="button"
-              onClick={() => patch({ search: "" })}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <ActionTooltip text="Limpia el texto de búsqueda." align="right">
+              <button
+                type="button"
+                onClick={() => patch({ search: "" })}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </ActionTooltip>
           )}
         </div>
 
@@ -227,14 +232,16 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
 
         {/* Clear */}
         {filtered && (
-          <button
-            type="button"
-            onClick={() => setFilters(EMPTY_FILTERS)}
-            className="inline-flex h-7 items-center gap-1 px-2 text-xs text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
-          >
-            <X className="h-3 w-3" />
-            Limpiar
-          </button>
+          <ActionTooltip text="Quita todos los filtros aplicados.">
+            <button
+              type="button"
+              onClick={() => setFilters(EMPTY_FILTERS)}
+              className="inline-flex h-7 items-center gap-1 px-2 text-xs text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
+            >
+              <X className="h-3 w-3" />
+              Limpiar
+            </button>
+          </ActionTooltip>
         )}
 
         {/* Spacer + color toggle */}
@@ -268,13 +275,17 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
             <input key={id} type="hidden" name="machineIds" value={id} />
           ))}
           <span className="text-xs font-medium">{selectedIds.size} seleccionada{selectedIds.size === 1 ? "" : "s"}</span>
-          <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
-            <Truck className="h-3.5 w-3.5" />
-            Despachar seleccionadas
-          </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <ActionTooltip text="Marca como despachadas todas las máquinas seleccionadas.">
+            <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
+              <Truck className="h-3.5 w-3.5" />
+              Despachar seleccionadas
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip text="Limpia la selección actual de máquinas.">
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
         </form>
       )}
 

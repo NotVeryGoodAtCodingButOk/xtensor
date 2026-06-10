@@ -5,6 +5,7 @@ import { RotateCcw, Truck, X } from "lucide-react";
 import { bulkDespacharTerminadosAction, reprocesarMaquinaAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import type { MachineView } from "@/types/domain";
 
 const C = "px-3 py-2 whitespace-nowrap";
@@ -57,13 +58,17 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
           <span className="text-xs font-medium">
             {selectedIds.size} seleccionada{selectedIds.size === 1 ? "" : "s"}
           </span>
-          <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
-            <Truck className="h-3.5 w-3.5" />
-            Despachar seleccionadas
-          </Button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <ActionTooltip text="Despacha todas las máquinas seleccionadas.">
+            <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
+              <Truck className="h-3.5 w-3.5" />
+              Despachar seleccionadas
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip text="Quita la selección actual.">
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
         </form>
       )}
 
@@ -119,17 +124,21 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
                   <div className="flex items-center justify-end gap-2">
                     <form action={reprocesarMaquinaAction}>
                       <input type="hidden" name="machineId" value={machine.id} />
-                      <Button type="submit" size="sm" variant="ghost" className="gap-1.5 text-[var(--xt-steel)]">
-                        <RotateCcw className="h-3.5 w-3.5" />
-                        Reproceso
-                      </Button>
+                      <ActionTooltip text="Devuelve esta máquina a producción para reproceso.">
+                        <Button type="submit" size="sm" variant="ghost" className="gap-1.5 text-[var(--xt-steel)]">
+                          <RotateCcw className="h-3.5 w-3.5" />
+                          Reproceso
+                        </Button>
+                      </ActionTooltip>
                     </form>
                     <form action={bulkDespacharTerminadosAction}>
                       <input type="hidden" name="machineIds" value={machine.id} />
-                      <Button type="submit" size="sm" variant="outline" className="gap-1.5">
-                        <Truck className="h-3.5 w-3.5" />
-                        Despachar
-                      </Button>
+                      <ActionTooltip text="Marca esta máquina como despachada.">
+                        <Button type="submit" size="sm" variant="outline" className="gap-1.5">
+                          <Truck className="h-3.5 w-3.5" />
+                          Despachar
+                        </Button>
+                      </ActionTooltip>
                     </form>
                   </div>
                 </TableCell>

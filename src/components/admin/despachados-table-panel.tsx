@@ -6,6 +6,7 @@ import { bulkDeleteMachinesAction } from "@/app/admin/actions";
 import { ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
 import { Button } from "@/components/ui/button";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -112,24 +113,26 @@ function FilterDropdown({
 
   return (
     <div className="relative" ref={ref}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className={cn(
-          "inline-flex h-7 items-center gap-1 border px-2 text-xs transition-colors",
-          active
-            ? "border-[var(--xt-black)] bg-[var(--xt-yellow)] font-medium text-[var(--xt-black)]"
-            : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)] hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]",
-        )}
-      >
-        {label}
-        {active && (
-          <span className="rounded-sm bg-[var(--xt-black)] px-1 py-px text-[9px] leading-none text-[var(--xt-yellow)]">
-            {selected.length}
-          </span>
-        )}
-        <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
-      </button>
+      <ActionTooltip text={`Abre el filtro por ${label.toLowerCase()}.`}>
+        <button
+          type="button"
+          onClick={() => setOpen((o) => !o)}
+          className={cn(
+            "inline-flex h-7 items-center gap-1 border px-2 text-xs transition-colors",
+            active
+              ? "border-[var(--xt-black)] bg-[var(--xt-yellow)] font-medium text-[var(--xt-black)]"
+              : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)] hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]",
+          )}
+        >
+          {label}
+          {active && (
+            <span className="rounded-sm bg-[var(--xt-black)] px-1 py-px text-[9px] leading-none text-[var(--xt-yellow)]">
+              {selected.length}
+            </span>
+          )}
+          <ChevronDown className={cn("h-3 w-3 transition-transform", open && "rotate-180")} />
+        </button>
+      </ActionTooltip>
 
       {open && (
         <div className="absolute left-0 top-full z-50 mt-0.5 min-w-[160px] max-h-64 overflow-y-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-md">
@@ -184,24 +187,30 @@ function DeleteDialog({
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <a
-                href={exportHref}
-                className="inline-flex h-9 w-full items-center justify-center gap-2 border border-[var(--xt-black)] bg-[var(--xt-yellow)] px-4 text-sm font-medium text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
-              >
-                <Download className="h-4 w-4" />
-                Exportar ahora
-              </a>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setStep("confirm-delete")}
-              >
-                Ya tengo una copia — continuar
-              </Button>
-              <Button type="button" variant="ghost" className="w-full" onClick={onClose}>
-                Cancelar
-              </Button>
+              <ActionTooltip text="Descarga una copia de seguridad antes de eliminar.">
+                <a
+                  href={exportHref}
+                  className="inline-flex h-9 w-full items-center justify-center gap-2 border border-[var(--xt-black)] bg-[var(--xt-yellow)] px-4 text-sm font-medium text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
+                >
+                  <Download className="h-4 w-4" />
+                  Exportar ahora
+                </a>
+              </ActionTooltip>
+              <ActionTooltip text="Continúa a la confirmación final de borrado.">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => setStep("confirm-delete")}
+                >
+                  Ya tengo una copia - continuar
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip text="Cierra este aviso sin eliminar nada.">
+                <Button type="button" variant="ghost" className="w-full" onClick={onClose}>
+                  Cancelar
+                </Button>
+              </ActionTooltip>
             </div>
           </>
         ) : (
@@ -217,17 +226,21 @@ function DeleteDialog({
               </div>
             </div>
             <div className="flex gap-2">
-              <Button
-                type="button"
-                className="flex-1 border-red-600 bg-red-600 text-white hover:bg-red-700"
-                onClick={onConfirm}
-              >
-                <Trash2 className="mr-1.5 h-4 w-4" />
-                Eliminar definitivamente
-              </Button>
-              <Button type="button" variant="outline" onClick={onClose}>
-                Cancelar
-              </Button>
+              <ActionTooltip text="Borra definitivamente las máquinas seleccionadas.">
+                <Button
+                  type="button"
+                  className="flex-1 border-red-600 bg-red-600 text-white hover:bg-red-700"
+                  onClick={onConfirm}
+                >
+                  <Trash2 className="mr-1.5 h-4 w-4" />
+                  Eliminar definitivamente
+                </Button>
+              </ActionTooltip>
+              <ActionTooltip text="Vuelve atrás sin borrar máquinas.">
+                <Button type="button" variant="outline" onClick={onClose}>
+                  Cancelar
+                </Button>
+              </ActionTooltip>
             </div>
           </>
         )}
@@ -314,13 +327,15 @@ export function DespachadosTablePanel({ machines }: { machines: CalculatedMachin
             className="h-7 w-48 border border-[var(--xt-cement)] bg-[var(--xt-white)] pl-6 pr-2 text-xs placeholder:text-[var(--xt-aluminum)] focus:border-[var(--xt-black)] focus:outline-none"
           />
           {filters.search && (
-            <button
-              type="button"
-              onClick={() => patch({ search: "" })}
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
-            >
-              <X className="h-3 w-3" />
-            </button>
+            <ActionTooltip text="Limpia el texto de búsqueda." align="right">
+              <button
+                type="button"
+                onClick={() => patch({ search: "" })}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </ActionTooltip>
           )}
         </div>
 
@@ -333,24 +348,28 @@ export function DespachadosTablePanel({ machines }: { machines: CalculatedMachin
 
         {/* Clear */}
         {filtered && (
-          <button
-            type="button"
-            onClick={() => setFilters(EMPTY_FILTERS)}
-            className="inline-flex h-7 items-center gap-1 px-2 text-xs text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
-          >
-            <X className="h-3 w-3" />
-            Limpiar
-          </button>
+          <ActionTooltip text="Quita todos los filtros aplicados.">
+            <button
+              type="button"
+              onClick={() => setFilters(EMPTY_FILTERS)}
+              className="inline-flex h-7 items-center gap-1 px-2 text-xs text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
+            >
+              <X className="h-3 w-3" />
+              Limpiar
+            </button>
+          </ActionTooltip>
         )}
 
         {/* Export all visible */}
-        <a
-          href={buildExportHref()}
-          className="ml-auto inline-flex h-7 items-center gap-1 border border-[var(--xt-cement)] bg-[var(--xt-white)] px-2 text-xs text-[var(--xt-steel)] transition-colors hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
-        >
-          <Download className="h-3 w-3" />
-          Exportar
-        </a>
+        <ActionTooltip text="Descarga en Excel las máquinas despachadas visibles.">
+          <a
+            href={buildExportHref()}
+            className="ml-auto inline-flex h-7 items-center gap-1 border border-[var(--xt-cement)] bg-[var(--xt-white)] px-2 text-xs text-[var(--xt-steel)] transition-colors hover:border-[var(--xt-aluminum)] hover:text-[var(--xt-black)]"
+          >
+            <Download className="h-3 w-3" />
+            Exportar
+          </a>
+        </ActionTooltip>
       </div>
 
       {/* Result count when filtered */}
@@ -366,24 +385,30 @@ export function DespachadosTablePanel({ machines }: { machines: CalculatedMachin
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">
           <span className="text-xs font-medium">{selectedIds.size} seleccionada{selectedIds.size === 1 ? "" : "s"}</span>
-          <a
-            href={buildExportHref(selectedIds)}
-            className="ml-auto inline-flex h-7 items-center gap-1.5 border border-[var(--xt-black)] bg-[var(--xt-white)] px-3 text-xs font-medium text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
-          >
-            <Download className="h-3.5 w-3.5" />
-            Exportar seleccionadas
-          </a>
-          <button
-            type="button"
-            onClick={() => openDeleteDialog(selectedIds)}
-            className="inline-flex h-7 items-center gap-1.5 border border-red-600 bg-red-50 px-3 text-xs font-medium text-red-700 hover:bg-red-100"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            Eliminar seleccionadas
-          </button>
-          <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
-            <X className="h-3.5 w-3.5" />
-          </Button>
+          <ActionTooltip text="Exporta solo las máquinas despachadas seleccionadas.">
+            <a
+              href={buildExportHref(selectedIds)}
+              className="ml-auto inline-flex h-7 items-center gap-1.5 border border-[var(--xt-black)] bg-[var(--xt-white)] px-3 text-xs font-medium text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
+            >
+              <Download className="h-3.5 w-3.5" />
+              Exportar seleccionadas
+            </a>
+          </ActionTooltip>
+          <ActionTooltip text="Abre la confirmación para eliminar las seleccionadas.">
+            <button
+              type="button"
+              onClick={() => openDeleteDialog(selectedIds)}
+              className="inline-flex h-7 items-center gap-1.5 border border-red-600 bg-red-50 px-3 text-xs font-medium text-red-700 hover:bg-red-100"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Eliminar seleccionadas
+            </button>
+          </ActionTooltip>
+          <ActionTooltip text="Quita la selección actual.">
+            <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+              <X className="h-3.5 w-3.5" />
+            </Button>
+          </ActionTooltip>
         </div>
       )}
 

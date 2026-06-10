@@ -7,7 +7,7 @@ import { sendToProductionAction, toggleMachinePrevioAction, updateMachinePlacaAc
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CellTooltip } from "@/components/ui/tooltip";
+import { ActionTooltip, CellTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
@@ -29,14 +29,16 @@ function InlinePlacaEdit({ machineId, placaNumber }: { machineId: string; placaN
 
   if (!editing) {
     return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="font-semibold underline-offset-2 hover:underline cursor-text"
-        title="Haz clic para editar el PLACA"
-      >
-        {placaNumber}
-      </button>
+      <ActionTooltip text="Edita el número de PLACA de esta máquina.">
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="font-semibold underline-offset-2 hover:underline cursor-text"
+          title="Haz clic para editar el PLACA"
+        >
+          {placaNumber}
+        </button>
+      </ActionTooltip>
     );
   }
 
@@ -78,14 +80,16 @@ function InlineClientEdit({ machineId, clientName }: { machineId: string; client
 
   if (!editing) {
     return (
-      <button
-        type="button"
-        onClick={() => setEditing(true)}
-        className="max-w-[100px] truncate text-left cursor-text hover:underline underline-offset-2"
-        title={clientName}
-      >
-        {clientName}
-      </button>
+      <ActionTooltip text="Edita el nombre del cliente de esta máquina.">
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="max-w-[100px] truncate text-left cursor-text hover:underline underline-offset-2"
+          title={clientName}
+        >
+          {clientName}
+        </button>
+      </ActionTooltip>
     );
   }
 
@@ -303,10 +307,12 @@ export function PreviosManager({
               {Array.from(selected).map((id) => (
                 <input key={id} type="hidden" name="machineIds" value={id} />
               ))}
-              <Button type="submit" size="sm">
-                <ArrowRight className="h-4 w-4" />
-                Enviar a producción ({selected.size})
-              </Button>
+              <ActionTooltip text="Mueve las máquinas seleccionadas desde previos a producción.">
+                <Button type="submit" size="sm">
+                  <ArrowRight className="h-4 w-4" />
+                  Enviar a producción ({selected.size})
+                </Button>
+              </ActionTooltip>
             </form>
           )}
         </div>
@@ -383,13 +389,15 @@ export function PreviosManager({
                     <TableCell>
                       <form action={sendToProductionAction}>
                         <input type="hidden" name="machineIds" value={machine.machineId} />
-                        <button
-                          type="submit"
-                          title="Enviar a producción"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
-                        >
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
+                        <ActionTooltip text="Envía esta máquina a producción." align="right">
+                          <button
+                            type="submit"
+                            title="Enviar a producción"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
+                          >
+                            <ArrowRight className="h-3 w-3" />
+                          </button>
+                        </ActionTooltip>
                       </form>
                     </TableCell>
                   </TableRow>

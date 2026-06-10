@@ -10,7 +10,7 @@ import {
   warrantyMachineAction,
 } from "@/app/admin/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { CellTooltip } from "@/components/ui/tooltip";
+import { ActionTooltip, CellTooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
@@ -257,13 +257,15 @@ function SortableHead({ sortKey, label, className, title, sortConfig, onSort }: 
   const active = sortConfig?.key === sortKey;
   return (
     <TableHead className={cn(C, className)} title={title}>
-      <button
-        onClick={() => onSort(sortKey)}
-        className="inline-flex items-center gap-1 font-semibold uppercase tracking-wide hover:text-[var(--xt-black)]"
-      >
-        {label}
-        <SortIndicator active={active} dir={sortConfig?.dir} />
-      </button>
+      <ActionTooltip text={`Ordena la tabla por ${label.toLowerCase()}.`}>
+        <button
+          onClick={() => onSort(sortKey)}
+          className="inline-flex items-center gap-1 font-semibold uppercase tracking-wide hover:text-[var(--xt-black)]"
+        >
+          {label}
+          <SortIndicator active={active} dir={sortConfig?.dir} />
+        </button>
+      </ActionTooltip>
     </TableHead>
   );
 }
@@ -288,14 +290,16 @@ function WarrantyButton({ machineId }: { machineId: string }) {
     <form ref={formRef} action={warrantyMachineAction}>
       <input type="hidden" name="machineId" value={machineId} />
       <input ref={messageRef} type="hidden" name="message" defaultValue="" />
-      <button
-        type="button"
-        onClick={handleClick}
-        title="Enviar a garantía"
-        className="inline-flex h-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow)] px-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
-      >
-        Garantía
-      </button>
+      <ActionTooltip text="Envía esta máquina a garantía y pide un motivo breve.">
+        <button
+          type="button"
+          onClick={handleClick}
+          title="Enviar a garantía"
+          className="inline-flex h-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow)] px-2 text-[10px] font-semibold uppercase tracking-wide text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
+        >
+          Garantía
+        </button>
+      </ActionTooltip>
     </form>
   );
 }
@@ -530,38 +534,44 @@ export function ProductionTable({
                 <TableCell className={C}>
                   <div className="flex gap-1">
                     {!shipped && (
-                      <Link
-                        href={`/admin/maquinas/${machine.id}`}
-                        title="Editar"
-                        className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-white)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
-                      >
-                        <Pencil className="h-3 w-3" />
-                      </Link>
+                      <ActionTooltip text="Abre el detalle de esta máquina para editarla." align="right">
+                        <Link
+                          href={`/admin/maquinas/${machine.id}`}
+                          title="Editar"
+                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-white)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Link>
+                      </ActionTooltip>
                     )}
                     {shipped ? (
                       <>
                         <WarrantyButton machineId={machine.id} />
                         {onDeleteShipped && (
-                          <button
-                            type="button"
-                            title="Eliminar"
-                            onClick={() => onDeleteShipped(machine.id)}
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
+                          <ActionTooltip text="Abre la confirmación para eliminar este despacho." align="right">
+                            <button
+                              type="button"
+                              title="Eliminar"
+                              onClick={() => onDeleteShipped(machine.id)}
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </ActionTooltip>
                         )}
                       </>
                     ) : (
                       <form action={markFinishedAction}>
                         <input type="hidden" name="machineId" value={machine.id} />
-                        <button
-                          type="submit"
-                          title="Marcar como terminado"
-                          className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--line-bio-green)] bg-[var(--xt-white)] text-[var(--line-bio-green)] hover:bg-green-50"
-                        >
-                          <Check className="h-3 w-3" />
-                        </button>
+                        <ActionTooltip text="Marca esta máquina como terminada." align="right">
+                          <button
+                            type="submit"
+                            title="Marcar como terminado"
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--line-bio-green)] bg-[var(--xt-white)] text-[var(--line-bio-green)] hover:bg-green-50"
+                          >
+                            <Check className="h-3 w-3" />
+                          </button>
+                        </ActionTooltip>
                       </form>
                     )}
                   </div>

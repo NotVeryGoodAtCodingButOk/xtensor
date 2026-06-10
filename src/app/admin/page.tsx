@@ -8,6 +8,7 @@ import { ConfigWarning } from "@/components/config-warning";
 import { ProductionTablePanel } from "@/components/admin/production-table-panel";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
@@ -36,18 +37,22 @@ export default async function AdminDashboardPage() {
           <p className="text-sm text-[var(--xt-steel)]">Vista densa equivalente a la planilla actual.</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button asChild variant="outline">
-            <a href="/admin/export">
-              <Download className="h-4 w-4" />
-              Exportar Excel
-            </a>
-          </Button>
-          <Button asChild>
-            <Link href="/admin/maquinas/nueva">
-              <Plus className="h-4 w-4" />
-              Agregar máquina
-            </Link>
-          </Button>
+          <ActionTooltip text="Descarga la vista actual de producción en Excel.">
+            <Button asChild variant="outline">
+              <a href="/admin/export">
+                <Download className="h-4 w-4" />
+                Exportar Excel
+              </a>
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip text="Crea una nueva máquina en el plan de producción.">
+            <Button asChild>
+              <Link href="/admin/maquinas/nueva">
+                <Plus className="h-4 w-4" />
+                Agregar máquina
+              </Link>
+            </Button>
+          </ActionTooltip>
         </div>
       </div>
       <ProductionTablePanel machines={machines} />

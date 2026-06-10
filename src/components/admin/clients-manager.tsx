@@ -6,6 +6,7 @@ import { deleteClientAction, regenerateClientTokenAction, updateClientAction } f
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ActionTooltip } from "@/components/ui/tooltip";
 
 type ClientWithUrl = {
   id: string;
@@ -36,13 +37,17 @@ export function ClientsManager({ clients }: { clients: ClientWithUrl[] }) {
                 <form action={updateClientAction} className="flex items-center gap-2">
                   <input type="hidden" name="clientId" value={client.id} />
                   <Input name="name" defaultValue={client.name} className="h-8 flex-1 text-sm" autoFocus required />
-                  <Button type="submit" size="sm">
-                    <Check className="h-3 w-3" />
-                    Guardar
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
-                    <X className="h-3 w-3" />
-                  </Button>
+                  <ActionTooltip text="Guarda los cambios del cliente.">
+                    <Button type="submit" size="sm">
+                      <Check className="h-3 w-3" />
+                      Guardar
+                    </Button>
+                  </ActionTooltip>
+                  <ActionTooltip text="Cancela la edición sin guardar.">
+                    <Button type="button" size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </ActionTooltip>
                 </form>
               </TableCell>
               <TableCell>{client.created_at.slice(0, 10)}</TableCell>
@@ -57,20 +62,24 @@ export function ClientsManager({ clients }: { clients: ClientWithUrl[] }) {
               <TableCell>{client.created_at.slice(0, 10)}</TableCell>
               <TableCell>
                 <div className="flex flex-wrap gap-1">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    type="button"
-                    onClick={() => setEditingId(client.id)}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Editar
-                  </Button>
+                  <ActionTooltip text="Edita el nombre de este cliente.">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => setEditingId(client.id)}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Editar
+                    </Button>
+                  </ActionTooltip>
                   <form action={regenerateClientTokenAction}>
                     <input type="hidden" name="clientId" value={client.id} />
-                    <Button type="submit" size="sm" variant="outline">
-                      Regenerar enlace
-                    </Button>
+                    <ActionTooltip text="Genera un nuevo enlace privado para este cliente.">
+                      <Button type="submit" size="sm" variant="outline">
+                        Regenerar enlace
+                      </Button>
+                    </ActionTooltip>
                   </form>
                   <form
                     action={deleteClientAction}
@@ -84,9 +93,11 @@ export function ClientsManager({ clients }: { clients: ClientWithUrl[] }) {
                     }}
                   >
                     <input type="hidden" name="clientId" value={client.id} />
-                    <Button type="submit" size="sm" variant="danger">
-                      <Trash2 className="h-3 w-3" />
-                    </Button>
+                    <ActionTooltip text="Elimina este cliente si no tiene máquinas asociadas." align="right">
+                      <Button type="submit" size="sm" variant="danger">
+                        <Trash2 className="h-3 w-3" />
+                      </Button>
+                    </ActionTooltip>
                   </form>
                 </div>
               </TableCell>

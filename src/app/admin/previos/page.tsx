@@ -9,6 +9,7 @@ import { PreviosManager } from "@/components/admin/previos-manager";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
+import { ActionTooltip } from "@/components/ui/tooltip";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listMachinePrevioRows } from "@/services/previos";
 
@@ -49,12 +50,14 @@ export default async function PreviosPage({
           <h1 className="text-3xl font-bold">Previos</h1>
           <p className="text-sm text-[var(--xt-steel)]">Revisión de cotizaciones y seguimiento de materiales.</p>
         </div>
-        <Button asChild>
-          <Link href="/admin/importar">
-            <Upload className="h-4 w-4" />
-            Importar Excel
-          </Link>
-        </Button>
+        <ActionTooltip text="Importa máquinas y previos desde la plantilla de Excel.">
+          <Button asChild>
+            <Link href="/admin/importar">
+              <Upload className="h-4 w-4" />
+              Importar Excel
+            </Link>
+          </Button>
+        </ActionTooltip>
       </div>
       <div className="mb-5">
         <ExcelImportGuide templateHref="/admin/importar/plantilla" />
