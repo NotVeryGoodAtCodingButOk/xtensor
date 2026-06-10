@@ -37,7 +37,7 @@ type Fixture = {
   }[];
   rows: {
     row: number;
-    cotiNumber: number;
+    placaNumber: number;
     clientName: string;
     equipmentCode: string;
     equipmentName: string;
@@ -214,7 +214,7 @@ async function main() {
     const allDone = r.stages.every((s) => s.completion === 100);
 
     const machineRow = {
-      coti_number: r.cotiNumber,
+      placa_number: r.placaNumber,
       client_id: clientId,
       equipment_id: equipmentId,
       custom_equipment_name: equipmentId ? null : r.equipmentName || "Producto personalizado",
@@ -231,7 +231,7 @@ async function main() {
     const { data: existing, error: selErr } = await supabase
       .from("machines")
       .select("id")
-      .eq("coti_number", r.cotiNumber)
+      .eq("placa_number", r.placaNumber)
       .maybeSingle();
     if (selErr) throw selErr;
 

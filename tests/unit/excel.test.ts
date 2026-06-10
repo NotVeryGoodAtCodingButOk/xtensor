@@ -18,7 +18,7 @@ async function buildQuoteFixture(): Promise<ArrayBuffer> {
   sheet.getCell("B6").value = "ventas@xtensor.co";
 
   // Header row of the line-item table.
-  const header = ["Producto", "Clave", "Descripción", "UNID.", "Descuento", "Impuesto", "P.UNIT.", "Importe", "Coti"];
+  const header = ["Producto", "Clave", "Descripción", "UNID.", "Descuento", "Impuesto", "P.UNIT.", "Importe", "Placa"];
   header.forEach((value, index) => {
     sheet.getCell(11, index + 1).value = value;
   });

@@ -138,7 +138,7 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
 
   const columns: Array<{ header: string; key: string; width: number }> = [
     { header: "Posición", key: "position", width: 10 },
-    { header: "COTI", key: "coti", width: 10 },
+    { header: "PLACA", key: "placa", width: 10 },
     { header: "Cliente", key: "client", width: 26 },
     { header: "Producto", key: "product", width: 30 },
     { header: "Clave", key: "code", width: 12 },
@@ -166,7 +166,7 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
   for (const machine of machines) {
     const row = sheet.addRow({
       position: machine.orderPosition,
-      coti: machine.cotiNumber,
+      placa: machine.placaNumber,
       client: machine.clientName,
       product: machine.equipmentName,
       code: machine.equipmentCode ?? "",
@@ -197,7 +197,7 @@ export async function buildShippedWorkbook(machines: CalculatedMachineView[]): P
   const sheet = workbook.addWorksheet("Despachados");
 
   const columns: Array<{ header: string; key: string; width: number }> = [
-    { header: "COTI", key: "coti", width: 10 },
+    { header: "PLACA", key: "placa", width: 10 },
     { header: "Cliente", key: "client", width: 26 },
     { header: "Producto", key: "product", width: 30 },
     { header: "Clave", key: "code", width: 12 },
@@ -224,7 +224,7 @@ export async function buildShippedWorkbook(machines: CalculatedMachineView[]): P
 
   for (const machine of machines) {
     const row = sheet.addRow({
-      coti: machine.cotiNumber,
+      placa: machine.placaNumber,
       client: machine.clientName,
       product: machine.equipmentName,
       code: machine.equipmentCode ?? "",

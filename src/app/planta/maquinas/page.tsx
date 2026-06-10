@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ChevronRight } from "lucide-react";
-import { changeWorkerAction } from "@/app/planta/actions";
+import { changeWorkerAction, lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
-import { PlantaNav } from "@/components/factory/planta-nav";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
@@ -54,25 +53,37 @@ export default async function FactoryMachinesPage({
     <main className="min-h-screen bg-[var(--xt-paper)]">
       <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages", "colors"]} />
       <header className="sticky top-0 z-10 border-b border-[var(--xt-graphite)]">
-        <PlantaNav />
         <div
-          className="flex flex-wrap items-center justify-between gap-4 px-5 py-4 text-[var(--xt-white)]"
+          className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[var(--xt-white)]"
           style={{ background: workerColor }}
         >
-          <div className="flex items-center gap-5">
+          <div className="flex items-center gap-4">
             <BrandLogo inverse />
-            <div className="border-l border-white/60 pl-4">
-              <p className="xt-eyebrow text-white/80">Operario activo</p>
-              <h1 className="text-2xl font-bold">{worker?.full_name ?? "Operario"}</h1>
+            <div className="border-l border-white/40 pl-4">
+              <p className="xt-eyebrow text-white/70 leading-none mb-0.5">Operario activo</p>
+              <h1 className="text-lg font-bold leading-none">{worker?.full_name ?? "Operario"}</h1>
             </div>
           </div>
-          <form action={changeWorkerAction}>
-            <Button type="submit" variant="outline" size="lg">
-              Cambiar de operario
+          <nav className="flex flex-wrap items-center gap-2">
+            <Button asChild variant="ghost" size="sm" className="text-white hover:text-white hover:bg-white/20">
+              <Link href="/planta/operarios">Operarios</Link>
             </Button>
-          </form>
+            <Button asChild variant="ghost" size="sm" className="text-white hover:text-white hover:bg-white/20">
+              <Link href="/planta/tablero">Cartelera</Link>
+            </Button>
+            <form action={changeWorkerAction}>
+              <Button type="submit" variant="ghost" size="sm" className="text-white hover:text-white hover:bg-white/20">
+                Cambiar operario
+              </Button>
+            </form>
+            <form action={lockFactoryAction}>
+              <Button type="submit" variant="outline" size="sm" className="border-white/30 text-white hover:bg-white/10 hover:text-white">
+                Cerrar sesión
+              </Button>
+            </form>
+          </nav>
         </div>
-        <div className="xt-hazard h-2" style={{ background: workerColor }} />
+        <div className="xt-hazard h-2" />
       </header>
 
       <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
@@ -103,7 +114,7 @@ export default async function FactoryMachinesPage({
                     {machine.clientName} · {machine.colorName ?? "Sin color"}
                   </p>
                   <p className="truncate">
-                    COTI {machine.cotiNumber} · {machine.equipmentCode ?? "Personalizado"}
+                    PLACA {machine.placaNumber} · {machine.equipmentCode ?? "Personalizado"}
                   </p>
                 </div>
 

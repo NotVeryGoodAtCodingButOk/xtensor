@@ -781,7 +781,7 @@
   "rows": [
     {
       "row": 5,
-      "cotiNumber": 3,
+      "placaNumber": 3,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM161",
       "equipmentName": "Rack Sentadilla",
@@ -830,7 +830,7 @@
     },
     {
       "row": 6,
-      "cotiNumber": 10,
+      "placaNumber": 10,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM104",
       "equipmentName": "Banco hombro peso libre",
@@ -881,7 +881,7 @@
     },
     {
       "row": 7,
-      "cotiNumber": 974,
+      "placaNumber": 974,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM104",
       "equipmentName": "Banco hombro peso libre",
@@ -932,7 +932,7 @@
     },
     {
       "row": 8,
-      "cotiNumber": 977,
+      "placaNumber": 977,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM165",
       "equipmentName": "Sentadilla Bulgara",
@@ -983,7 +983,7 @@
     },
     {
       "row": 9,
-      "cotiNumber": 5,
+      "placaNumber": 5,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM108",
       "equipmentName": "banco olimpico plano",
@@ -1034,7 +1034,7 @@
     },
     {
       "row": 10,
-      "cotiNumber": 1,
+      "placaNumber": 1,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -1086,7 +1086,7 @@
     },
     {
       "row": 11,
-      "cotiNumber": 975,
+      "placaNumber": 975,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -1138,7 +1138,7 @@
     },
     {
       "row": 12,
-      "cotiNumber": 976,
+      "placaNumber": 976,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -1190,7 +1190,7 @@
     },
     {
       "row": 13,
-      "cotiNumber": 13,
+      "placaNumber": 13,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM111",
       "equipmentName": "Banco Predicador Libre",
@@ -1241,7 +1241,7 @@
     },
     {
       "row": 14,
-      "cotiNumber": 12,
+      "placaNumber": 12,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM130",
       "equipmentName": "Hammer remo",
@@ -1293,7 +1293,7 @@
     },
     {
       "row": 15,
-      "cotiNumber": 42,
+      "placaNumber": 42,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM162",
       "equipmentName": "Remo en punta",
@@ -1345,7 +1345,7 @@
     },
     {
       "row": 16,
-      "cotiNumber": 32,
+      "placaNumber": 32,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM140",
       "equipmentName": "Pantorrillero",
@@ -1397,7 +1397,7 @@
     },
     {
       "row": 17,
-      "cotiNumber": 2,
+      "placaNumber": 2,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM184",
       "equipmentName": "Prensa Atletica 3.0 lineal",
@@ -1449,7 +1449,7 @@
     },
     {
       "row": 18,
-      "cotiNumber": 4,
+      "placaNumber": 4,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM100",
       "equipmentName": "Abductor Aductor",
@@ -1501,7 +1501,7 @@
     },
     {
       "row": 19,
-      "cotiNumber": 978,
+      "placaNumber": 978,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XC103",
       "equipmentName": "PIVOTE DE BARRA PARA JAULA ",
@@ -1550,7 +1550,7 @@
     },
     {
       "row": 20,
-      "cotiNumber": 979,
+      "placaNumber": 979,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XC101",
       "equipmentName": "Accesorio fondos para jaula",
@@ -1601,7 +1601,7 @@
     },
     {
       "row": 21,
-      "cotiNumber": 980,
+      "placaNumber": 980,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM181",
       "equipmentName": "Jaula de Potencia para peso",
@@ -1654,7 +1654,7 @@
     },
     {
       "row": 22,
-      "cotiNumber": 17,
+      "placaNumber": 17,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM148",
       "equipmentName": "Polea Alta",
@@ -1707,7 +1707,7 @@
     },
     {
       "row": 23,
-      "cotiNumber": 981,
+      "placaNumber": 981,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM185",
       "equipmentName": "Sentadilla Hack  Up  3.0 Lineal",
@@ -1759,7 +1759,7 @@
     },
     {
       "row": 24,
-      "cotiNumber": 28,
+      "placaNumber": 28,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM113",
       "equipmentName": "Crossover clásica",
@@ -1811,7 +1811,7 @@
     },
     {
       "row": 25,
-      "cotiNumber": 16,
+      "placaNumber": 16,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM145",
       "equipmentName": "Peck Deck doble función",
@@ -1864,7 +1864,7 @@
     },
     {
       "row": 26,
-      "cotiNumber": 982,
+      "placaNumber": 982,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM908",
       "equipmentName": "rack mancuernas 2 niveles",
@@ -1913,7 +1913,7 @@
     },
     {
       "row": 27,
-      "cotiNumber": 983,
+      "placaNumber": 983,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM908",
       "equipmentName": "rack mancuernas 2 niveles",
@@ -1962,7 +1962,7 @@
     },
     {
       "row": 28,
-      "cotiNumber": 984,
+      "placaNumber": 984,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM908",
       "equipmentName": "rack mancuernas 2 niveles",
@@ -2013,7 +2013,7 @@
     },
     {
       "row": 29,
-      "cotiNumber": 8,
+      "placaNumber": 8,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM121",
       "equipmentName": "Flexor",
@@ -2066,7 +2066,7 @@
     },
     {
       "row": 30,
-      "cotiNumber": 7,
+      "placaNumber": 7,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM120",
       "equipmentName": "Flexo Extensor",
@@ -2119,7 +2119,7 @@
     },
     {
       "row": 31,
-      "cotiNumber": 9,
+      "placaNumber": 9,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM170",
       "equipmentName": "Sentadilla Smith 2.0",
@@ -2172,7 +2172,7 @@
     },
     {
       "row": 32,
-      "cotiNumber": 29,
+      "placaNumber": 29,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM116",
       "equipmentName": "Elevador de pelvis",
@@ -2227,7 +2227,7 @@
     },
     {
       "row": 33,
-      "cotiNumber": 985,
+      "placaNumber": 985,
       "clientName": "Diosivan Paez",
       "equipmentCode": "XM129",
       "equipmentName": "Hammer pecho plano",
@@ -2283,7 +2283,7 @@
     },
     {
       "row": 34,
-      "cotiNumber": 986,
+      "placaNumber": 986,
       "clientName": "Diosivan Paez",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -2338,7 +2338,7 @@
     },
     {
       "row": 35,
-      "cotiNumber": 987,
+      "placaNumber": 987,
       "clientName": "Camilo Aristizabal",
       "equipmentCode": "XB457",
       "equipmentName": "Pasamanos para parque",
@@ -2400,7 +2400,7 @@
     },
     {
       "row": 36,
-      "cotiNumber": 988,
+      "placaNumber": 988,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb449",
       "equipmentName": "Halon de espalda con discos",
@@ -2461,7 +2461,7 @@
     },
     {
       "row": 37,
-      "cotiNumber": 989,
+      "placaNumber": 989,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb442",
       "equipmentName": "Sentadilla con discos",
@@ -2522,7 +2522,7 @@
     },
     {
       "row": 38,
-      "cotiNumber": 990,
+      "placaNumber": 990,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb437",
       "equipmentName": "Press de pecho con discos",
@@ -2583,7 +2583,7 @@
     },
     {
       "row": 39,
-      "cotiNumber": 991,
+      "placaNumber": 991,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb420",
       "equipmentName": "Dominadas y Fondos bio",
@@ -2644,7 +2644,7 @@
     },
     {
       "row": 40,
-      "cotiNumber": 992,
+      "placaNumber": 992,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb402",
       "equipmentName": "Banco Abdominal doble",
@@ -2705,7 +2705,7 @@
     },
     {
       "row": 41,
-      "cotiNumber": 993,
+      "placaNumber": 993,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb440",
       "equipmentName": "Press de Pierna con discos",
@@ -2766,7 +2766,7 @@
     },
     {
       "row": 42,
-      "cotiNumber": 994,
+      "placaNumber": 994,
       "clientName": "Inversiones aguas BARBOSA SAS",
       "equipmentCode": "xm171",
       "equipmentName": "Sentadilla Smith con Poleas 2.0",
@@ -2826,7 +2826,7 @@
     },
     {
       "row": 43,
-      "cotiNumber": 995,
+      "placaNumber": 995,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb456",
       "equipmentName": "Circuito de calistenia #2",
@@ -2887,7 +2887,7 @@
     },
     {
       "row": 44,
-      "cotiNumber": 996,
+      "placaNumber": 996,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb449",
       "equipmentName": "Halon de espalda con discos",
@@ -2947,7 +2947,7 @@
     },
     {
       "row": 45,
-      "cotiNumber": 997,
+      "placaNumber": 997,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb442",
       "equipmentName": "Sentadilla con discos",
@@ -3008,7 +3008,7 @@
     },
     {
       "row": 46,
-      "cotiNumber": 998,
+      "placaNumber": 998,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb437",
       "equipmentName": "Press de pecho con discos",
@@ -3068,7 +3068,7 @@
     },
     {
       "row": 47,
-      "cotiNumber": 999,
+      "placaNumber": 999,
       "clientName": "Martha",
       "equipmentCode": "xm165",
       "equipmentName": "Sentadilla Bulgara",
@@ -3129,7 +3129,7 @@
     },
     {
       "row": 48,
-      "cotiNumber": 500,
+      "placaNumber": 500,
       "clientName": "Martha",
       "equipmentCode": "xm148",
       "equipmentName": "Polea Alta",
@@ -3189,7 +3189,7 @@
     },
     {
       "row": 49,
-      "cotiNumber": 501,
+      "placaNumber": 501,
       "clientName": "Martha",
       "equipmentCode": "xm145",
       "equipmentName": "Peck Deck doble función",

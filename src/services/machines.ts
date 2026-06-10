@@ -349,7 +349,7 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
   const { data: machine, error: machineError } = await supabase
     .from("machines")
-    .select("id, coti_number, status")
+    .select("id, placa_number, status")
     .eq("id", id)
     .single();
 
@@ -362,7 +362,7 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
   const warrantyEvent: MachineWarrantyEventInsert = {
     machine_id: machine.id,
-    coti_number: machine.coti_number,
+    placa_number: machine.placa_number,
     message: warrantyMessage,
   };
 
@@ -378,7 +378,7 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
   const { error: updateError } = await supabase
     .from("machines")
-    .update({ status: "in_production", shipped_at: null })
+    .update({ status: "in_production", shipped_at: null, completed_at: null })
     .eq("id", machine.id);
 
   if (updateError) {
@@ -386,6 +386,17 @@ export async function sendMachineToWarranty(id: string, message: string) {
       await supabase.from("machine_warranty_events").delete().eq("id", event.id);
     }
     throw new Error(`No se pudo devolver la máquina a producción: ${updateError.message}`);
+  }
+
+  // Reset all stages so the machine re-enters production from scratch.
+  // Done via direct update (no stage_logs) so warranty resets are NOT counted as reprocesos.
+  const { error: resetError } = await supabase
+    .from("machine_stages")
+    .update({ completion: 0, last_worker_id: null, last_updated_at: null })
+    .eq("machine_id", machine.id);
+
+  if (resetError) {
+    throw new Error(`No se pudieron reiniciar las etapas: ${resetError.message}`);
   }
 
   return getMachine(machine.id);
@@ -442,7 +453,7 @@ function mapMachineRow(row: MachineRow): MachineView {
 
   return {
     id: row.id,
-    cotiNumber: row.coti_number,
+    placaNumber: row.placa_number,
     clientId: row.client_id,
     clientName: row.clients?.name ?? "Cliente sin nombre",
     equipmentCode: row.equipment_catalog?.code ?? null,

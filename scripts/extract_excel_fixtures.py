@@ -104,14 +104,14 @@ def main():
     rows = []
     for row_index in range(5, 50):
         row = plan.get(row_index, {})
-        coti = row.get("Q")
-        if not coti:
+        placa = row.get("Q")
+        if not placa:
             continue
 
         rows.append(
             {
                 "row": row_index,
-                "cotiNumber": int(number(coti) or 0),
+                "placaNumber": int(number(placa) or 0),
                 "clientName": row.get("R") or "",
                 "equipmentCode": row.get("S") or "",
                 "equipmentName": row.get("T") or "",

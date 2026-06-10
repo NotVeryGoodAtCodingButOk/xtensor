@@ -39,7 +39,7 @@ export function ExcelImportManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<QuotePreview | null>(null);
   const [clientName, setClientName] = useState("");
-  const [cotiNumber, setCotiNumber] = useState("");
+  const [placaNumber, setPlacaNumber] = useState("");
   const [promisedDate, setPromisedDate] = useState(queueEndDate);
   const [lineState, setLineState] = useState<Record<number, LineState>>({});
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +55,7 @@ export function ExcelImportManager({
         const result = await parseQuoteExcelAction(formData);
         setPreview(result);
         setClientName(result.clientName ?? "");
-        setCotiNumber(result.cotiNumber ? String(result.cotiNumber) : "");
+        setPlacaNumber(result.placaNumber ? String(result.placaNumber) : "");
         setLineState(
           Object.fromEntries(
             result.lines.map((line) => [
@@ -83,9 +83,9 @@ export function ExcelImportManager({
   function handleImport() {
     if (!preview) return;
     setError(null);
-    const coti = Number(cotiNumber);
-    if (!coti || !Number.isFinite(coti)) {
-      setError("Ingresa un número de cotización (COTI) válido.");
+    const placa = Number(placaNumber);
+    if (!placa || !Number.isFinite(placa)) {
+      setError("Ingresa un número de cotización (PLACA) válido.");
       return;
     }
     if (!clientName.trim()) {
@@ -117,7 +117,7 @@ export function ExcelImportManager({
     startImport(async () => {
       try {
         const result = await importQuoteAction({
-          cotiNumber: coti,
+          placaNumber: placa,
           clientName: clientName.trim(),
           promisedDate,
           lines,
@@ -181,8 +181,8 @@ export function ExcelImportManager({
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
               <label className="grid gap-2 text-sm font-medium">
-                COTI
-                <Input value={cotiNumber} onChange={(e) => setCotiNumber(e.target.value)} type="number" />
+                PLACA
+                <Input value={placaNumber} onChange={(e) => setPlacaNumber(e.target.value)} type="number" />
               </label>
               <label className="grid gap-2 text-sm font-medium">
                 Cliente

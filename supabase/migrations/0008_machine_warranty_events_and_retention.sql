@@ -4,7 +4,7 @@ alter table public.settings
 create table if not exists public.machine_warranty_events (
   id uuid primary key default gen_random_uuid(),
   machine_id uuid not null references public.machines(id) on delete cascade,
-  coti_number integer not null,
+  placa_number integer not null,
   message text not null,
   actor_profile_id uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()

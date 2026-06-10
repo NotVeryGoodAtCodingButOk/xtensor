@@ -98,7 +98,7 @@ export default async function FactoryMachineDetailPage({
           <div className="grid gap-1">
             <p className="xt-eyebrow">Detalle de máquina</p>
             <p className="text-lg text-[var(--xt-steel)]">
-              COTI {machine.cotiNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"}
+              PLACA {machine.placaNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"}
             </p>
           </div>
           <h2 className="[font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none md:text-7xl">

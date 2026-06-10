@@ -11,12 +11,12 @@ import type { MachineStatus } from "@/types/database";
 
 export function MachineEditActions({
   machineId,
-  cotiNumber,
+  placaNumber,
   status,
   undoPreviosMove = false,
 }: {
   machineId: string;
-  cotiNumber: number;
+  placaNumber: number;
   status: MachineStatus;
   undoPreviosMove?: boolean;
 }) {
@@ -34,7 +34,7 @@ export function MachineEditActions({
         <form
           action={sendMachineToPreviosAction}
           onSubmit={(event) => {
-            if (!confirm(`¿Enviar COTI ${cotiNumber} a previos?`)) event.preventDefault();
+            if (!confirm(`¿Enviar PLACA ${placaNumber} a previos?`)) event.preventDefault();
           }}
         >
           <input type="hidden" name="machineId" value={machineId} />
@@ -47,7 +47,7 @@ export function MachineEditActions({
       <form
         action={deleteMachineAction}
         onSubmit={(event) => {
-          if (!confirm(`¿Eliminar definitivamente COTI ${cotiNumber}?`)) event.preventDefault();
+          if (!confirm(`¿Eliminar definitivamente PLACA ${placaNumber}?`)) event.preventDefault();
         }}
       >
         <input type="hidden" name="machineId" value={machineId} />

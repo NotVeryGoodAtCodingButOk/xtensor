@@ -96,7 +96,7 @@ export async function createMachineAction(formData: FormData) {
         });
 
   await createMachine({
-    coti_number: Number(formData.get("cotiNumber")),
+    placa_number: Number(formData.get("placaNumber")),
     client_id: client.id,
     equipment_id: equipmentIdInput || equipment?.id || null,
     custom_equipment_name: equipmentIdInput ? null : customEquipmentName,
@@ -117,7 +117,7 @@ export async function updateMachineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
-    coti_number: Number(formData.get("cotiNumber")),
+    placa_number: Number(formData.get("placaNumber")),
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
@@ -136,7 +136,7 @@ export async function updateMachineInlineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
-    coti_number: Number(formData.get("cotiNumber")),
+    placa_number: Number(formData.get("placaNumber")),
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
@@ -456,7 +456,7 @@ export type QuotePreviewLine = ParsedQuoteLine & {
 
 export type QuotePreview = {
   reference: string | null;
-  cotiNumber: number | null;
+  placaNumber: number | null;
   fecha: string | null;
   clientName: string | null;
   lines: QuotePreviewLine[];
@@ -477,11 +477,11 @@ export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePr
   const byCode = new Map(catalog.map((item) => [item.code.trim().toLowerCase(), item]));
 
   const referenceDigits = (quote.reference ?? "").replace(/[^0-9]/g, "");
-  const cotiNumber = referenceDigits ? Number(referenceDigits) : null;
+  const placaNumber = referenceDigits ? Number(referenceDigits) : null;
 
   return {
     reference: quote.reference,
-    cotiNumber: Number.isFinite(cotiNumber) ? cotiNumber : null,
+    placaNumber: Number.isFinite(placaNumber) ? placaNumber : null,
     fecha: quote.fecha,
     clientName: quote.clientName,
     lines: quote.lines.map((line) => {
@@ -506,7 +506,7 @@ export type ImportQuoteLineInput = {
 };
 
 export async function importQuoteAction(input: {
-  cotiNumber: number;
+  placaNumber: number;
   clientName: string;
   promisedDate: string;
   lines: ImportQuoteLineInput[];
@@ -514,8 +514,8 @@ export async function importQuoteAction(input: {
   await requireAdmin();
   const clientName = input.clientName.trim();
   if (!clientName) throw new Error("El cliente es requerido.");
-  if (!input.cotiNumber || !Number.isFinite(input.cotiNumber)) {
-    throw new Error("El número de cotización (COTI) es inválido.");
+  if (!input.placaNumber || !Number.isFinite(input.placaNumber)) {
+    throw new Error("El número de cotización (PLACA) es inválido.");
   }
   if (!input.promisedDate) throw new Error("La fecha prometida es requerida.");
 
@@ -551,7 +551,7 @@ export async function importQuoteAction(input: {
     for (let i = 0; i < units; i += 1) {
       position += 1;
       await createMachine({
-        coti_number: input.cotiNumber,
+        placa_number: input.placaNumber,
         client_id: client.id,
         equipment_id: equipmentId,
         custom_equipment_name: null,
@@ -581,12 +581,12 @@ export async function updateMachineClientAction(formData: FormData) {
   revalidatePath("/admin/previos");
 }
 
-export async function updateMachineCotiAction(formData: FormData) {
+export async function updateMachinePlacaAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
-  const cotiNumber = Number(formData.get("cotiNumber"));
-  if (machineId && Number.isFinite(cotiNumber) && cotiNumber > 0) {
-    await updateMachine(machineId, { coti_number: cotiNumber });
+  const placaNumber = Number(formData.get("placaNumber"));
+  if (machineId && Number.isFinite(placaNumber) && placaNumber > 0) {
+    await updateMachine(machineId, { placa_number: placaNumber });
   }
   revalidateFactoryData();
   revalidatePath("/admin/previos");

@@ -37,7 +37,7 @@ create table if not exists public.workers (
 
 create table if not exists public.machines (
   id uuid primary key default gen_random_uuid(),
-  coti_number integer not null unique,
+  placa_number integer not null unique,
   client_id uuid not null references public.clients(id),
   equipment_id uuid references public.equipment_catalog(id),
   custom_equipment_name text,

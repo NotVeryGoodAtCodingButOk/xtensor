@@ -43,7 +43,7 @@ function filterMachines(machines: CalculatedMachineView[], f: FilterState): Calc
     if (f.search) {
       const q = f.search.toLowerCase();
       const hit =
-        m.cotiNumber.toString().includes(q) ||
+        m.placaNumber.toString().includes(q) ||
         m.clientName.toLowerCase().includes(q) ||
         m.equipmentName.toLowerCase().includes(q) ||
         (m.equipmentCode ?? "").toLowerCase().includes(q);
@@ -202,7 +202,7 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
           <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[var(--xt-aluminum)]" />
           <input
             type="text"
-            placeholder="Coti, cliente, equipo…"
+            placeholder="Placa, cliente, equipo…"
             value={filters.search}
             onChange={(e) => patch({ search: e.target.value })}
             className="h-7 w-48 border border-[var(--xt-cement)] bg-[var(--xt-white)] pl-6 pr-2 text-xs placeholder:text-[var(--xt-aluminum)] focus:border-[var(--xt-black)] focus:outline-none"

@@ -91,17 +91,17 @@ export default async function StatisticsPage({
         <MetricCard
           icon={Timer}
           eyebrow="KPI principal"
-          title="Promedio producción total"
+          title="Tiempo de producción"
           value={formatHours(dashboard.summary.production.averageHours)}
-          detail={`${dashboard.summary.production.count} máquinas completadas · mediana ${formatHours(dashboard.summary.production.medianHours)} · p90 ${formatHours(dashboard.summary.production.p90Hours)}`}
+          detail={`${dashboard.summary.production.count} máquinas · mediana ${formatHours(dashboard.summary.production.medianHours)} · p90 ${formatHours(dashboard.summary.production.p90Hours)} · desde primera tarea hasta Empacar 100%`}
           prominent
         />
         <MetricCard
           icon={Factory}
-          eyebrow="Entrada a producción"
-          title="Tiempo total"
-          value={formatHours(dashboard.summary.production.averageHours)}
-          detail="Desde creación de máquina hasta Empacar 100%."
+          eyebrow="Pedido a terminado"
+          title="Ciclo total"
+          value={formatHours(dashboard.summary.orderToCompletion.averageHours)}
+          detail="Desde creación del pedido hasta Empacar 100%."
         />
         <MetricCard
           icon={Truck}
@@ -171,9 +171,9 @@ export default async function StatisticsPage({
             </div>
             <StatsTable
               empty="No hay garantías en este rango."
-              headers={["COTI", "Cliente", "Equipo", "Mensaje", "Fecha"]}
+              headers={["PLACA", "Cliente", "Equipo", "Mensaje", "Fecha"]}
               rows={dashboard.warrantyEvents.map((event) => [
-                `#${event.cotiNumber}`,
+                `#${event.placaNumber}`,
                 event.clientName,
                 event.equipmentName,
                 event.message,
@@ -215,9 +215,9 @@ export default async function StatisticsPage({
           <CardContent>
             <StatsTable
               empty="No hay etapas abiertas con fecha de inicio."
-              headers={["COTI", "Etapa", "Antigüedad", "Cliente"]}
+              headers={["PLACA", "Etapa", "Antigüedad", "Cliente"]}
               rows={dashboard.currentOpenStages.map((stage) => [
-                `#${stage.cotiNumber}`,
+                `#${stage.placaNumber}`,
                 stage.stageName,
                 formatHours(stage.agingHours),
                 stage.clientName,
@@ -276,13 +276,13 @@ export default async function StatisticsPage({
             <div className="mt-4">
               <StatsTable
                 empty="No hay alertas prioritarias."
-                headers={["COTI", "Máquina", "Detalle"]}
+                headers={["PLACA", "Máquina", "Detalle"]}
                 rows={[
                   ...dashboard.dataQuality.shippedWithoutProductionCompletion,
                   ...dashboard.dataQuality.outOfSequenceStages,
                 ]
                   .slice(0, 8)
-                  .map((issue) => [`#${issue.cotiNumber}`, issue.label, issue.detail])}
+                  .map((issue) => [`#${issue.placaNumber}`, issue.label, issue.detail])}
               />
             </div>
           </CardContent>

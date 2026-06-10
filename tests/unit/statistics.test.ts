@@ -67,7 +67,9 @@ describe("machine timing", () => {
     );
 
     expect(timing.productionCompletedAt).toBe("2026-06-02T09:00:00-05:00");
-    expect(timing.productionHours).toBe(10);
+    expect(timing.productionActualStartAt).toBe("2026-06-01T09:00:00-05:00");
+    expect(timing.productionHours).toBe(9);
+    expect(timing.orderToCompletionHours).toBe(10);
     expect(timing.stages[1].workingHours).toBe(9);
   });
 
@@ -102,7 +104,7 @@ describe("statistics dashboard aggregation", () => {
       machines: [
         machine({
           id: "m1",
-          cotiNumber: 101,
+          placaNumber: 101,
           equipmentName: "Equipo A",
           stages: [
             stage(1, "Material", 1, 100, "2026-06-01T09:00:00-05:00"),
@@ -119,7 +121,7 @@ describe("statistics dashboard aggregation", () => {
         }),
         machine({
           id: "m2",
-          cotiNumber: 102,
+          placaNumber: 102,
           equipmentName: "Equipo B",
           stages: [
             stage(1, "Material", 1, 100, "2026-05-20T09:00:00-05:00"),
@@ -137,7 +139,7 @@ describe("statistics dashboard aggregation", () => {
         {
           id: "w1",
           machineId: "m1",
-          cotiNumber: 101,
+          placaNumber: 101,
           clientName: "Cliente A",
           equipmentName: "Equipo A",
           message: "Puerta desalineada",
@@ -152,7 +154,8 @@ describe("statistics dashboard aggregation", () => {
 
     expect(dashboard.summary.completedMachinesCount).toBe(1);
     expect(dashboard.summary.shippedMachinesCount).toBe(1);
-    expect(dashboard.summary.production.averageHours).toBe(10);
+    expect(dashboard.summary.production.averageHours).toBe(9);
+    expect(dashboard.summary.orderToCompletion.averageHours).toBe(10);
     expect(dashboard.summary.productionToShipment.averageHours).toBe(2);
     expect(dashboard.summary.warrantyCount).toBe(1);
     expect(dashboard.summary.reprocessCount).toBe(1);
@@ -167,7 +170,7 @@ describe("statistics dashboard aggregation", () => {
 function machine(overrides: Partial<MachineTimingInput> = {}): MachineTimingInput {
   return {
     id: "m1",
-    cotiNumber: 100,
+    placaNumber: 100,
     clientName: "Cliente",
     equipmentName: "Equipo",
     line: "PRO",
