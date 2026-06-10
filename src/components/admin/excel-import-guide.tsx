@@ -33,8 +33,8 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
             <p className="font-medium text-[var(--xt-black)]">Bloque superior</p>
             <ul className="grid gap-1">
               <li>
-                <span className="font-medium text-[var(--xt-black)]">A3/B3:</span> Referencia/COTI opcional. Si no
-                viene, el sistema asigna una PLACA automática editable por máquina.
+                <span className="font-medium text-[var(--xt-black)]">A3/B3:</span> Referencia opcional de la
+                cotización.
               </li>
               <li>
                 <span className="font-medium text-[var(--xt-black)]">A4/B4:</span> Fecha
@@ -65,6 +65,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
                     <th className="px-3 py-2">UNID.</th>
                     <th className="px-3 py-2">P.UNIT.</th>
                     <th className="px-3 py-2">Importe</th>
+                    <th className="px-3 py-2">Coti/Placa</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -75,11 +76,13 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
                     <td className="px-3 py-2">1</td>
                     <td className="px-3 py-2">4748100</td>
                     <td className="px-3 py-2">4748100</td>
+                    <td className="px-3 py-2"></td>
                   </tr>
                 </tbody>
               </table>
             </div>
             <p>La columna `Código` debe coincidir con el catálogo para hacer match automático.</p>
+            <p>La columna `Coti` o `Placa` es opcional; si queda vacía, se asigna una PLACA editable por máquina.</p>
             <p>El importador ignora filas vacías y filas de totales con `Suma`, `Subtotal` o `Total`.</p>
             <p>`UNID.` crea una máquina por cada unidad redondeada a entero.</p>
           </div>
@@ -93,9 +96,9 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
             <div>Email       ventas@xtensor.co</div>
             <div>Teléfono    3233437444</div>
             <div className="mt-2 border-t border-[var(--xt-cement)] pt-2">
-              Producto | Código | Descripción | UNID. | P.UNIT. | Importe
+              Producto | Código | Descripción | UNID. | P.UNIT. | Importe | Coti
             </div>
-            <div>Flexo Extensor | XM120 | XM120 - Tren Inferior | 1 | 4748100 | 4748100</div>
+            <div>Flexo Extensor | XM120 | XM120 - Tren Inferior | 1 | 4748100 | 4748100 |</div>
           </div>
           <Button asChild variant="outline" className="w-full">
             <Link href={templateHref}>

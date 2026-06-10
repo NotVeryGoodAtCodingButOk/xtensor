@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  buildAutoMachineRows,
+  buildMachineRows,
   collectUsedPlacasForOtherLines,
-  findAutoPlacaIssue,
+  findPlacaIssue,
   initialLineState,
   resizePlacaNumbers,
 } from "@/components/admin/excel-import-state";
-import type { QuotePreview } from "@/app/admin/actions";
+import type { QuotePreview } from "@/services/quote-preview";
 
 function autoPreview(): QuotePreview {
   return {
@@ -23,6 +23,7 @@ function autoPreview(): QuotePreview {
         clave: "XM105",
         descripcion: "Banco",
         unidades: 2,
+        placaNumber: null,
         pUnitCop: 1400000,
         importeCop: 2800000,
         matchedCatalogId: "catalog-1",
@@ -35,6 +36,7 @@ function autoPreview(): QuotePreview {
         clave: "XM120",
         descripcion: "Flexo",
         unidades: 1,
+        placaNumber: null,
         pUnitCop: 4700000,
         importeCop: 4700000,
         matchedCatalogId: "catalog-2",
@@ -48,7 +50,7 @@ function autoPreview(): QuotePreview {
 describe("excel import preview state", () => {
   it("expands auto-mode quote lines into one row per machine", () => {
     const preview = autoPreview();
-    const rows = buildAutoMachineRows(preview, initialLineState(preview));
+    const rows = buildMachineRows(preview, initialLineState(preview));
 
     expect(rows.map((row) => `${row.rowIndex}:${row.machineIndex}:${row.placaNumber}`)).toEqual([
       "12:0:43",
@@ -70,6 +72,6 @@ describe("excel import preview state", () => {
     const state = initialLineState(preview);
     state[13] = { ...state[13], placaNumbers: [44] };
 
-    expect(findAutoPlacaIssue(preview, state)).toBe("La PLACA 44 está repetida en esta importación.");
+    expect(findPlacaIssue(preview, state)).toBe("La PLACA 44 está repetida en esta importación.");
   });
 });

@@ -20,6 +20,8 @@ export type ParsedQuoteLine = {
   clave: string;
   descripcion: string;
   unidades: number;
+  /** Optional row-level Coti/Placa value from the product table. */
+  placaNumber: number | null;
   /** P.UNIT — unit sale price before tax. */
   pUnitCop: number;
   importeCop: number;
@@ -53,6 +55,7 @@ type ProductTableColumns = {
   unidades: number;
   pUnitCop: number;
   importeCop: number;
+  placaNumber: number | null;
 };
 
 const DEFAULT_PRODUCT_COLUMNS: ProductTableColumns = {
@@ -62,6 +65,7 @@ const DEFAULT_PRODUCT_COLUMNS: ProductTableColumns = {
   unidades: 4,
   pUnitCop: 7,
   importeCop: 8,
+  placaNumber: null,
 };
 
 function normalizeLabel(value: string): string {
@@ -96,6 +100,12 @@ function cellNumber(value: ExcelJS.CellValue): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function cellOptionalNumber(value: ExcelJS.CellValue): number | null {
+  if (!cellString(value)) return null;
+  const parsed = cellNumber(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 function resolveProductColumns(row: ExcelJS.Row): ProductTableColumns {
   const columns = { ...DEFAULT_PRODUCT_COLUMNS };
 
@@ -111,6 +121,7 @@ function resolveProductColumns(row: ExcelJS.Row): ProductTableColumns {
       columns.pUnitCop = colNumber;
     }
     if (label === "importe") columns.importeCop = colNumber;
+    if (label === "coti" || label === "cotizacion" || label === "placa") columns.placaNumber = colNumber;
   });
 
   return columns;
@@ -177,6 +188,9 @@ export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuo
     const descripcion = cellString(row.getCell(columns.descripcion).value);
     const pUnitCop = cellNumber(row.getCell(columns.pUnitCop).value);
     const importeCop = cellNumber(row.getCell(columns.importeCop).value);
+    const placaNumber = columns.placaNumber
+      ? cellOptionalNumber(row.getCell(columns.placaNumber).value)
+      : null;
 
     if (!producto && !clave && !descripcion && !pUnitCop && !importeCop) continue;
     if (!producto && !clave && !pUnitCop && !importeCop) continue;
@@ -188,6 +202,7 @@ export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuo
       clave,
       descripcion,
       unidades,
+      placaNumber,
       pUnitCop,
       importeCop,
     });

@@ -7,12 +7,11 @@ import {
   importQuoteAction,
   parseQuoteExcelAction,
   type ImportQuoteLineInput,
-  type QuotePreview,
 } from "@/app/admin/actions";
 import {
-  buildAutoMachineRows,
+  buildMachineRows,
   collectUsedPlacasForOtherLines,
-  findAutoPlacaIssue,
+  findPlacaIssue,
   getLinePlacaNumbers,
   getLineResolution,
   getLineUnitCount,
@@ -20,6 +19,7 @@ import {
   resizePlacaNumbers,
   type LineState,
 } from "@/components/admin/excel-import-state";
+import type { QuotePreview } from "@/services/quote-preview";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -45,7 +45,6 @@ export function ExcelImportManager({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<QuotePreview | null>(null);
   const [clientName, setClientName] = useState("");
-  const [placaNumber, setPlacaNumber] = useState("");
   const [promisedDate, setPromisedDate] = useState(queueEndDate);
   const [lineState, setLineState] = useState<Record<number, LineState>>({});
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +60,6 @@ export function ExcelImportManager({
         const result = await parseQuoteExcelAction(formData);
         setPreview(result);
         setClientName(result.clientName ?? "");
-        setPlacaNumber(result.placaNumber ? String(result.placaNumber) : "");
         setLineState(initialLineState(result));
       } catch (caught) {
         setError(caught instanceof Error ? caught.message : "No se pudo leer el archivo.");
@@ -79,17 +77,12 @@ export function ExcelImportManager({
     }, 0);
   }, [preview, lineState]);
 
-  const autoMachineRows = useMemo(() => buildAutoMachineRows(preview, lineState), [preview, lineState]);
-  const autoPlacaIssue = useMemo(() => findAutoPlacaIssue(preview, lineState), [preview, lineState]);
+  const machineRows = useMemo(() => buildMachineRows(preview, lineState), [preview, lineState]);
+  const placaIssue = useMemo(() => findPlacaIssue(preview, lineState), [preview, lineState]);
 
   function handleImport() {
     if (!preview) return;
     setError(null);
-    const placa = Number(placaNumber);
-    if (preview.placaMode === "reference" && (!placa || !Number.isFinite(placa))) {
-      setError("Ingresa un número de cotización (PLACA) válido.");
-      return;
-    }
     if (!clientName.trim()) {
       setError("Ingresa el nombre del cliente.");
       return;
@@ -98,8 +91,8 @@ export function ExcelImportManager({
       setError("Selecciona la fecha prometida.");
       return;
     }
-    if (preview.placaMode === "auto" && autoPlacaIssue) {
-      setError(autoPlacaIssue);
+    if (placaIssue) {
+      setError(placaIssue);
       return;
     }
 
@@ -107,10 +100,7 @@ export function ExcelImportManager({
       const state = lineState[line.rowIndex];
       const resolution = getLineResolution(line, state);
       const units = getLineUnitCount(line, state);
-      const placaNumbers =
-        preview.placaMode === "reference"
-          ? Array.from({ length: units }, () => placa)
-          : getLinePlacaNumbers(line, state);
+      const placaNumbers = getLinePlacaNumbers(line, state);
       const base = {
         producto: line.producto || line.clave,
         unidades: units,
@@ -129,7 +119,7 @@ export function ExcelImportManager({
     startImport(async () => {
       try {
         const result = await importQuoteAction({
-          placaMode: preview.placaMode,
+          placaMode: "auto",
           clientName: clientName.trim(),
           promisedDate,
           lines,
@@ -256,19 +246,12 @@ export function ExcelImportManager({
               <CardTitle>Datos de la cotización</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
-              {preview.placaMode === "reference" ? (
-                <label className="grid gap-2 text-sm font-medium">
-                  PLACA
-                  <Input value={placaNumber} onChange={(e) => setPlacaNumber(e.target.value)} type="number" />
-                </label>
-              ) : (
-                <div className="grid gap-2 text-sm font-medium">
-                  PLACA
-                  <div className="rounded-[2px] border border-[var(--xt-cement)] bg-[var(--xt-yellow-soft)] px-3 py-2 text-sm font-normal text-[var(--xt-black)]">
-                    Sin COTI detectada. Se asignó una PLACA por máquina; edítalas fila por fila en la tabla.
-                  </div>
+              <div className="grid gap-2 text-sm font-medium">
+                PLACA
+                <div className="rounded-[2px] border border-[var(--xt-cement)] bg-[var(--xt-yellow-soft)] px-3 py-2 text-sm font-normal text-[var(--xt-black)]">
+                  Se asignó una PLACA por máquina; edítalas fila por fila en la tabla.
                 </div>
-              )}
+              </div>
               <label className="grid gap-2 text-sm font-medium">
                 Cliente
                 <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
@@ -288,139 +271,95 @@ export function ExcelImportManager({
               <CardTitle>Líneas ({totalMachines} máquinas)</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
-              {autoPlacaIssue ? (
+              {placaIssue ? (
                 <div className="rounded-[2px] border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-700">
-                  {autoPlacaIssue}
+                  {placaIssue}
                 </div>
               ) : null}
 
               <div className="overflow-x-auto">
-                {preview.placaMode === "auto" ? (
-                  <Table className="min-w-[920px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Producto</TableHead>
-                        <TableHead>Código</TableHead>
-                        <TableHead className="w-24">Unidad</TableHead>
-                        <TableHead className="w-36">PLACA</TableHead>
-                        <TableHead className="text-right">P.UNIT.</TableHead>
-                        <TableHead className="w-72">Acción</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {preview.lines.flatMap((line) => {
-                        const state = lineState[line.rowIndex];
-                        const resolution = getLineResolution(line, state);
-                        const unitCount = getLineUnitCount(line, state);
-                        const rows = autoMachineRows.filter((row) => row.rowIndex === line.rowIndex);
+                <Table className="min-w-[920px]">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Producto</TableHead>
+                      <TableHead>Código</TableHead>
+                      <TableHead className="w-24">Unidad</TableHead>
+                      <TableHead className="w-36">PLACA</TableHead>
+                      <TableHead className="text-right">P.UNIT.</TableHead>
+                      <TableHead className="w-72">Acción</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {preview.lines.flatMap((line) => {
+                      const state = lineState[line.rowIndex];
+                      const resolution = getLineResolution(line, state);
+                      const unitCount = getLineUnitCount(line, state);
+                      const rows = machineRows.filter((row) => row.rowIndex === line.rowIndex);
 
-                        return rows.map((row) => (
-                          <TableRow
-                            key={`${line.rowIndex}-${row.machineIndex}`}
-                            className={resolution === "skip" ? "opacity-60" : undefined}
-                          >
-                            {row.machineIndex === 0 ? (
-                              <TableCell rowSpan={unitCount} className="min-w-[240px] align-top">
-                                <div className="grid gap-2">
-                                  <div>
-                                    <span className="font-medium">{line.producto || "—"}</span>
-                                    {!line.matchedCatalogId ? (
-                                      <span className="ml-2 rounded-[2px] bg-[var(--xt-yellow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
-                                        sin catálogo
-                                      </span>
-                                    ) : null}
-                                  </div>
-                                  <label className="flex items-center gap-2 text-xs font-medium text-[var(--xt-steel)]">
-                                    UNID.
-                                    <Input
-                                      type="number"
-                                      min="1"
-                                      value={state?.unidades ?? line.unidades}
-                                      onChange={(e) => updateLineUnits(line, Number(e.target.value))}
-                                      className="h-8 w-20"
-                                    />
-                                  </label>
+                      return rows.map((row) => (
+                        <TableRow
+                          key={`${line.rowIndex}-${row.machineIndex}`}
+                          className={resolution === "skip" ? "opacity-60" : undefined}
+                        >
+                          {row.machineIndex === 0 ? (
+                            <TableCell rowSpan={unitCount} className="min-w-[240px] align-top">
+                              <div className="grid gap-2">
+                                <div>
+                                  <span className="font-medium">{line.producto || "—"}</span>
+                                  {!line.matchedCatalogId ? (
+                                    <span className="ml-2 rounded-[2px] bg-[var(--xt-yellow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
+                                      sin catálogo
+                                    </span>
+                                  ) : null}
                                 </div>
-                              </TableCell>
-                            ) : null}
-                            {row.machineIndex === 0 ? (
-                              <TableCell rowSpan={unitCount} className="align-top text-[var(--xt-steel)]">
-                                {line.clave || "—"}
-                              </TableCell>
-                            ) : null}
-                            <TableCell className="tabular-nums">
-                              {row.machineIndex + 1} / {unitCount}
+                                <label className="flex items-center gap-2 text-xs font-medium text-[var(--xt-steel)]">
+                                  UNID.
+                                  <Input
+                                    type="number"
+                                    min="1"
+                                    value={state?.unidades ?? line.unidades}
+                                    onChange={(e) => updateLineUnits(line, Number(e.target.value))}
+                                    className="h-8 w-20"
+                                  />
+                                </label>
+                              </div>
                             </TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min="1"
-                                max="999"
-                                value={row.placaNumber}
-                                disabled={resolution === "skip"}
-                                onChange={(e) => updateLinePlacaNumber(line, row.machineIndex, Number(e.target.value))}
-                                className="h-9"
-                                aria-label={`PLACA ${row.machineIndex + 1} para ${line.producto || line.clave}`}
-                              />
+                          ) : null}
+                          {row.machineIndex === 0 ? (
+                            <TableCell rowSpan={unitCount} className="align-top text-[var(--xt-steel)]">
+                              {line.clave || "—"}
                             </TableCell>
-                            {row.machineIndex === 0 ? (
-                              <TableCell rowSpan={unitCount} className="align-top text-right tabular-nums">
-                                {peso.format(line.pUnitCop)}
-                              </TableCell>
-                            ) : null}
-                            {row.machineIndex === 0 ? (
-                              <TableCell rowSpan={unitCount} className="align-top">
-                                {renderResolutionSelect(line, resolution)}
-                              </TableCell>
-                            ) : null}
-                          </TableRow>
-                        ));
-                      })}
-                    </TableBody>
-                  </Table>
-                ) : (
-                  <Table className="min-w-[760px]">
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Producto</TableHead>
-                        <TableHead>Código</TableHead>
-                        <TableHead className="w-20">UNID.</TableHead>
-                        <TableHead className="text-right">P.UNIT.</TableHead>
-                        <TableHead className="w-72">Acción</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {preview.lines.map((line) => {
-                        const state = lineState[line.rowIndex];
-                        const resolution = getLineResolution(line, state);
-                        return (
-                          <TableRow key={line.rowIndex}>
-                            <TableCell>
-                              <span className="font-medium">{line.producto || "—"}</span>
-                              {!line.matchedCatalogId ? (
-                                <span className="ml-2 rounded-[2px] bg-[var(--xt-yellow)] px-1.5 py-0.5 text-[10px] font-semibold uppercase">
-                                  sin catálogo
-                                </span>
-                              ) : null}
+                          ) : null}
+                          <TableCell className="tabular-nums">
+                            {row.machineIndex + 1} / {unitCount}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              min="1"
+                              max="999"
+                              value={row.placaNumber}
+                              disabled={resolution === "skip"}
+                              onChange={(e) => updateLinePlacaNumber(line, row.machineIndex, Number(e.target.value))}
+                              className="h-9"
+                              aria-label={`PLACA ${row.machineIndex + 1} para ${line.producto || line.clave}`}
+                            />
+                          </TableCell>
+                          {row.machineIndex === 0 ? (
+                            <TableCell rowSpan={unitCount} className="align-top text-right tabular-nums">
+                              {peso.format(line.pUnitCop)}
                             </TableCell>
-                            <TableCell className="text-[var(--xt-steel)]">{line.clave || "—"}</TableCell>
-                            <TableCell>
-                              <Input
-                                type="number"
-                                min="1"
-                                value={state?.unidades ?? line.unidades}
-                                onChange={(e) => updateLineUnits(line, Number(e.target.value))}
-                                className="h-9"
-                              />
+                          ) : null}
+                          {row.machineIndex === 0 ? (
+                            <TableCell rowSpan={unitCount} className="align-top">
+                              {renderResolutionSelect(line, resolution)}
                             </TableCell>
-                            <TableCell className="text-right tabular-nums">{peso.format(line.pUnitCop)}</TableCell>
-                            <TableCell>{renderResolutionSelect(line, resolution)}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
-                )}
+                          ) : null}
+                        </TableRow>
+                      ));
+                    })}
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>

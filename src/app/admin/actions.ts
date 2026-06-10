@@ -38,8 +38,9 @@ import {
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
-import { parseQuoteWorkbook, type ParsedQuoteLine } from "@/services/excel";
-import { AUTO_PLACA_MAX, generateSequentialPlacaNumbers, listActivePlacaNumbers, normalizePlacaNumber } from "@/services/placas";
+import { parseQuoteWorkbook } from "@/services/excel";
+import { buildQuotePreview, type QuotePreview, type QuotePreviewLine } from "@/services/quote-preview";
+import { AUTO_PLACA_MAX, listActivePlacaNumbers, normalizePlacaNumber } from "@/services/placas";
 import {
   addMachinePrevio,
   addEquipmentPrevio,
@@ -457,21 +458,7 @@ export async function deleteHolidayAction(formData: FormData) {
   redirect("/admin/configuracion");
 }
 
-export type QuotePreviewLine = ParsedQuoteLine & {
-  /** Catalog id matched by exact code ("Clave"), if any. */
-  matchedCatalogId: string | null;
-  matchedCatalogName: string | null;
-  placaNumbers: number[];
-};
-
-export type QuotePreview = {
-  reference: string | null;
-  placaNumber: number | null;
-  placaMode: "reference" | "auto";
-  fecha: string | null;
-  clientName: string | null;
-  lines: QuotePreviewLine[];
-};
+export type { QuotePreview, QuotePreviewLine };
 
 export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePreview> {
   await requireAdmin();
@@ -486,36 +473,7 @@ export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePr
     listActivePlacaNumbers(),
   ]);
 
-  const byCode = new Map(catalog.map((item) => [item.code.trim().toLowerCase(), item]));
-
-  const referenceDigits = (quote.reference ?? "").replace(/[^0-9]/g, "");
-  const placaNumber = normalizePlacaNumber(referenceDigits);
-  const totalUnits = quote.lines.reduce((sum, line) => sum + Math.max(1, Math.round(line.unidades) || 1), 0);
-  const autoPlacaNumbers = placaNumber ? [] : generateSequentialPlacaNumbers(activePlacaNumbers, totalUnits);
-  let autoPlacaIndex = 0;
-
-  return {
-    reference: quote.reference,
-    placaNumber,
-    placaMode: placaNumber ? "reference" : "auto",
-    fecha: quote.fecha,
-    clientName: quote.clientName,
-    lines: quote.lines.map((line) => {
-      const match = byCode.get(line.clave.trim().toLowerCase()) ?? null;
-      const units = Math.max(1, Math.round(line.unidades) || 1);
-      const placaNumbers = placaNumber
-        ? Array.from({ length: units }, () => placaNumber)
-        : autoPlacaNumbers.slice(autoPlacaIndex, autoPlacaIndex + units);
-      autoPlacaIndex += placaNumber ? 0 : units;
-
-      return {
-        ...line,
-        placaNumbers,
-        matchedCatalogId: match?.id ?? null,
-        matchedCatalogName: match ? `${match.code} · ${match.name}` : null,
-      };
-    }),
-  };
+  return buildQuotePreview({ quote, catalog, activePlacaNumbers });
 }
 
 export type ImportQuoteLineInput = {
@@ -530,7 +488,7 @@ export type ImportQuoteLineInput = {
 };
 
 export async function importQuoteAction(input: {
-  placaMode: "reference" | "auto";
+  placaMode: "auto";
   clientName: string;
   promisedDate: string;
   lines: ImportQuoteLineInput[];
@@ -545,7 +503,7 @@ export async function importQuoteAction(input: {
     throw new Error("No hay líneas seleccionadas para importar.");
   }
 
-  const activePlacaNumbers = input.placaMode === "auto" ? await listActivePlacaNumbers() : [];
+  const activePlacaNumbers = await listActivePlacaNumbers();
   const unavailablePlacas = new Set(activePlacaNumbers);
   const placasInImport = new Set<number>();
   for (const line of importable) {
@@ -559,18 +517,16 @@ export async function importQuoteAction(input: {
       if (!placaNumber) {
         throw new Error(`La PLACA de "${line.producto}" es inválida.`);
       }
-      if (input.placaMode === "auto") {
-        if (placaNumber > AUTO_PLACA_MAX) {
-          throw new Error(`La PLACA ${placaNumber} supera el máximo automático de ${AUTO_PLACA_MAX}.`);
-        }
-        if (unavailablePlacas.has(placaNumber)) {
-          throw new Error(`La PLACA ${placaNumber} ya está activa. Elige otra antes de importar.`);
-        }
-        if (placasInImport.has(placaNumber)) {
-          throw new Error(`La PLACA ${placaNumber} está repetida en esta importación.`);
-        }
-        placasInImport.add(placaNumber);
+      if (placaNumber > AUTO_PLACA_MAX) {
+        throw new Error(`La PLACA ${placaNumber} supera el máximo automático de ${AUTO_PLACA_MAX}.`);
       }
+      if (unavailablePlacas.has(placaNumber)) {
+        throw new Error(`La PLACA ${placaNumber} ya está activa. Elige otra antes de importar.`);
+      }
+      if (placasInImport.has(placaNumber)) {
+        throw new Error(`La PLACA ${placaNumber} está repetida en esta importación.`);
+      }
+      placasInImport.add(placaNumber);
     }
   }
 

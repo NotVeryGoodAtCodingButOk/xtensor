@@ -1,4 +1,4 @@
-import type { QuotePreview } from "@/app/admin/actions";
+import type { QuotePreview } from "@/services/quote-preview";
 
 export const IMPORT_AUTO_PLACA_MAX = 999;
 
@@ -10,7 +10,7 @@ export type LineState = {
 
 type PreviewLine = QuotePreview["lines"][number];
 
-export type AutoMachinePreviewRow = {
+export type MachinePreviewRow = {
   line: PreviewLine;
   rowIndex: number;
   machineIndex: number;
@@ -90,11 +90,11 @@ export function getLinePlacaNumbers(
   return resizePlacaNumbers(state?.placaNumbers ?? line.placaNumbers, getLineUnitCount(line, state), usedByOtherLines);
 }
 
-export function buildAutoMachineRows(
+export function buildMachineRows(
   preview: QuotePreview | null,
   lineState: Record<number, LineState>,
-): AutoMachinePreviewRow[] {
-  if (!preview || preview.placaMode !== "auto") return [];
+): MachinePreviewRow[] {
+  if (!preview) return [];
 
   return preview.lines.flatMap((line) => {
     const state = lineState[line.rowIndex];
@@ -113,8 +113,8 @@ export function buildAutoMachineRows(
   });
 }
 
-export function findAutoPlacaIssue(preview: QuotePreview | null, lineState: Record<number, LineState>) {
-  if (!preview || preview.placaMode !== "auto") return null;
+export function findPlacaIssue(preview: QuotePreview | null, lineState: Record<number, LineState>) {
+  if (!preview) return null;
 
   const seen = new Set<number>();
   for (const line of preview.lines) {

@@ -54,6 +54,7 @@ describe("parseQuoteWorkbook", () => {
       producto: "Flexo Extensor",
       clave: "XM120",
       unidades: 1,
+      placaNumber: null,
       pUnitCop: 4748100,
     });
     expect(quote.lines[1]).toMatchObject({
@@ -76,6 +77,31 @@ describe("parseQuoteWorkbook", () => {
 
     expect(quote.reference).toBeNull();
     expect(quote.lines).toHaveLength(2);
+  });
+
+  it("extracts optional row-level Coti/Placa values from the product table", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Cotizacion");
+    ["Producto", "Clave", "Descripción", "UNID.", "Descuento", "Impuesto", "P.UNIT.", "Importe", "Coti"].forEach(
+      (value, index) => {
+        sheet.getCell(3, index + 1).value = value;
+      },
+    );
+    sheet.getCell("A4").value = "Flexo Extensor";
+    sheet.getCell("B4").value = "XM120";
+    sheet.getCell("D4").value = 1;
+    sheet.getCell("G4").value = 4748100;
+    sheet.getCell("H4").value = 4748100;
+    sheet.getCell("I4").value = 51;
+    sheet.getCell("A5").value = "Banco Multifunción";
+    sheet.getCell("B5").value = "XM105";
+    sheet.getCell("D5").value = 2;
+    sheet.getCell("G5").value = 1416100;
+    sheet.getCell("H5").value = 2832200;
+
+    const quote = await parseQuoteWorkbook((await workbook.xlsx.writeBuffer()) as ArrayBuffer);
+
+    expect(quote.lines.map((line) => line.placaNumber)).toEqual([51, null]);
   });
 
   it("skips blank and total rows while continuing through the worksheet", async () => {
