@@ -233,6 +233,7 @@ export type Database = {
           shipped_at: string | null;
           production_started_at: string | null;
           completed_at: string | null;
+          is_reproceso: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -253,6 +254,7 @@ export type Database = {
           shipped_at?: string | null;
           production_started_at?: string | null;
           completed_at?: string | null;
+          is_reproceso?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -273,6 +275,7 @@ export type Database = {
           shipped_at?: string | null;
           production_started_at?: string | null;
           completed_at?: string | null;
+          is_reproceso?: boolean;
           created_at?: string;
           updated_at?: string;
         };

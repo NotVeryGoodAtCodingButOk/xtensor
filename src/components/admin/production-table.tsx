@@ -363,11 +363,12 @@ export function ProductionTable({
         <TableBody>
           {machines.map((machine) => {
             const isLate   = machine.estimatedDate > machine.promisedDate;
+            const isRework = !shipped && (machine.isReproceso || machine.isWarranty);
             const rowColor = colorRows ? getMachineRowColor(machine.colorName) : null;
             return (
               <TableRow
                 key={machine.id}
-                style={rowColor ? { backgroundColor: rowColor } : undefined}
+                style={rowColor ? { backgroundColor: rowColor } : isRework ? { backgroundColor: "rgb(254 242 242)" } : undefined}
               >
                 {selectable && (
                   <TableCell className="px-2">

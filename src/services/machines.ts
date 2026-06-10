@@ -25,6 +25,7 @@ type MachineRow = Database["public"]["Tables"]["machines"]["Row"] & {
       workers: Database["public"]["Tables"]["workers"]["Row"] | null;
     }
   >;
+  machine_warranty_events: Array<Pick<Database["public"]["Tables"]["machine_warranty_events"]["Row"], "id">>;
 };
 
 const MACHINE_SELECT = `
@@ -36,7 +37,8 @@ const MACHINE_SELECT = `
     *,
     stages(*),
     workers(*)
-  )
+  ),
+  machine_warranty_events(id)
 `;
 
 export async function listMachines(
@@ -439,7 +441,7 @@ export async function bulkMarkShipped(ids: string[]) {
 }
 
 export async function sendFinishedToProduction(id: string) {
-  return updateMachine(id, { status: "in_production", completed_at: null });
+  return updateMachine(id, { status: "in_production", completed_at: null, is_reproceso: true });
 }
 
 function mapMachineRow(row: MachineRow): MachineView {
@@ -476,6 +478,8 @@ function mapMachineRow(row: MachineRow): MachineView {
     shippedAt: row.shipped_at,
     productionStartedAt: row.production_started_at,
     completedAt: row.completed_at,
+    isReproceso: row.is_reproceso,
+    isWarranty: row.machine_warranty_events.length > 0,
     stages,
   };
 }

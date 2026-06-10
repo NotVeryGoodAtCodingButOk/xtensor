@@ -27,6 +27,8 @@ export type MachineView = {
   shippedAt: string | null;
   productionStartedAt: string | null;
   completedAt: string | null;
+  isReproceso: boolean;
+  isWarranty: boolean;
   stages: StageView[];
 };
 
