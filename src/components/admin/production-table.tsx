@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Pencil, Truck } from "lucide-react";
+import { Pencil, Trash2, Truck } from "lucide-react";
 import {
   updateMachineInlineAction,
   markShippedAction,
@@ -308,6 +308,7 @@ export function ProductionTable({
   onSort,
   selectedIds,
   onToggle,
+  onDeleteShipped,
 }: {
   machines: CalculatedMachineView[];
   shipped?: boolean;
@@ -316,6 +317,7 @@ export function ProductionTable({
   onSort?: (key: SortKey) => void;
   selectedIds?: Set<string>;
   onToggle?: (id: string) => void;
+  onDeleteShipped?: (id: string) => void;
 }) {
   const sortable = !!onSort;
   const selectable = !!onToggle && !!selectedIds;
@@ -538,7 +540,19 @@ export function ProductionTable({
                       </Link>
                     )}
                     {shipped ? (
-                      <WarrantyButton machineId={machine.id} />
+                      <>
+                        <WarrantyButton machineId={machine.id} />
+                        {onDeleteShipped && (
+                          <button
+                            type="button"
+                            title="Eliminar"
+                            onClick={() => onDeleteShipped(machine.id)}
+                            className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-red-300 bg-red-50 text-red-600 hover:bg-red-100"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </button>
+                        )}
+                      </>
                     ) : (
                       <form action={markShippedAction}>
                         <input type="hidden" name="machineId" value={machine.id} />

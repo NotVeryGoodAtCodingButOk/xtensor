@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
-import { ProductionTable } from "@/components/admin/production-table";
+import { DespachadosTablePanel } from "@/components/admin/despachados-table-panel";
 
 export const metadata: Metadata = { title: "Despachados XTENSOR" };
 import { hasSupabaseConfig } from "@/lib/env";
@@ -36,7 +36,7 @@ export default async function ShippedPage() {
           Histórico de despachos recientes. Se muestran los últimos {settings.shippedRetentionDays} días.
         </p>
       </div>
-      <ProductionTable machines={machines} shipped />
+      <DespachadosTablePanel machines={machines} />
     </AdminShell>
   );
 }

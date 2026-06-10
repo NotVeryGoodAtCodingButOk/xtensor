@@ -608,6 +608,16 @@ export async function bulkMarkShippedAction(formData: FormData) {
   redirect(`/admin?toast=shipped&count=${machineIds.length || 1}`);
 }
 
+export async function bulkDeleteMachinesAction(formData: FormData) {
+  await requireAdmin();
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  for (const id of machineIds) {
+    await deleteMachine(id);
+  }
+  revalidateFactoryData();
+  redirect(`/admin/despachados?toast=deleted&count=${machineIds.length}`);
+}
+
 export async function bulkDespacharTerminadosAction(formData: FormData) {
   await requireAdmin();
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
