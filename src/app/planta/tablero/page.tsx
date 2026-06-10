@@ -50,7 +50,7 @@ export default async function FactoryBoardPage() {
         <div className="xt-hazard h-2" />
         <div className="flex flex-wrap items-center justify-between gap-4 px-8 py-5">
           <div>
-            <p className="xt-eyebrow text-white/70">Estado de producción</p>
+            <p className="xt-eyebrow xt-eyebrow-light">Estado de producción</p>
             <h1 className="[font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none">
               Cartelera
             </h1>
@@ -58,7 +58,7 @@ export default async function FactoryBoardPage() {
           <div className="flex items-center gap-8 text-right">
             <div>
               <p className="text-5xl font-bold tabular-nums leading-none">{orderedMachines.length}</p>
-              <p className="xt-eyebrow text-white/70">En producción</p>
+              <p className="xt-eyebrow xt-eyebrow-light">En producción</p>
             </div>
             <div className={cn(lateCount > 0 && "xt-flash-late rounded-[4px] px-3 py-1")}>
               <p
@@ -69,7 +69,7 @@ export default async function FactoryBoardPage() {
               >
                 {lateCount}
               </p>
-              <p className="xt-eyebrow text-white/70">Atrasadas</p>
+              <p className="xt-eyebrow xt-eyebrow-light">Atrasadas</p>
             </div>
           </div>
         </div>

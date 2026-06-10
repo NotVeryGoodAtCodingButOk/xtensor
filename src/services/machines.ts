@@ -328,6 +328,8 @@ export async function markMachineShipped(id: string) {
 }
 
 export async function unmarkMachineShipped(id: string) {
+  const supabase = createSupabaseAdminClient();
+  await ensureMachineStages(supabase, [id]);
   const machine = await updateMachine(id, {
     status: "in_production",
     shipped_at: null,
@@ -347,6 +349,8 @@ export async function sendMachineToPrevios(id: string) {
 
 export async function sendMachineToProduction(id: string) {
   const supabase = createSupabaseAdminClient();
+  await ensureMachineStages(supabase, [id]);
+
   // Stamp the production start the first time the machine enters production,
   // preserving the original date if it ever bounces back and forth.
   const { error: startError } = await supabase
@@ -432,6 +436,8 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
 export async function bulkSendToProduction(ids: string[]) {
   const supabase = createSupabaseAdminClient();
+  await ensureMachineStages(supabase, ids);
+
   // Stamp production start only for machines that don't have one yet.
   const { error: startError } = await supabase
     .from("machines")
@@ -464,9 +470,33 @@ export async function bulkMarkShipped(ids: string[]) {
 }
 
 export async function sendFinishedToProduction(id: string) {
+  const supabase = createSupabaseAdminClient();
+  await ensureMachineStages(supabase, [id]);
   const machine = await updateMachine(id, { status: "in_production", completed_at: null, is_reproceso: true });
   await normalizeProductionQueue();
   return machine;
+}
+
+async function ensureMachineStages(supabase: ReturnType<typeof createSupabaseAdminClient>, machineIds: string[]) {
+  const uniqueMachineIds = [...new Set(machineIds.filter(Boolean))];
+  if (uniqueMachineIds.length === 0) {
+    return;
+  }
+
+  const stageRows = uniqueMachineIds.flatMap((machineId) =>
+    DEFAULT_STAGES.map((stage) => ({
+      machine_id: machineId,
+      stage_id: stage.id,
+      completion: 0,
+    })),
+  );
+  const { error } = await supabase
+    .from("machine_stages")
+    .upsert(stageRows, { onConflict: "machine_id,stage_id", ignoreDuplicates: true });
+
+  if (error) {
+    throw new Error(`No se pudieron preparar las etapas de producción: ${error.message}`);
+  }
 }
 
 function mapMachineRow(row: MachineRow): MachineView {

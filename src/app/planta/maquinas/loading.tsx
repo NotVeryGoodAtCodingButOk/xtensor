@@ -12,7 +12,7 @@ export default function FactoryMachinesLoading() {
         <div className="xt-hazard h-2" />
       </div>
 
-      <div className="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-3">
+      <div className="grid gap-4 p-5 xl:grid-cols-2 2xl:grid-cols-3">
         {Array.from({ length: 6 }).map((_, index) => (
           <div key={index} className="min-h-[230px] border border-[var(--xt-black)] bg-[var(--xt-white)] p-5 shadow-[var(--shadow-sm)]">
             <div className="grid h-full gap-4">

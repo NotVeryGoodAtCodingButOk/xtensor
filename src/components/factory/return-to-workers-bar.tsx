@@ -27,10 +27,10 @@ export function ReturnToWorkersBar({ continueHref }: { continueHref: string }) {
         <div className="h-full origin-left animate-[xt-countdown_20s_linear_forwards] bg-[var(--xt-yellow)]" />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <span className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold">
+        <span className="min-w-0 [font-family:var(--font-barlow-condensed)] text-xl font-bold leading-tight md:text-2xl">
           Registro guardado. Volveremos a seleccionar operario en 20 segundos.
         </span>
-        <Button asChild size="lg" onClick={() => setIsVisible(false)}>
+        <Button asChild size="lg" className="shrink-0" onClick={() => setIsVisible(false)}>
           <Link href={continueHref}>Continuar registrando</Link>
         </Button>
       </div>

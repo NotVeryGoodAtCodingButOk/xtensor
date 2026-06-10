@@ -111,6 +111,10 @@ select {
   text-transform: uppercase;
 }
 
+.xt-eyebrow-light {
+  color: rgba(255, 255, 255, 0.72);
+}
+
 .xt-hazard {
   background: repeating-linear-gradient(135deg, var(--xt-black) 0 14px, var(--xt-yellow) 14px 28px);
 }

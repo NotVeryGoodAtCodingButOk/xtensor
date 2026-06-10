@@ -21,7 +21,7 @@ export function WorkerPicker({ workers }: { workers: WorkerCard[] }) {
   }, [router, workers]);
 
   return (
-    <div className="grid grid-cols-2 gap-5 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
       {workers.map((worker) => (
         <Link
           key={worker.id}
@@ -34,13 +34,13 @@ export function WorkerPicker({ workers }: { workers: WorkerCard[] }) {
               keepalive: true,
             });
           }}
-          className="flex h-[200px] w-full flex-col justify-end border border-[var(--xt-black)] p-6 text-left text-white shadow-[var(--shadow-stamp)] transition-transform duration-200 ease-[var(--ease-snap)] active:translate-y-px active:shadow-none"
+          className="flex min-h-[180px] w-full flex-col justify-end border border-[var(--xt-black)] p-5 text-left text-white shadow-[var(--shadow-stamp)] transition-transform duration-200 ease-[var(--ease-snap)] active:translate-y-px active:shadow-none md:min-h-[180px] md:p-6 xl:min-h-[200px]"
           style={{ background: worker.display_color ?? "var(--xt-black)" }}
         >
-          <span className="[font-family:var(--font-barlow-condensed)] text-3xl font-bold leading-tight">
+          <span className="[font-family:var(--font-barlow-condensed)] text-2xl font-bold leading-tight break-words lg:text-3xl">
             {worker.full_name}
           </span>
-          <span className="mt-2 text-lg opacity-90">{worker.role}</span>
+          <span className="mt-2 text-lg leading-snug opacity-90">{worker.role}</span>
         </Link>
       ))}
     </div>
