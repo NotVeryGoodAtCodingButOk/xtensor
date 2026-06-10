@@ -176,6 +176,17 @@ export async function updateCatalogItem(
   return data;
 }
 
+export async function deleteCatalogItem(id: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("equipment_catalog").delete().eq("id", id);
+  if (error) {
+    if (error.code === "23503") {
+      throw new Error("No se puede eliminar este equipo porque tiene máquinas asociadas.");
+    }
+    throw new Error(`No se pudo eliminar el equipo: ${error.message}`);
+  }
+}
+
 export async function createHoliday(date: string, name: string) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("holidays").insert({ date, name, is_custom: true }).select("*").single();

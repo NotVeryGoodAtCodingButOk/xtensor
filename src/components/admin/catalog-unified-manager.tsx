@@ -5,6 +5,7 @@ import { Check, ChevronDown, ChevronUp, Plus, Trash2, X } from "lucide-react";
 import {
   addCatalogItemAction,
   addPrevioCatalogItemAction,
+  deleteCatalogItemAction,
   deletePrevioCatalogItemAction,
   toggleEquipmentPrevioAction,
   updateCatalogItemAction,
@@ -67,35 +68,50 @@ function EditPanel({
       <TableCell colSpan={6}>
         <div className="py-3">
           <p className="mb-2 text-sm font-semibold">Editar equipo</p>
-          <form action={updateCatalogItemAction} className="flex flex-wrap items-center gap-2">
-            <input type="hidden" name="id" value={item.id} />
-            <Input name="code" defaultValue={item.code} placeholder="Código" className="h-8 w-28 text-sm" required />
-            <Input name="name" defaultValue={item.name} placeholder="Nombre del equipo" className="h-8 w-52 text-sm" required />
-            <select name="line" defaultValue={currentLine} className={cn(selectCls, "w-36")}>
-              {MACHINE_LINE_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>{option.label}</option>
-              ))}
-            </select>
-            <Input
-              name="default_price_cop"
-              type="number"
-              min="0"
-              defaultValue={item.default_price_cop ?? ""}
-              placeholder="Precio"
-              className="h-8 w-32 text-sm"
-            />
-            <select name="is_active" defaultValue={item.is_active ? "true" : "false"} className={selectCls}>
-              <option value="true">Activo</option>
-              <option value="false">Inactivo</option>
-            </select>
-            <Button type="submit" size="sm">
-              <Check className="h-3 w-3" />
-              Guardar
-            </Button>
-            <Button type="button" size="sm" variant="ghost" onClick={onClose}>
-              <X className="h-3 w-3" />
-            </Button>
-          </form>
+          <div className="flex flex-wrap items-center gap-2">
+            <form action={updateCatalogItemAction} className="flex flex-wrap items-center gap-2">
+              <input type="hidden" name="id" value={item.id} />
+              <Input name="code" defaultValue={item.code} placeholder="Código" className="h-8 w-28 text-sm" required />
+              <Input name="name" defaultValue={item.name} placeholder="Nombre del equipo" className="h-8 w-52 text-sm" required />
+              <select name="line" defaultValue={currentLine} className={cn(selectCls, "w-36")}>
+                {MACHINE_LINE_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>{option.label}</option>
+                ))}
+              </select>
+              <Input
+                name="default_price_cop"
+                type="number"
+                min="0"
+                defaultValue={item.default_price_cop ?? ""}
+                placeholder="Precio"
+                className="h-8 w-32 text-sm"
+              />
+              <select name="is_active" defaultValue={item.is_active ? "true" : "false"} className={selectCls}>
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+              <Button type="submit" size="sm">
+                <Check className="h-3 w-3" />
+                Guardar
+              </Button>
+              <Button type="button" size="sm" variant="ghost" onClick={onClose}>
+                <X className="h-3 w-3" />
+              </Button>
+            </form>
+            <form
+              action={deleteCatalogItemAction}
+              onSubmit={(e) => {
+                if (!confirm(`¿Eliminar "${item.name}"? Esta acción no se puede deshacer.`)) e.preventDefault();
+              }}
+              className="ml-auto"
+            >
+              <input type="hidden" name="id" value={item.id} />
+              <Button type="submit" size="sm" variant="danger">
+                <Trash2 className="h-3 w-3" />
+                Eliminar
+              </Button>
+            </form>
+          </div>
         </div>
       </TableCell>
     </TableRow>

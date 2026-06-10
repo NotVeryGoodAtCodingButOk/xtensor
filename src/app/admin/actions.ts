@@ -15,6 +15,7 @@ import {
   updateWorker,
   createCatalogItem,
   updateCatalogItem,
+  deleteCatalogItem,
   createHoliday,
   deleteHoliday,
   listCatalog,
@@ -366,6 +367,13 @@ export async function updateCatalogItemAction(formData: FormData) {
   const default_price_cop = Number(formData.get("default_price_cop")) || null;
   const is_active = formData.get("is_active") !== "false";
   if (id) await updateCatalogItem(id, { code, name, line, default_price_cop, is_active });
+  redirect("/admin/catalogo");
+}
+
+export async function deleteCatalogItemAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "").trim();
+  if (id) await deleteCatalogItem(id);
   redirect("/admin/catalogo");
 }
 
