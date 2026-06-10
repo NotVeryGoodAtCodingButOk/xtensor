@@ -21,6 +21,11 @@ function buildAdminToast(toastCode: string | null, count: number) {
         message: plural ? `${total} máquinas despachadas` : "Máquina despachada",
         description: plural ? "Máquinas llevadas al historial." : "Máquina llevada al historial.",
       };
+    case "reproceso":
+      return {
+        message: "Máquina enviada a reproceso",
+        description: "La máquina volvió a producción.",
+      };
     default:
       return null;
   }

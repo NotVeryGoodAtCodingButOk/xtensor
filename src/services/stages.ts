@@ -88,7 +88,7 @@ async function syncMachineCompletion(
 
   const { data: machine, error: machineError } = await supabase
     .from("machines")
-    .select("completed_at")
+    .select("completed_at, status")
     .eq("id", machineId)
     .single();
 
@@ -96,15 +96,15 @@ async function syncMachineCompletion(
     throw new Error(`No se pudo cargar la máquina: ${machineError.message}`);
   }
 
-  if (allDone && !machine.completed_at) {
+  if (allDone && machine.status === "in_production") {
     await supabase
       .from("machines")
-      .update({ completed_at: new Date().toISOString() })
+      .update({ status: "finished", completed_at: new Date().toISOString() })
       .eq("id", machineId);
-  } else if (!allDone && machine.completed_at) {
+  } else if (!allDone && machine.status === "finished") {
     await supabase
       .from("machines")
-      .update({ completed_at: null })
+      .update({ status: "in_production", completed_at: null })
       .eq("id", machineId);
   }
 }

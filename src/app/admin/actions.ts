@@ -29,6 +29,7 @@ import {
   getMaxOrderPosition,
   markMachineShipped,
   reorderMachines,
+  sendFinishedToProduction,
   sendMachineToPrevios,
   sendMachineToProduction,
   sendMachineToWarranty,
@@ -604,6 +605,24 @@ export async function bulkMarkShippedAction(formData: FormData) {
   if (machineIds.length > 0) await bulkMarkShipped(machineIds);
   revalidateFactoryData();
   redirect(`/admin?toast=shipped&count=${machineIds.length || 1}`);
+}
+
+export async function bulkDespacharTerminadosAction(formData: FormData) {
+  await requireAdmin();
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (machineIds.length > 0) await bulkMarkShipped(machineIds);
+  revalidateFactoryData();
+  revalidatePath("/admin/terminados");
+  redirect(`/admin/despachados?toast=shipped&count=${machineIds.length || 1}`);
+}
+
+export async function reprocesarMaquinaAction(formData: FormData) {
+  await requireAdmin();
+  const machineId = String(formData.get("machineId") ?? "");
+  await sendFinishedToProduction(machineId);
+  revalidateFactoryData();
+  revalidatePath("/admin/terminados");
+  redirect("/admin/terminados?toast=reproceso");
 }
 
 export async function warrantyMachineAction(formData: FormData) {

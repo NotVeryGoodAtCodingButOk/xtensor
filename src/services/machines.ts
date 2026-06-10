@@ -40,7 +40,7 @@ const MACHINE_SELECT = `
 `;
 
 export async function listMachines(
-  status?: "in_production" | "shipped",
+  status?: "in_production" | "finished" | "shipped",
   options?: { shippedRetentionDays?: number; now?: Date },
 ) {
   const supabase = createSupabaseAdminClient();
@@ -95,7 +95,7 @@ export async function listCalculatedMachines(input: {
   settings: ProductionSettings;
   holidays: Holiday[];
   startDate?: Date;
-  status?: "in_production" | "shipped";
+  status?: "in_production" | "finished" | "shipped";
   shippedRetentionDays?: number;
 }) {
   const machines = await listMachines(input.status, {
@@ -416,8 +416,12 @@ export async function bulkMarkShipped(ids: string[]) {
     .from("machines")
     .update({ status: "shipped", shipped_at: new Date().toISOString() })
     .in("id", ids)
-    .eq("status", "in_production");
+    .eq("status", "finished");
   if (error) throw new Error(`No se pudo despachar: ${error.message}`);
+}
+
+export async function sendFinishedToProduction(id: string) {
+  return updateMachine(id, { status: "in_production", completed_at: null });
 }
 
 function mapMachineRow(row: MachineRow): MachineView {
