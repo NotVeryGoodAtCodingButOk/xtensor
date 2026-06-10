@@ -1,21 +1,17 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 
 export function ReturnToWorkersBar({ continueHref }: { continueHref: string }) {
-  const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      router.push("/planta/operarios");
+      window.location.assign("/planta/operarios");
     }, 20_000);
 
     return () => window.clearTimeout(timeout);
-  }, [router]);
+  }, []);
 
   if (!isVisible) {
     return null;
@@ -30,9 +26,16 @@ export function ReturnToWorkersBar({ continueHref }: { continueHref: string }) {
         <span className="xt-return-message min-w-0 [font-family:var(--font-barlow-condensed)] text-xl font-bold leading-tight md:text-2xl">
           Registro guardado. Volveremos a seleccionar operario en 20 segundos.
         </span>
-        <Button asChild size="lg" className="xt-return-continue shrink-0" onClick={() => setIsVisible(false)}>
-          <Link href={continueHref}>Continuar registrando</Link>
-        </Button>
+        <button
+          type="button"
+          className="xt-return-continue xt-return-continue-btn"
+          onClick={() => {
+            setIsVisible(false);
+            window.location.assign(continueHref);
+          }}
+        >
+          Continuar registrando
+        </button>
       </div>
     </div>
   );
