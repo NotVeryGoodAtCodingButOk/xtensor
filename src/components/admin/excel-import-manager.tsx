@@ -26,7 +26,37 @@ const peso = new Intl.NumberFormat("es-CO");
 type LineState = {
   resolution: string;
   unidades: number;
+  placaNumbers: number[];
 };
+
+function nextAvailablePlaca(start: number, used: Set<number>) {
+  let candidate = start;
+  for (let attempts = 0; attempts < 999; attempts += 1) {
+    candidate = candidate >= 999 ? 1 : candidate + 1;
+    if (!used.has(candidate)) return candidate;
+  }
+  return 1;
+}
+
+function resizePlacaNumbers(
+  current: number[],
+  units: number,
+  usedByOtherLines: Set<number>,
+) {
+  const target = Math.max(1, Math.round(units) || 1);
+  const next = current.slice(0, target);
+  const used = new Set([...usedByOtherLines, ...next.filter((placa) => Number.isInteger(placa) && placa > 0)]);
+  let cursor = used.size > 0 ? Math.max(...used) : 0;
+
+  while (next.length < target) {
+    const placa = nextAvailablePlaca(cursor, used);
+    next.push(placa);
+    used.add(placa);
+    cursor = placa;
+  }
+
+  return next;
+}
 
 export function ExcelImportManager({
   catalog,
@@ -60,7 +90,11 @@ export function ExcelImportManager({
           Object.fromEntries(
             result.lines.map((line) => [
               line.rowIndex,
-              { resolution: line.matchedCatalogId ?? "custom", unidades: line.unidades },
+              {
+                resolution: line.matchedCatalogId ?? "custom",
+                unidades: line.unidades,
+                placaNumbers: line.placaNumbers,
+              },
             ]),
           ),
         );
@@ -84,7 +118,7 @@ export function ExcelImportManager({
     if (!preview) return;
     setError(null);
     const placa = Number(placaNumber);
-    if (!placa || !Number.isFinite(placa)) {
+    if (preview.placaMode === "reference" && (!placa || !Number.isFinite(placa))) {
       setError("Ingresa un número de cotización (PLACA) válido.");
       return;
     }
@@ -100,9 +134,15 @@ export function ExcelImportManager({
     const lines: ImportQuoteLineInput[] = preview.lines.map((line) => {
       const state = lineState[line.rowIndex];
       const resolution = state?.resolution ?? "skip";
+      const units = Math.max(1, Math.round(state?.unidades ?? line.unidades) || 1);
+      const placaNumbers =
+        preview.placaMode === "reference"
+          ? Array.from({ length: units }, () => placa)
+          : resizePlacaNumbers(state?.placaNumbers ?? line.placaNumbers, units, new Set());
       const base = {
         producto: line.producto || line.clave,
-        unidades: state?.unidades ?? line.unidades,
+        unidades: units,
+        placaNumbers,
         pUnitCop: line.pUnitCop,
         // Leave línea unset: catalog matches keep their own line; custom items have none.
         line: null,
@@ -117,7 +157,7 @@ export function ExcelImportManager({
     startImport(async () => {
       try {
         const result = await importQuoteAction({
-          placaNumber: placa,
+          placaMode: preview.placaMode,
           clientName: clientName.trim(),
           promisedDate,
           lines,
@@ -180,10 +220,19 @@ export function ExcelImportManager({
               <CardTitle>Datos de la cotización</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4 md:grid-cols-3">
-              <label className="grid gap-2 text-sm font-medium">
-                PLACA
-                <Input value={placaNumber} onChange={(e) => setPlacaNumber(e.target.value)} type="number" />
-              </label>
+              {preview.placaMode === "reference" ? (
+                <label className="grid gap-2 text-sm font-medium">
+                  PLACA
+                  <Input value={placaNumber} onChange={(e) => setPlacaNumber(e.target.value)} type="number" />
+                </label>
+              ) : (
+                <div className="grid gap-2 text-sm font-medium">
+                  PLACA
+                  <div className="rounded-[2px] border border-[var(--xt-cement)] bg-[var(--xt-yellow-soft)] px-3 py-2 text-sm font-normal text-[var(--xt-black)]">
+                    Sin COTI detectada. Se asignó una PLACA por máquina; puedes editarlas en la tabla.
+                  </div>
+                </div>
+              )}
               <label className="grid gap-2 text-sm font-medium">
                 Cliente
                 <Input value={clientName} onChange={(e) => setClientName(e.target.value)} />
@@ -209,6 +258,7 @@ export function ExcelImportManager({
                     <TableHead>Producto</TableHead>
                     <TableHead>Código</TableHead>
                     <TableHead className="w-20">UNID.</TableHead>
+                    {preview.placaMode === "auto" ? <TableHead className="w-56">PLACA(s)</TableHead> : null}
                     <TableHead className="text-right">P.UNIT.</TableHead>
                     <TableHead className="w-72">Acción</TableHead>
                   </TableRow>
@@ -234,17 +284,67 @@ export function ExcelImportManager({
                             min="1"
                             value={state?.unidades ?? line.unidades}
                             onChange={(e) =>
-                              setLineState((prev) => ({
-                                ...prev,
-                                [line.rowIndex]: {
-                                  resolution: prev[line.rowIndex]?.resolution ?? resolution,
-                                  unidades: Number(e.target.value),
-                                },
-                              }))
+                              setLineState((prev) => {
+                                const units = Number(e.target.value);
+                                const usedByOtherLines = new Set(
+                                  Object.entries(prev)
+                                    .filter(([rowIndex]) => Number(rowIndex) !== line.rowIndex)
+                                    .flatMap(([, item]) => item.placaNumbers),
+                                );
+                                return {
+                                  ...prev,
+                                  [line.rowIndex]: {
+                                    resolution: prev[line.rowIndex]?.resolution ?? resolution,
+                                    unidades: units,
+                                    placaNumbers: resizePlacaNumbers(
+                                      prev[line.rowIndex]?.placaNumbers ?? line.placaNumbers,
+                                      units,
+                                      usedByOtherLines,
+                                    ),
+                                  },
+                                };
+                              })
                             }
                             className="h-9"
                           />
                         </TableCell>
+                        {preview.placaMode === "auto" ? (
+                          <TableCell>
+                            <div className="grid max-h-28 gap-1 overflow-y-auto pr-1">
+                              {resizePlacaNumbers(state?.placaNumbers ?? line.placaNumbers, state?.unidades ?? line.unidades, new Set()).map(
+                                (placa, index) => (
+                                  <Input
+                                    key={`${line.rowIndex}-${index}`}
+                                    type="number"
+                                    min="1"
+                                    max="999"
+                                    value={placa}
+                                    onChange={(e) =>
+                                      setLineState((prev) => {
+                                        const current = resizePlacaNumbers(
+                                          prev[line.rowIndex]?.placaNumbers ?? line.placaNumbers,
+                                          prev[line.rowIndex]?.unidades ?? line.unidades,
+                                          new Set(),
+                                        );
+                                        current[index] = Number(e.target.value);
+                                        return {
+                                          ...prev,
+                                          [line.rowIndex]: {
+                                            resolution: prev[line.rowIndex]?.resolution ?? resolution,
+                                            unidades: prev[line.rowIndex]?.unidades ?? line.unidades,
+                                            placaNumbers: current,
+                                          },
+                                        };
+                                      })
+                                    }
+                                    className="h-8"
+                                    aria-label={`PLACA ${index + 1} para ${line.producto || line.clave}`}
+                                  />
+                                ),
+                              )}
+                            </div>
+                          </TableCell>
+                        ) : null}
                         <TableCell className="text-right tabular-nums">{peso.format(line.pUnitCop)}</TableCell>
                         <TableCell>
                           <select
@@ -256,6 +356,7 @@ export function ExcelImportManager({
                                 [line.rowIndex]: {
                                   resolution: e.target.value,
                                   unidades: prev[line.rowIndex]?.unidades ?? line.unidades,
+                                  placaNumbers: prev[line.rowIndex]?.placaNumbers ?? line.placaNumbers,
                                 },
                               }))
                             }

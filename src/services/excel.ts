@@ -35,6 +35,9 @@ export type ParsedQuote = {
 };
 
 const HEADER_LABELS: Record<string, keyof Pick<ParsedQuote, "reference" | "fecha" | "clientName" | "email" | "phone">> = {
+  coti: "reference",
+  cotizacion: "reference",
+  cotización: "reference",
   referencia: "reference",
   fecha: "fecha",
   cliente: "clientName",
@@ -42,6 +45,34 @@ const HEADER_LABELS: Record<string, keyof Pick<ParsedQuote, "reference" | "fecha
   "teléfono": "phone",
   telefono: "phone",
 };
+
+type ProductTableColumns = {
+  producto: number;
+  clave: number;
+  descripcion: number;
+  unidades: number;
+  pUnitCop: number;
+  importeCop: number;
+};
+
+const DEFAULT_PRODUCT_COLUMNS: ProductTableColumns = {
+  producto: 1,
+  clave: 2,
+  descripcion: 3,
+  unidades: 4,
+  pUnitCop: 7,
+  importeCop: 8,
+};
+
+function normalizeLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/:$/, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
 function cellString(value: ExcelJS.CellValue): string {
   if (value === null || value === undefined) return "";
@@ -65,6 +96,39 @@ function cellNumber(value: ExcelJS.CellValue): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+function resolveProductColumns(row: ExcelJS.Row): ProductTableColumns {
+  const columns = { ...DEFAULT_PRODUCT_COLUMNS };
+
+  row.eachCell((cell, colNumber) => {
+    const label = normalizeLabel(cellString(cell.value));
+    if (label === "producto") columns.producto = colNumber;
+    if (label === "clave" || label === "codigo" || label === "código") columns.clave = colNumber;
+    if (label === "descripcion" || label === "descripción") columns.descripcion = colNumber;
+    if (label === "unid." || label === "unid" || label === "unidad" || label === "unidades") {
+      columns.unidades = colNumber;
+    }
+    if (label === "p.unit." || label === "p.unit" || label === "p unit" || label === "p. unit.") {
+      columns.pUnitCop = colNumber;
+    }
+    if (label === "importe") columns.importeCop = colNumber;
+  });
+
+  return columns;
+}
+
+function rowContainsTotalMarker(row: ExcelJS.Row): boolean {
+  const markers = new Set(["suma", "subtotal", "total"]);
+  let containsMarker = false;
+
+  row.eachCell((cell) => {
+    if (markers.has(normalizeLabel(cellString(cell.value)))) {
+      containsMarker = true;
+    }
+  });
+
+  return containsMarker;
+}
+
 export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuote> {
   const workbook = new ExcelJS.Workbook();
   // exceljs's typings declare `Buffer extends ArrayBuffer`, so an ArrayBuffer is what
@@ -85,9 +149,10 @@ export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuo
   };
 
   let headerRow = 0;
+  let columns = DEFAULT_PRODUCT_COLUMNS;
 
   sheet.eachRow((row, rowNumber) => {
-    const labelRaw = cellString(row.getCell(1).value).toLowerCase().replace(/:$/, "").trim();
+    const labelRaw = normalizeLabel(cellString(row.getCell(1).value));
     if (!headerRow && labelRaw in HEADER_LABELS) {
       const key = HEADER_LABELS[labelRaw];
       const value = cellString(row.getCell(2).value);
@@ -95,6 +160,7 @@ export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuo
     }
     if (!headerRow && labelRaw === "producto") {
       headerRow = rowNumber;
+      columns = resolveProductColumns(row);
     }
   });
 
@@ -104,25 +170,26 @@ export async function parseQuoteWorkbook(buffer: ArrayBuffer): Promise<ParsedQuo
 
   for (let rowNumber = headerRow + 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
     const row = sheet.getRow(rowNumber);
-    const producto = cellString(row.getCell(1).value);
-    const clave = cellString(row.getCell(2).value);
-    const colA = producto.toLowerCase();
+    if (rowContainsTotalMarker(row)) continue;
 
-    // Stop at the totals block ("Suma" / "Total") or once both leading columns are blank.
-    if (colA === "suma" || colA === "total") break;
-    const sumaMarker = cellString(row.getCell(7).value).toLowerCase();
-    if (sumaMarker === "suma" || sumaMarker === "total") break;
-    if (!producto && !clave) continue;
+    const producto = cellString(row.getCell(columns.producto).value);
+    const clave = cellString(row.getCell(columns.clave).value);
+    const descripcion = cellString(row.getCell(columns.descripcion).value);
+    const pUnitCop = cellNumber(row.getCell(columns.pUnitCop).value);
+    const importeCop = cellNumber(row.getCell(columns.importeCop).value);
 
-    const unidades = Math.max(1, Math.round(cellNumber(row.getCell(4).value)) || 1);
+    if (!producto && !clave && !descripcion && !pUnitCop && !importeCop) continue;
+    if (!producto && !clave && !pUnitCop && !importeCop) continue;
+
+    const unidades = Math.max(1, Math.round(cellNumber(row.getCell(columns.unidades).value)) || 1);
     quote.lines.push({
       rowIndex: rowNumber,
       producto,
       clave,
-      descripcion: cellString(row.getCell(3).value),
+      descripcion,
       unidades,
-      pUnitCop: cellNumber(row.getCell(7).value),
-      importeCop: cellNumber(row.getCell(8).value),
+      pUnitCop,
+      importeCop,
     });
   }
 

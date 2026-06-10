@@ -33,7 +33,8 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
             <p className="font-medium text-[var(--xt-black)]">Bloque superior</p>
             <ul className="grid gap-1">
               <li>
-                <span className="font-medium text-[var(--xt-black)]">A3/B3:</span> Referencia
+                <span className="font-medium text-[var(--xt-black)]">A3/B3:</span> Referencia/COTI opcional. Si no
+                viene, el sistema asigna PLACAS automáticas editables.
               </li>
               <li>
                 <span className="font-medium text-[var(--xt-black)]">A4/B4:</span> Fecha
@@ -79,7 +80,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
               </table>
             </div>
             <p>La columna `Código` debe coincidir con el catálogo para hacer match automático.</p>
-            <p>El importador se detiene cuando encuentra una fila de totales con `Suma` o `Total`.</p>
+            <p>El importador ignora filas vacías y filas de totales con `Suma`, `Subtotal` o `Total`.</p>
             <p>`UNID.` crea una máquina por cada unidad redondeada a entero.</p>
           </div>
         </div>

@@ -39,6 +39,7 @@ import {
   unmarkMachineShipped,
 } from "@/services/machines";
 import { parseQuoteWorkbook, type ParsedQuoteLine } from "@/services/excel";
+import { AUTO_PLACA_MAX, generateSequentialPlacaNumbers, listActivePlacaNumbers, normalizePlacaNumber } from "@/services/placas";
 import {
   addMachinePrevio,
   addEquipmentPrevio,
@@ -460,11 +461,13 @@ export type QuotePreviewLine = ParsedQuoteLine & {
   /** Catalog id matched by exact code ("Clave"), if any. */
   matchedCatalogId: string | null;
   matchedCatalogName: string | null;
+  placaNumbers: number[];
 };
 
 export type QuotePreview = {
   reference: string | null;
   placaNumber: number | null;
+  placaMode: "reference" | "auto";
   fecha: string | null;
   clientName: string | null;
   lines: QuotePreviewLine[];
@@ -477,25 +480,37 @@ export async function parseQuoteExcelAction(formData: FormData): Promise<QuotePr
     throw new Error("Selecciona un archivo de Excel.");
   }
 
-  const [quote, catalog] = await Promise.all([
+  const [quote, catalog, activePlacaNumbers] = await Promise.all([
     file.arrayBuffer().then(parseQuoteWorkbook),
     listCatalog(),
+    listActivePlacaNumbers(),
   ]);
 
   const byCode = new Map(catalog.map((item) => [item.code.trim().toLowerCase(), item]));
 
   const referenceDigits = (quote.reference ?? "").replace(/[^0-9]/g, "");
-  const placaNumber = referenceDigits ? Number(referenceDigits) : null;
+  const placaNumber = normalizePlacaNumber(referenceDigits);
+  const totalUnits = quote.lines.reduce((sum, line) => sum + Math.max(1, Math.round(line.unidades) || 1), 0);
+  const autoPlacaNumbers = placaNumber ? [] : generateSequentialPlacaNumbers(activePlacaNumbers, totalUnits);
+  let autoPlacaIndex = 0;
 
   return {
     reference: quote.reference,
-    placaNumber: Number.isFinite(placaNumber) ? placaNumber : null,
+    placaNumber,
+    placaMode: placaNumber ? "reference" : "auto",
     fecha: quote.fecha,
     clientName: quote.clientName,
     lines: quote.lines.map((line) => {
       const match = byCode.get(line.clave.trim().toLowerCase()) ?? null;
+      const units = Math.max(1, Math.round(line.unidades) || 1);
+      const placaNumbers = placaNumber
+        ? Array.from({ length: units }, () => placaNumber)
+        : autoPlacaNumbers.slice(autoPlacaIndex, autoPlacaIndex + units);
+      autoPlacaIndex += placaNumber ? 0 : units;
+
       return {
         ...line,
+        placaNumbers,
         matchedCatalogId: match?.id ?? null,
         matchedCatalogName: match ? `${match.code} · ${match.name}` : null,
       };
@@ -510,11 +525,12 @@ export type ImportQuoteLineInput = {
   line?: string | null;
   producto: string;
   unidades: number;
+  placaNumbers: number[];
   pUnitCop: number;
 };
 
 export async function importQuoteAction(input: {
-  placaNumber: number;
+  placaMode: "reference" | "auto";
   clientName: string;
   promisedDate: string;
   lines: ImportQuoteLineInput[];
@@ -522,14 +538,40 @@ export async function importQuoteAction(input: {
   await requireAdmin();
   const clientName = input.clientName.trim();
   if (!clientName) throw new Error("El cliente es requerido.");
-  if (!input.placaNumber || !Number.isFinite(input.placaNumber)) {
-    throw new Error("El número de cotización (PLACA) es inválido.");
-  }
   if (!input.promisedDate) throw new Error("La fecha prometida es requerida.");
 
   const importable = input.lines.filter((line) => line.resolution !== "skip");
   if (importable.length === 0) {
     throw new Error("No hay líneas seleccionadas para importar.");
+  }
+
+  const activePlacaNumbers = input.placaMode === "auto" ? await listActivePlacaNumbers() : [];
+  const unavailablePlacas = new Set(activePlacaNumbers);
+  const placasInImport = new Set<number>();
+  for (const line of importable) {
+    const units = Math.max(1, Math.round(line.unidades) || 1);
+    if (line.placaNumbers.length < units) {
+      throw new Error(`Faltan placas para "${line.producto}".`);
+    }
+
+    for (let i = 0; i < units; i += 1) {
+      const placaNumber = normalizePlacaNumber(line.placaNumbers[i]);
+      if (!placaNumber) {
+        throw new Error(`La PLACA de "${line.producto}" es inválida.`);
+      }
+      if (input.placaMode === "auto") {
+        if (placaNumber > AUTO_PLACA_MAX) {
+          throw new Error(`La PLACA ${placaNumber} supera el máximo automático de ${AUTO_PLACA_MAX}.`);
+        }
+        if (unavailablePlacas.has(placaNumber)) {
+          throw new Error(`La PLACA ${placaNumber} ya está activa. Elige otra antes de importar.`);
+        }
+        if (placasInImport.has(placaNumber)) {
+          throw new Error(`La PLACA ${placaNumber} está repetida en esta importación.`);
+        }
+        placasInImport.add(placaNumber);
+      }
+    }
   }
 
   const client = await ensureClientByName(clientName);
@@ -558,8 +600,10 @@ export async function importQuoteAction(input: {
     const units = Math.max(1, Math.round(line.unidades) || 1);
     for (let i = 0; i < units; i += 1) {
       position += 1;
+      const placaNumber = normalizePlacaNumber(line.placaNumbers[i]);
+      if (!placaNumber) throw new Error(`La PLACA de "${line.producto}" es inválida.`);
       await createMachine({
-        placa_number: input.placaNumber,
+        placa_number: placaNumber,
         client_id: client.id,
         equipment_id: equipmentId,
         custom_equipment_name: null,
