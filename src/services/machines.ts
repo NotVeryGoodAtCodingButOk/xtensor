@@ -215,6 +215,12 @@ export async function createMachine(input: MachineInsert) {
     throw error;
   }
 
+  // Slot the new machine into the queue by its requested position and recompact
+  // so positions stay gapless and unique.
+  if (machine.status === "in_production") {
+    await normalizeProductionQueue(supabase);
+  }
+
   return getMachine(machine.id);
 }
 
@@ -264,6 +270,8 @@ export async function deleteMachine(id: string) {
   if (error) {
     throw new Error(`No se pudo eliminar la máquina: ${error.message}`);
   }
+
+  await normalizeProductionQueue();
 }
 
 export async function reorderMachines(orderedIds: string[]) {
@@ -302,31 +310,39 @@ export function buildMovedQueueOrder(
 }
 
 export async function markMachineFinished(id: string) {
-  return updateMachine(id, {
+  const machine = await updateMachine(id, {
     status: "finished",
     completed_at: new Date().toISOString(),
   });
+  await normalizeProductionQueue();
+  return machine;
 }
 
 export async function markMachineShipped(id: string) {
-  return updateMachine(id, {
+  const machine = await updateMachine(id, {
     status: "shipped",
     shipped_at: new Date().toISOString(),
   });
+  await normalizeProductionQueue();
+  return machine;
 }
 
 export async function unmarkMachineShipped(id: string) {
-  return updateMachine(id, {
+  const machine = await updateMachine(id, {
     status: "in_production",
     shipped_at: null,
   });
+  await normalizeProductionQueue();
+  return machine;
 }
 
 export async function sendMachineToPrevios(id: string) {
-  return updateMachine(id, {
+  const machine = await updateMachine(id, {
     status: "pending",
     shipped_at: null,
   });
+  await normalizeProductionQueue();
+  return machine;
 }
 
 export async function sendMachineToProduction(id: string) {
@@ -342,10 +358,12 @@ export async function sendMachineToProduction(id: string) {
     throw new Error(`No se pudo registrar el inicio en producción: ${startError.message}`);
   }
 
-  return updateMachine(id, {
+  const machine = await updateMachine(id, {
     status: "in_production",
     shipped_at: null,
   });
+  await normalizeProductionQueue();
+  return machine;
 }
 
 export async function sendMachineToWarranty(id: string, message: string) {
@@ -408,6 +426,7 @@ export async function sendMachineToWarranty(id: string, message: string) {
     throw new Error(`No se pudieron reiniciar las etapas: ${resetError.message}`);
   }
 
+  await normalizeProductionQueue(supabase);
   return getMachine(machine.id);
 }
 
@@ -428,6 +447,8 @@ export async function bulkSendToProduction(ids: string[]) {
     .in("id", ids)
     .eq("status", "pending");
   if (error) throw new Error(`No se pudo enviar a producción: ${error.message}`);
+
+  await normalizeProductionQueue(supabase);
 }
 
 export async function bulkMarkShipped(ids: string[]) {
@@ -438,10 +459,14 @@ export async function bulkMarkShipped(ids: string[]) {
     .in("id", ids)
     .eq("status", "finished");
   if (error) throw new Error(`No se pudo despachar: ${error.message}`);
+
+  await normalizeProductionQueue(supabase);
 }
 
 export async function sendFinishedToProduction(id: string) {
-  return updateMachine(id, { status: "in_production", completed_at: null, is_reproceso: true });
+  const machine = await updateMachine(id, { status: "in_production", completed_at: null, is_reproceso: true });
+  await normalizeProductionQueue();
+  return machine;
 }
 
 function mapMachineRow(row: MachineRow): MachineView {
@@ -535,4 +560,14 @@ async function persistProductionQueueOrder(supabase = createSupabaseAdminClient(
   if (error) {
     throw new Error(`No se pudo reordenar la cola: ${error.message}`);
   }
+}
+
+// Recompacts the in-production queue to a gapless 1..N sequence, preserving the
+// current relative order. Run after any machine enters or leaves production so
+// the "#" column never shows gaps (e.g. starting at 10 after shipping) or
+// duplicate positions.
+async function normalizeProductionQueue(supabase = createSupabaseAdminClient()) {
+  const queue = await listProductionQueue(supabase);
+  const orderedIds = sortProductionQueue(queue).map((machine) => machine.id);
+  await persistProductionQueueOrder(supabase, orderedIds);
 }
