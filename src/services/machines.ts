@@ -520,6 +520,7 @@ function mapMachineRow(row: MachineRow): MachineView {
     placaNumber: row.placa_number,
     clientId: row.client_id,
     clientName: row.clients?.name ?? "Cliente sin nombre",
+    equipmentId: row.equipment_id,
     equipmentCode: row.equipment_catalog?.code ?? null,
     equipmentName,
     colorName: row.colors?.name ?? null,

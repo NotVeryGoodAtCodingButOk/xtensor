@@ -126,8 +126,10 @@ export async function createMachineAction(formData: FormData) {
 export async function updateMachineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
+  const equipmentId = String(formData.get("equipmentId") ?? "").trim() || null;
   await updateMachine(machineId, {
     placa_number: Number(formData.get("placaNumber")),
+    equipment_id: equipmentId,
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),

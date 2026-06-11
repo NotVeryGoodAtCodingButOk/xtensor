@@ -14,6 +14,7 @@ export type MachineView = {
   placaNumber: number;
   clientId: string;
   clientName: string;
+  equipmentId: string | null;
   equipmentCode: string | null;
   equipmentName: string;
   colorName: string | null;

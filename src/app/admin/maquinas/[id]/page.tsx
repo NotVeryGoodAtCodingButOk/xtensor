@@ -3,6 +3,7 @@ import { updateMachineAction } from "@/app/admin/actions";
 
 export const metadata: Metadata = { title: "Máquina XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
+import { CatalogCombobox } from "@/components/admin/catalog-combobox";
 import { MachineEditActions } from "@/components/admin/machine-edit-actions";
 import { ConfigWarning } from "@/components/config-warning";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasSupabaseConfig } from "@/lib/env";
 import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
+import { listCatalog } from "@/services/catalog";
 import { getMachine } from "@/services/machines";
 
 export default async function EditMachinePage({
@@ -26,7 +28,7 @@ export default async function EditMachinePage({
   }
 
   const { id } = await params;
-  const machine = await getMachine(id);
+  const [machine, catalog] = await Promise.all([getMachine(id), listCatalog()]);
 
   return (
     <AdminShell>
@@ -43,9 +45,18 @@ export default async function EditMachinePage({
             <Field label="Cliente">
               <Input value={machine.clientName} readOnly />
             </Field>
-            <Field label="Equipo">
-              <Input value={machine.equipmentName} readOnly />
-            </Field>
+            <label className="grid gap-2 text-sm font-medium">
+              Equipo
+              <CatalogCombobox
+                items={catalog.filter((c) => c.is_active).map((c) => ({ id: c.id, code: c.code, name: c.name }))}
+                defaultId={machine.equipmentId}
+                defaultLabel={
+                  machine.equipmentId && machine.equipmentCode
+                    ? `${machine.equipmentCode} · ${machine.equipmentName}`
+                    : machine.equipmentName
+                }
+              />
+            </label>
             <Field label="Ciudad">
               <Input name="city" defaultValue={machine.city ?? ""} />
             </Field>
