@@ -96,7 +96,7 @@ export default async function FactoryMachineDetailPage({
         </div>
         <div className="xt-hazard h-2" />
         <div className="xt-machine-detail-hero px-5 py-3 text-center">
-          <h2 className="xt-machine-detail-title mx-auto max-w-5xl [font-family:var(--font-barlow-condensed)] text-xl font-bold leading-tight break-words lg:text-3xl">
+          <h2 className="xt-machine-detail-title mx-auto max-w-5xl [font-family:var(--font-barlow-condensed)] text-base font-bold leading-tight break-words lg:text-2xl">
             {machine.equipmentName}
           </h2>
           <p className="xt-machine-detail-subtitle mx-auto max-w-4xl text-sm text-[var(--xt-steel)] mt-0.5">
