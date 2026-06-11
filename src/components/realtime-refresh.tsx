@@ -7,9 +7,12 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 export function RealtimeRefresh({
   channelName,
   tables,
+  pollMs,
 }: {
   channelName: string;
   tables: string[];
+  /** When set, also refresh on a fixed interval as a fallback to realtime. */
+  pollMs?: number;
 }) {
   const router = useRouter();
 
@@ -38,6 +41,21 @@ export function RealtimeRefresh({
       void supabase.removeChannel(channel);
     };
   }, [channelName, router, tables]);
+
+  // Polling fallback: keep the board fresh even if the realtime socket drops.
+  useEffect(() => {
+    if (!pollMs) {
+      return;
+    }
+
+    const interval = setInterval(() => {
+      router.refresh();
+    }, pollMs);
+
+    return () => {
+      clearInterval(interval);
+    };
+  }, [pollMs, router]);
 
   return null;
 }

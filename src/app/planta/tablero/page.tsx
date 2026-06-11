@@ -43,7 +43,11 @@ export default async function FactoryBoardPage() {
 
   return (
     <main className="xt-planta xt-board flex min-h-screen flex-col bg-[var(--xt-black)] text-[var(--xt-white)]">
-      <RealtimeRefresh channelName="factory-board" tables={["machines", "machine_stages", "settings", "colors"]} />
+      <RealtimeRefresh
+        channelName="factory-board"
+        tables={["machines", "machine_stages", "settings", "colors"]}
+        pollMs={30_000}
+      />
 
       <header className="xt-board-header border-b border-[var(--xt-steel)] bg-[var(--xt-black)]">
         <PlantaNav active="tablero" />
