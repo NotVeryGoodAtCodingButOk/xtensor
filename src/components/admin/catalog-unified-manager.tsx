@@ -118,6 +118,30 @@ function EditPanel({
   );
 }
 
+function DeletePrevioButton({ previo }: { previo: PrevioCatalogView }) {
+  return (
+    <form
+      action={deletePrevioCatalogItemAction}
+      onSubmit={(e) => {
+        if (
+          !window.confirm(
+            `¿Eliminar el previo maestro "${previo.name}"?\n\n` +
+              "Se quitará de TODAS las máquinas y de todos los códigos de equipo que lo tengan asociado. Esta acción no se puede deshacer.",
+          )
+        ) {
+          e.preventDefault();
+        }
+      }}
+    >
+      <input type="hidden" name="id" value={previo.id} />
+      <Button type="submit" size="sm" variant="outline">
+        {previo.name}
+        <Trash2 className="h-3 w-3" />
+      </Button>
+    </form>
+  );
+}
+
 function InlinePrevioChip({
   item,
   previo,
@@ -188,13 +212,7 @@ export function CatalogUnifiedManager({
           </form>
           <div className="flex flex-wrap gap-2">
             {previosCatalog.map((previo) => (
-              <form key={previo.id} action={deletePrevioCatalogItemAction}>
-                <input type="hidden" name="id" value={previo.id} />
-                <Button type="submit" size="sm" variant="outline">
-                  {previo.name}
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </form>
+              <DeletePrevioButton key={previo.id} previo={previo} />
             ))}
           </div>
         </div>
