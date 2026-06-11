@@ -218,7 +218,7 @@ export type Database = {
       machines: {
         Row: {
           id: string;
-          placa_number: number;
+          senal_number: number;
           client_id: string;
           equipment_id: string | null;
           custom_equipment_name: string | null;
@@ -239,7 +239,7 @@ export type Database = {
         };
         Insert: {
           id?: string;
-          placa_number: number;
+          senal_number: number;
           client_id: string;
           equipment_id?: string | null;
           custom_equipment_name?: string | null;
@@ -260,7 +260,7 @@ export type Database = {
         };
         Update: {
           id?: string;
-          placa_number?: number;
+          senal_number?: number;
           client_id?: string;
           equipment_id?: string | null;
           custom_equipment_name?: string | null;
@@ -285,7 +285,7 @@ export type Database = {
         Row: {
           id: string;
           machine_id: string;
-          placa_number: number;
+          senal_number: number;
           message: string;
           actor_profile_id: string | null;
           created_at: string;
@@ -293,7 +293,7 @@ export type Database = {
         Insert: {
           id?: string;
           machine_id: string;
-          placa_number: number;
+          senal_number: number;
           message: string;
           actor_profile_id?: string | null;
           created_at?: string;
@@ -301,7 +301,7 @@ export type Database = {
         Update: {
           id?: string;
           machine_id?: string;
-          placa_number?: number;
+          senal_number?: number;
           message?: string;
           actor_profile_id?: string | null;
           created_at?: string;

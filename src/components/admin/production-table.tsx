@@ -20,7 +20,7 @@ import type { CalculatedMachineView } from "@/types/domain";
 
 export type SortKey = keyof CalculatedMachineView;
 export type SortConfig = { key: SortKey; dir: "asc" | "desc" } | null;
-type EditableField = "placaNumber" | "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line";
+type EditableField = "senalNumber" | "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line";
 
 function StagePin({ completion }: { completion: number }) {
   if (completion === 100) {
@@ -146,7 +146,7 @@ function EditableMachineCell({
 
 function HiddenMachineFields({ machine, omit }: { machine: CalculatedMachineView; omit: EditableField }) {
   const fields: Array<{ name: EditableField; value: string | number }> = [
-    { name: "placaNumber", value: machine.placaNumber },
+    { name: "senalNumber", value: machine.senalNumber },
     { name: "salePriceCop", value: machine.salePriceCop },
     { name: "assignedTo", value: machine.assignedTo ?? "" },
     { name: "promisedDate", value: machine.promisedDate },
@@ -340,7 +340,7 @@ export function ProductionTable({
             {selectable && <TableHead className="w-8 px-2" />}
             {sh("orderPosition", "#")}
             {!shipped && sh("progressPct", "%")}
-            {sh("placaNumber", "PLACA")}
+            {sh("senalNumber", "SEÑAL")}
             {sh("clientName", "Cliente")}
             {sh("equipmentCode", "Código")}
             {sh("equipmentName", "Máquina")}
@@ -380,7 +380,7 @@ export function ProductionTable({
                       type="checkbox"
                       checked={selectedIds!.has(machine.id)}
                       onChange={() => onToggle!(machine.id)}
-                      aria-label={`Seleccionar PLACA ${machine.placaNumber}`}
+                      aria-label={`Seleccionar SEÑAL ${machine.senalNumber}`}
                     />
                   </TableCell>
                 )}
@@ -418,15 +418,15 @@ export function ProductionTable({
                 <TableCell className={`${C} tabular-nums`}>
                   <EditableMachineCell
                     machine={machine}
-                    field="placaNumber"
-                    value={machine.placaNumber}
+                    field="senalNumber"
+                    value={machine.senalNumber}
                     inputType="number"
                     min={1}
                     step={1}
                     className="w-full font-semibold"
                     inputClassName="w-20 font-semibold tabular-nums"
-                    display={machine.placaNumber}
-                    title="Doble clic para editar el PLACA"
+                    display={machine.senalNumber}
+                    title="Doble clic para editar la SEÑAL"
                   />
                 </TableCell>
 

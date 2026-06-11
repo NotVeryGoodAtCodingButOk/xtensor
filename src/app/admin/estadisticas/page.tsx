@@ -171,9 +171,9 @@ export default async function StatisticsPage({
             </div>
             <StatsTable
               empty="No hay garantías en este rango."
-              headers={["PLACA", "Cliente", "Equipo", "Mensaje", "Fecha"]}
+              headers={["SEÑAL", "Cliente", "Equipo", "Mensaje", "Fecha"]}
               rows={dashboard.warrantyEvents.map((event) => [
-                `#${event.placaNumber}`,
+                `#${event.senalNumber}`,
                 event.clientName,
                 event.equipmentName,
                 event.message,
@@ -215,9 +215,9 @@ export default async function StatisticsPage({
           <CardContent>
             <StatsTable
               empty="No hay etapas abiertas con fecha de inicio."
-              headers={["PLACA", "Etapa", "Antigüedad", "Cliente"]}
+              headers={["SEÑAL", "Etapa", "Antigüedad", "Cliente"]}
               rows={dashboard.currentOpenStages.map((stage) => [
-                `#${stage.placaNumber}`,
+                `#${stage.senalNumber}`,
                 stage.stageName,
                 formatHours(stage.agingHours),
                 stage.clientName,
@@ -276,13 +276,13 @@ export default async function StatisticsPage({
             <div className="mt-4">
               <StatsTable
                 empty="No hay alertas prioritarias."
-                headers={["PLACA", "Máquina", "Detalle"]}
+                headers={["SEÑAL", "Máquina", "Detalle"]}
                 rows={[
                   ...dashboard.dataQuality.shippedWithoutProductionCompletion,
                   ...dashboard.dataQuality.outOfSequenceStages,
                 ]
                   .slice(0, 8)
-                  .map((issue) => [`#${issue.placaNumber}`, issue.label, issue.detail])}
+                  .map((issue) => [`#${issue.senalNumber}`, issue.label, issue.detail])}
               />
             </div>
           </CardContent>

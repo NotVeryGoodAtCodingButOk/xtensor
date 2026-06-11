@@ -85,7 +85,7 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
                   className="h-3.5 w-3.5 accent-[var(--xt-yellow-deep)]"
                 />
               </TableHead>
-              <TableHead className={C}>PLACA</TableHead>
+              <TableHead className={C}>SEÑAL</TableHead>
               <TableHead className={C}>Cliente</TableHead>
               <TableHead className={C}>Código</TableHead>
               <TableHead className={C}>Máquina</TableHead>
@@ -103,11 +103,11 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
                     type="checkbox"
                     checked={selectedIds.has(machine.id)}
                     onChange={() => toggle(machine.id)}
-                    aria-label={`Seleccionar PLACA ${machine.placaNumber}`}
+                    aria-label={`Seleccionar SEÑAL ${machine.senalNumber}`}
                     className="h-3.5 w-3.5 accent-[var(--xt-yellow-deep)]"
                   />
                 </TableCell>
-                <TableCell className={`${C} font-semibold tabular-nums`}>{machine.placaNumber}</TableCell>
+                <TableCell className={`${C} font-semibold tabular-nums`}>{machine.senalNumber}</TableCell>
                 <TableCell className={`${C} max-w-[120px] truncate`}>{machine.clientName}</TableCell>
                 <TableCell className={`${C} whitespace-nowrap font-mono text-[10px] text-[var(--xt-steel)]`}>
                   {machine.equipmentCode ?? "—"}

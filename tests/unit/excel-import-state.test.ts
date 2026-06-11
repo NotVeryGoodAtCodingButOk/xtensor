@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   buildMachineRows,
-  collectPlacasFromEntries,
-  collectUsedPlacasForOtherLines,
-  findPlacaIssue,
+  collectSenalesFromEntries,
+  collectUsedSenalesForOtherLines,
+  findSenalIssue,
   initialLineState,
-  resizePlacaNumbers,
+  resizeSenalNumbers,
   validateEntries,
   type ImportFileEntry,
 } from "@/components/admin/excel-import-state";
@@ -15,8 +15,8 @@ import type { QuotePreview } from "@/services/quote-preview";
 function autoPreview(): QuotePreview {
   return {
     reference: null,
-    placaNumber: null,
-    placaMode: "auto",
+    senalNumber: null,
+    senalMode: "auto",
     fecha: null,
     clientName: "Cliente",
     lines: [
@@ -26,13 +26,13 @@ function autoPreview(): QuotePreview {
         clave: "XM105",
         descripcion: "Banco",
         unidades: 2,
-        placaNumber: null,
+        senalNumber: null,
         pUnitCop: 1400000,
         importeCop: 2800000,
         ignored: false,
         matchedCatalogId: "catalog-1",
         matchedCatalogName: "XM105 · Banco Multifunción",
-        placaNumbers: [43, 44],
+        senalNumbers: [43, 44],
       },
       {
         rowIndex: 13,
@@ -40,13 +40,13 @@ function autoPreview(): QuotePreview {
         clave: "XM120",
         descripcion: "Flexo",
         unidades: 1,
-        placaNumber: null,
+        senalNumber: null,
         pUnitCop: 4700000,
         importeCop: 4700000,
         ignored: false,
         matchedCatalogId: "catalog-2",
         matchedCatalogName: "XM120 · Flexo Extensor",
-        placaNumbers: [45],
+        senalNumbers: [45],
       },
     ],
   };
@@ -57,43 +57,43 @@ describe("excel import preview state", () => {
     const preview = autoPreview();
     const rows = buildMachineRows(preview, initialLineState(preview));
 
-    expect(rows.map((row) => `${row.rowIndex}:${row.machineIndex}:${row.placaNumber}`)).toEqual([
+    expect(rows.map((row) => `${row.rowIndex}:${row.machineIndex}:${row.senalNumber}`)).toEqual([
       "12:0:43",
       "12:1:44",
       "13:0:45",
     ]);
   });
 
-  it("extends a line's placas without reusing another staged line's placa", () => {
+  it("extends a line's senales without reusing another staged line's señal", () => {
     const preview = autoPreview();
     const state = initialLineState(preview);
-    const usedByOtherLines = collectUsedPlacasForOtherLines(state, 12);
+    const usedByOtherLines = collectUsedSenalesForOtherLines(state, 12);
 
-    expect(resizePlacaNumbers(state[12].placaNumbers, 3, usedByOtherLines)).toEqual([43, 44, 46]);
+    expect(resizeSenalNumbers(state[12].senalNumbers, 3, usedByOtherLines)).toEqual([43, 44, 46]);
   });
 
-  it("reports duplicate manual placas in the staged auto import", () => {
+  it("reports duplicate manual señales in the staged auto import", () => {
     const preview = autoPreview();
     const state = initialLineState(preview);
-    state[13] = { ...state[13], placaNumbers: [44] };
+    state[13] = { ...state[13], senalNumbers: [44] };
 
-    expect(findPlacaIssue(preview, state)).toBe("La PLACA 44 está repetida en esta importación.");
+    expect(findSenalIssue(preview, state)).toBe("La SEÑAL 44 está repetida en esta importación.");
   });
 
-  it("seeds a second file's placas to avoid those already taken by the first file", () => {
+  it("seeds a second file's senales to avoid those already taken by the first file", () => {
     const preview = autoPreview();
     const first = initialLineState(preview);
-    const seedUsed = collectPlacasFromEntries([
+    const seedUsed = collectSenalesFromEntries([
       { id: "a", fileName: "a.xlsx", preview, clientName: "A", promisedDate: "2026-07-01", lineState: first },
     ]);
     const second = initialLineState(preview, seedUsed);
 
-    const firstPlacas = Object.values(first).flatMap((s) => s.placaNumbers);
-    const secondPlacas = Object.values(second).flatMap((s) => s.placaNumbers);
+    const firstSenales = Object.values(first).flatMap((s) => s.senalNumbers);
+    const secondSenales = Object.values(second).flatMap((s) => s.senalNumbers);
 
-    expect(firstPlacas).toEqual([43, 44, 45]);
-    // Second file must not reuse any placa from the first.
-    expect(secondPlacas.some((placa) => firstPlacas.includes(placa))).toBe(false);
+    expect(firstSenales).toEqual([43, 44, 45]);
+    // Second file must not reuse any senal from the first.
+    expect(secondSenales.some((senal) => firstSenales.includes(senal))).toBe(false);
   });
 
   function entry(id: string, overrides: Partial<ImportFileEntry> = {}): ImportFileEntry {
@@ -115,25 +115,25 @@ describe("excel import preview state", () => {
     expect(result.a.reason).toBe("Falta el nombre del cliente.");
   });
 
-  it("flags both files when a placa collides across files", () => {
+  it("flags both files when a señal collides across files", () => {
     const a = entry("a");
-    // Force file b to reuse one of file a's placas.
+    // Force file b to reuse one of file a's señales.
     const b = entry("b", {
       lineState: {
         ...initialLineState(autoPreview()),
-        12: { resolution: "catalog-1", unidades: 2, placaNumbers: [43, 99] },
+        12: { resolution: "catalog-1", unidades: 2, senalNumbers: [43, 99] },
       },
     });
 
     const result = validateEntries([a, b]);
     expect(result.a.valid).toBe(false);
     expect(result.b.valid).toBe(false);
-    expect(result.a.reason).toBe("La PLACA 43 se repite en otro archivo.");
+    expect(result.a.reason).toBe("La SEÑAL 43 se repite en otro archivo.");
   });
 
   it("keeps independent files valid", () => {
     const a = entry("a");
-    const seedUsed = collectPlacasFromEntries([a]);
+    const seedUsed = collectSenalesFromEntries([a]);
     const b = entry("b", { lineState: initialLineState(autoPreview(), seedUsed) });
 
     const result = validateEntries([a, b]);

@@ -100,7 +100,7 @@ export default async function FactoryMachineDetailPage({
             {machine.equipmentName}
           </h2>
           <p className="xt-machine-detail-subtitle mx-auto max-w-4xl text-sm text-[var(--xt-steel)] mt-0.5">
-            PLACA {machine.placaNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"} · {machine.stages.filter((stage) => stage.completion === 100).length}/{machine.stages.length} tareas
+            SEÑAL {machine.senalNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"} · {machine.stages.filter((stage) => stage.completion === 100).length}/{machine.stages.length} tareas
           </p>
         </div>
       </header>

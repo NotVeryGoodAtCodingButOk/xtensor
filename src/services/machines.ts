@@ -380,7 +380,7 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
   const { data: machine, error: machineError } = await supabase
     .from("machines")
-    .select("id, placa_number, status")
+    .select("id, senal_number, status")
     .eq("id", id)
     .single();
 
@@ -393,7 +393,7 @@ export async function sendMachineToWarranty(id: string, message: string) {
 
   const warrantyEvent: MachineWarrantyEventInsert = {
     machine_id: machine.id,
-    placa_number: machine.placa_number,
+    senal_number: machine.senal_number,
     message: warrantyMessage,
   };
 
@@ -517,7 +517,7 @@ function mapMachineRow(row: MachineRow): MachineView {
 
   return {
     id: row.id,
-    placaNumber: row.placa_number,
+    senalNumber: row.senal_number,
     clientId: row.client_id,
     clientName: row.clients?.name ?? "Cliente sin nombre",
     equipmentId: row.equipment_id,

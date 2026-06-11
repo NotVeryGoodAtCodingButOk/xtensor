@@ -77,7 +77,7 @@ export default async function FactoryBoardPage() {
 
       {/* Column labels */}
       <div className="xt-board-columns sticky top-0 z-10 grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 bg-[var(--xt-black)] px-6 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-extrabold uppercase tracking-widest text-white">
-        <span className="text-center">PLACA</span>
+        <span className="text-center">SEÑAL</span>
         <span>Máquina</span>
         <span>Cliente</span>
         <span>Color</span>
@@ -123,9 +123,9 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
         status === "late" ? "xt-flash-late border-[var(--line-pro-red)]" : "border-white/10",
       )}
     >
-      {/* PLACA number */}
-      <span className="xt-board-placa text-center text-2xl font-bold tabular-nums text-white/80 leading-none">
-        {machine.placaNumber}
+      {/* SEÑAL number */}
+      <span className="xt-board-senal text-center text-2xl font-bold tabular-nums text-white/80 leading-none">
+        {machine.senalNumber}
       </span>
 
       {/* Machine name */}

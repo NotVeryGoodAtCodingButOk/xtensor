@@ -22,6 +22,9 @@ def split_ref(ref):
 
 def cell_text(cell, shared):
     cell_type = cell.attrib.get("t")
+    if cell_type == "inlineStr":
+        return "".join(text.text or "" for text in cell.findall(".//main:t", NS))
+
     value_node = cell.find("main:v", NS)
     value = value_node.text if value_node is not None and value_node.text is not None else ""
     if cell_type == "s" and value.isdigit():
@@ -41,7 +44,10 @@ def number(value):
 def sheet_rows(zip_file, workbook_root, relmap, shared, sheet_name):
     sheet = next(sheet for sheet in workbook_root.findall("main:sheets/main:sheet", NS) if sheet.attrib["name"] == sheet_name)
     target = relmap[sheet.attrib[f"{{{NS['rel']}}}id"]]
-    root = ET.fromstring(zip_file.read("xl/" + target))
+    target_path = target.lstrip("/")
+    if not target_path.startswith("xl/"):
+        target_path = "xl/" + target_path
+    root = ET.fromstring(zip_file.read(target_path))
     rows = {}
     for row in root.findall("main:sheetData/main:row", NS):
         row_index = int(row.attrib["r"])
@@ -64,11 +70,14 @@ def main():
         workbook_root = ET.fromstring(zip_file.read("xl/workbook.xml"))
         rels_root = ET.fromstring(zip_file.read("xl/_rels/workbook.xml.rels"))
         relmap = {rel.attrib["Id"]: rel.attrib["Target"] for rel in rels_root}
-        shared_root = ET.fromstring(zip_file.read("xl/sharedStrings.xml"))
-        shared = [
-            "".join(text.text or "" for text in item.iter(f"{{{NS['main']}}}t"))
-            for item in shared_root.findall("main:si", NS)
-        ]
+        if "xl/sharedStrings.xml" in zip_file.namelist():
+            shared_root = ET.fromstring(zip_file.read("xl/sharedStrings.xml"))
+            shared = [
+                "".join(text.text or "" for text in item.iter(f"{{{NS['main']}}}t"))
+                for item in shared_root.findall("main:si", NS)
+            ]
+        else:
+            shared = []
 
         plan = sheet_rows(zip_file, workbook_root, relmap, shared, "plan de producción")
         labor = sheet_rows(zip_file, workbook_root, relmap, shared, "Mano de obra")
@@ -104,14 +113,14 @@ def main():
     rows = []
     for row_index in range(5, 50):
         row = plan.get(row_index, {})
-        placa = row.get("Q")
-        if not placa:
+        senal = row.get("Q")
+        if not senal:
             continue
 
         rows.append(
             {
                 "row": row_index,
-                "placaNumber": int(number(placa) or 0),
+                "senalNumber": int(number(senal) or 0),
                 "clientName": row.get("R") or "",
                 "equipmentCode": row.get("S") or "",
                 "equipmentName": row.get("T") or "",

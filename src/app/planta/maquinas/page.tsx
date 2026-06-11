@@ -134,7 +134,7 @@ export default async function FactoryMachinesPage({
                       {machine.clientName} · {machine.colorName ?? "Sin color"}
                     </p>
                     <p className="xt-machine-meta-line truncate">
-                      PLACA {machine.placaNumber} · {machine.equipmentCode ?? "Personalizado"}
+                      SEÑAL {machine.senalNumber} · {machine.equipmentCode ?? "Personalizado"}
                     </p>
                   </div>
 

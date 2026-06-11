@@ -7,12 +7,12 @@ describe("previos helpers", () => {
   it("extracts grouped previos from the workbook fixture and backfills by equipment code", () => {
     const maps = buildFixturePrevioMaps(fixture.rows);
 
-    expect(resolveFixturePrevios({ placaNumber: 987, equipmentCode: "XM145" }, maps)).toEqual([
+    expect(resolveFixturePrevios({ senalNumber: 987, equipmentCode: "XM145" }, maps)).toEqual([
       "Torno A.",
       "Torno E.",
       "Laser",
       "Carenaje",
-      "Placas",
+      "Señales",
       "Tubos",
       "Inox.",
       "Pintu.",
@@ -22,9 +22,9 @@ describe("previos helpers", () => {
       "Cojines",
     ]);
 
-    expect(resolveFixturePrevios({ placaNumber: 975, equipmentCode: "XM105" }, maps)).toEqual(["Torno E.", "Cojines"]);
+    expect(resolveFixturePrevios({ senalNumber: 975, equipmentCode: "XM105" }, maps)).toEqual(["Torno E.", "Cojines"]);
 
-    expect(resolveFixturePrevios({ placaNumber: 123456, equipmentCode: "XM105" }, maps)).toEqual([
+    expect(resolveFixturePrevios({ senalNumber: 123456, equipmentCode: "XM105" }, maps)).toEqual([
       "Carenaje",
       "Cojines",
       "Laser",

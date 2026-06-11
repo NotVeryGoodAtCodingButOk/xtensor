@@ -1,5 +1,5 @@
 import type { ParsedQuote, ParsedQuoteLine } from "@/services/excel";
-import { generateSequentialPlacaNumbers, normalizePlacaNumber } from "@/services/placas";
+import { generateSequentialSenalNumbers, normalizeSenalNumber } from "@/services/senales";
 
 export type QuotePreviewCatalogItem = {
   id: string;
@@ -17,13 +17,13 @@ export type QuotePreviewLine = ParsedQuoteLine & {
    * defaults these lines to "skip".
    */
   ignored: boolean;
-  placaNumbers: number[];
+  senalNumbers: number[];
 };
 
 export type QuotePreview = {
   reference: string | null;
-  placaNumber: number | null;
-  placaMode: "auto";
+  senalNumber: number | null;
+  senalMode: "auto";
   fecha: string | null;
   clientName: string | null;
   lines: QuotePreviewLine[];
@@ -48,7 +48,7 @@ export function normalizeCatalogCode(code: string): string {
  * Quote claves that don't resolve 1:1 to a catalog code by normalization.
  * Keyed by the normalized clave.
  *  - Aliases: a clave that should resolve to a different catalog code
- *    ("Placas adicionales" is quoted as XTM000 but is catalog item XM200).
+ *    ("Señales adicionales" is quoted as XTM000 but is catalog item XM200).
  */
 const CLAVE_CODE_ALIASES: Record<string, string> = {
   XTM000: "XM200",
@@ -98,50 +98,50 @@ function unitCount(line: Pick<ParsedQuoteLine, "unidades">) {
   return Math.max(1, Math.round(line.unidades) || 1);
 }
 
-function sourcePlacaNumbers(line: ParsedQuoteLine) {
-  const placaNumber = normalizePlacaNumber(line.placaNumber);
-  if (!placaNumber) return null;
+function sourceSenalNumbers(line: ParsedQuoteLine) {
+  const senalNumber = normalizeSenalNumber(line.senalNumber);
+  if (!senalNumber) return null;
 
-  return Array.from({ length: unitCount(line) }, (_, index) => placaNumber + index);
+  return Array.from({ length: unitCount(line) }, (_, index) => senalNumber + index);
 }
 
 export function buildQuotePreview({
   quote,
   catalog,
-  activePlacaNumbers,
+  activeSenalNumbers,
 }: {
   quote: ParsedQuote;
   catalog: QuotePreviewCatalogItem[];
-  activePlacaNumbers: number[];
+  activeSenalNumbers: number[];
 }): QuotePreview {
   const byCode = buildCatalogIndex(catalog);
-  const explicitPlacaNumbers = quote.lines.flatMap((line) => sourcePlacaNumbers(line) ?? []);
-  const missingPlacaUnits = quote.lines.reduce((sum, line) => {
-    return sourcePlacaNumbers(line) ? sum : sum + unitCount(line);
+  const explicitSenalNumbers = quote.lines.flatMap((line) => sourceSenalNumbers(line) ?? []);
+  const missingSenalUnits = quote.lines.reduce((sum, line) => {
+    return sourceSenalNumbers(line) ? sum : sum + unitCount(line);
   }, 0);
-  const autoPlacaNumbers = generateSequentialPlacaNumbers(
-    [...activePlacaNumbers, ...explicitPlacaNumbers],
-    missingPlacaUnits,
+  const autoSenalNumbers = generateSequentialSenalNumbers(
+    [...activeSenalNumbers, ...explicitSenalNumbers],
+    missingSenalUnits,
   );
-  let autoPlacaIndex = 0;
+  let autoSenalIndex = 0;
 
   return {
     reference: quote.reference,
-    placaNumber: null,
-    placaMode: "auto",
+    senalNumber: null,
+    senalMode: "auto",
     fecha: quote.fecha,
     clientName: quote.clientName,
     lines: quote.lines.map((line) => {
       const { ignored, lookupCode } = classifyClave(line.clave);
       const match = ignored ? null : (byCode.get(lookupCode) ?? null);
       const units = unitCount(line);
-      const explicit = sourcePlacaNumbers(line);
-      const placaNumbers = explicit ?? autoPlacaNumbers.slice(autoPlacaIndex, autoPlacaIndex + units);
-      if (!explicit) autoPlacaIndex += units;
+      const explicit = sourceSenalNumbers(line);
+      const senalNumbers = explicit ?? autoSenalNumbers.slice(autoSenalIndex, autoSenalIndex + units);
+      if (!explicit) autoSenalIndex += units;
 
       return {
         ...line,
-        placaNumbers,
+        senalNumbers,
         ignored,
         matchedCatalogId: match?.id ?? null,
         matchedCatalogName: match ? `${match.code} · ${match.name}` : null,

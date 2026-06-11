@@ -21,7 +21,7 @@ export type StatisticsRange = {
 
 export type MachineTimingInput = {
   id: string;
-  placaNumber: number;
+  senalNumber: number;
   clientName: string;
   equipmentName: string;
   line: string | null;
@@ -58,7 +58,7 @@ export type StageLogTimingInput = {
 export type WarrantyEventTimingInput = {
   id: string;
   machineId: string;
-  placaNumber: number;
+  senalNumber: number;
   clientName: string;
   equipmentName: string;
   message: string;
@@ -87,7 +87,7 @@ export type CurrentOpenStageTiming = {
 
 export type MachineTimingStats = {
   id: string;
-  placaNumber: number;
+  senalNumber: number;
   clientName: string;
   equipmentName: string;
   line: string | null;
@@ -140,14 +140,14 @@ export type WorkerActivityStats = {
 
 export type CurrentOpenStageStats = CurrentOpenStageTiming & {
   machineId: string;
-  placaNumber: number;
+  senalNumber: number;
   clientName: string;
   equipmentName: string;
 };
 
 export type DataQualityIssue = {
   machineId: string;
-  placaNumber: number;
+  senalNumber: number;
   label: string;
   detail: string;
 };
@@ -207,7 +207,7 @@ type MachineStatisticsRow = Database["public"]["Tables"]["machines"]["Row"] & {
   stage_logs: StageLogRow[];
 };
 type WarrantyEventRow = Database["public"]["Tables"]["machine_warranty_events"]["Row"] & {
-  machines: Pick<MachineStatisticsRow, "id" | "placa_number" | "clients" | "equipment_catalog"> | null;
+  machines: Pick<MachineStatisticsRow, "id" | "senal_number" | "clients" | "equipment_catalog"> | null;
 };
 
 const STATISTICS_MACHINE_SELECT = `
@@ -238,7 +238,7 @@ export async function getStatisticsDashboard(input: {
     supabase.from("machines").select(STATISTICS_MACHINE_SELECT).order("created_at", { ascending: true }),
     supabase
       .from("machine_warranty_events")
-      .select("*, machines(id, placa_number, clients(*), equipment_catalog(*))")
+      .select("*, machines(id, senal_number, clients(*), equipment_catalog(*))")
       .order("created_at", { ascending: false }),
   ]);
 
@@ -361,7 +361,7 @@ export function buildStatisticsDashboard(input: {
       .map((machine) => ({
         ...machine.currentOpenStage!,
         machineId: machine.id,
-        placaNumber: machine.placaNumber,
+        senalNumber: machine.senalNumber,
         clientName: machine.clientName,
         equipmentName: machine.equipmentName,
       }))
@@ -381,7 +381,7 @@ export function buildStatisticsDashboard(input: {
         .filter((machine) => !machine.productionCompletedAt)
         .map((machine) => ({
           machineId: machine.id,
-          placaNumber: machine.placaNumber,
+          senalNumber: machine.senalNumber,
           label: machine.equipmentName,
           detail: "No tiene Empacar al 100%.",
         }))
@@ -390,7 +390,7 @@ export function buildStatisticsDashboard(input: {
         .filter((machine) => machine.status === "shipped" && !machine.productionCompletedAt)
         .map((machine) => ({
           machineId: machine.id,
-          placaNumber: machine.placaNumber,
+          senalNumber: machine.senalNumber,
           label: machine.equipmentName,
           detail: machine.shippedAt ? `Despachada el ${toFactoryDateKey(machine.shippedAt)}.` : "Despachada sin fecha.",
         })),
@@ -399,7 +399,7 @@ export function buildStatisticsDashboard(input: {
           .filter((stage) => stage.isOutOfSequence)
           .map((stage) => ({
             machineId: machine.id,
-            placaNumber: machine.placaNumber,
+            senalNumber: machine.senalNumber,
             label: machine.equipmentName,
             detail: `${stage.stageName} fue completada antes de la etapa previa.`,
           })),
@@ -470,7 +470,7 @@ export function calculateMachineTiming(
 
   return {
     id: input.id,
-    placaNumber: input.placaNumber,
+    senalNumber: input.senalNumber,
     clientName: input.clientName,
     equipmentName: input.equipmentName,
     line: input.line,
@@ -546,7 +546,7 @@ function mapStatisticsMachineRow(row: MachineStatisticsRow): MachineTimingInput 
 
   return {
     id: row.id,
-    placaNumber: row.placa_number,
+    senalNumber: row.senal_number,
     clientName: row.clients?.name ?? "Cliente sin nombre",
     equipmentName,
     line: normalizeMachineLine(row.line_override ?? row.equipment_catalog?.line),
@@ -581,7 +581,7 @@ function mapWarrantyEventRow(row: WarrantyEventRow): WarrantyEventTimingInput {
   return {
     id: row.id,
     machineId: row.machine_id,
-    placaNumber: row.placa_number,
+    senalNumber: row.senal_number,
     clientName: row.machines?.clients?.name ?? "Cliente sin nombre",
     equipmentName: row.machines?.equipment_catalog?.name ?? "Producto personalizado",
     message: row.message,

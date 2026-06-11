@@ -16,7 +16,7 @@ update public.equipment_catalog set name = 'Multifuerza 4 estaciones',          
 update public.equipment_catalog set name = 'Multifuerza 8 estaciones',                    updated_at = now() where code = 'XM139';
 update public.equipment_catalog set name = 'Sentadilla Smith 2.0 (clasica)',              updated_at = now() where code = 'XM170';
 update public.equipment_catalog set name = 'Sentadilla hack up 3.0',                      updated_at = now() where code = 'XM185';
-update public.equipment_catalog set name = 'Sentadilla smith con poleas 2.0 sin placas',  updated_at = now() where code = 'XM189';
+update public.equipment_catalog set name = 'Sentadilla smith con poleas 2.0 sin señales',  updated_at = now() where code = 'XM189';
 update public.equipment_catalog set name = 'Rack para mancuernas 3 niveles',              updated_at = now() where code = 'XM906';
 update public.equipment_catalog set name = 'Carrusel Infantil',                           updated_at = now() where code = 'XJ505';
 update public.equipment_catalog set name = 'Banco Olimpico Multifunción',                 updated_at = now() where code = 'XM195';

@@ -40,7 +40,7 @@ import {
 } from "@/services/machines";
 import { parseQuoteWorkbook } from "@/services/excel";
 import { buildQuotePreview, type QuotePreview, type QuotePreviewLine } from "@/services/quote-preview";
-import { AUTO_PLACA_MAX, listActivePlacaNumbers, normalizePlacaNumber } from "@/services/placas";
+import { AUTO_SENAL_MAX, listActiveSenalNumbers, normalizeSenalNumber } from "@/services/senales";
 import {
   addMachinePrevio,
   addEquipmentPrevio,
@@ -107,7 +107,7 @@ export async function createMachineAction(formData: FormData) {
         });
 
   await createMachine({
-    placa_number: Number(formData.get("placaNumber")),
+    senal_number: Number(formData.get("senalNumber")),
     client_id: client.id,
     equipment_id: equipmentIdInput || equipment?.id || null,
     custom_equipment_name: equipmentIdInput ? null : customEquipmentName,
@@ -129,7 +129,7 @@ export async function updateMachineAction(formData: FormData) {
   const machineId = String(formData.get("machineId") ?? "");
   const equipmentId = String(formData.get("equipmentId") ?? "").trim() || null;
   await updateMachine(machineId, {
-    placa_number: Number(formData.get("placaNumber")),
+    senal_number: Number(formData.get("senalNumber")),
     equipment_id: equipmentId,
     color_id: String(formData.get("colorId") ?? "").trim() || null,
     sale_price_cop: Number(formData.get("salePriceCop")),
@@ -155,7 +155,7 @@ export async function updateMachineInlineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
-    placa_number: Number(formData.get("placaNumber")),
+    senal_number: Number(formData.get("senalNumber")),
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
@@ -488,13 +488,13 @@ export async function parseQuoteExcelAction(
     throw new Error("Selecciona un archivo de Excel.");
   }
 
-  const [quote, catalog, activePlacaNumbers] = await Promise.all([
+  const [quote, catalog, activeSenalNumbers] = await Promise.all([
     file.arrayBuffer().then(parseQuoteWorkbook),
     listCatalog(),
-    listActivePlacaNumbers(),
+    listActiveSenalNumbers(),
   ]);
 
-  return buildQuotePreview({ quote, catalog, activePlacaNumbers });
+  return buildQuotePreview({ quote, catalog, activeSenalNumbers });
 }
 
 export type ImportQuoteLineInput = {
@@ -504,12 +504,12 @@ export type ImportQuoteLineInput = {
   line?: string | null;
   producto: string;
   unidades: number;
-  placaNumbers: number[];
+  senalNumbers: number[];
   pUnitCop: number;
 };
 
 export async function importQuoteAction(input: {
-  placaMode: "auto";
+  senalMode: "auto";
   clientName: string;
   promisedDate: string;
   lines: ImportQuoteLineInput[];
@@ -524,30 +524,30 @@ export async function importQuoteAction(input: {
     throw new Error("No hay líneas seleccionadas para importar.");
   }
 
-  const activePlacaNumbers = await listActivePlacaNumbers();
-  const unavailablePlacas = new Set(activePlacaNumbers);
-  const placasInImport = new Set<number>();
+  const activeSenalNumbers = await listActiveSenalNumbers();
+  const unavailableSenales = new Set(activeSenalNumbers);
+  const senalesInImport = new Set<number>();
   for (const line of importable) {
     const units = Math.max(1, Math.round(line.unidades) || 1);
-    if (line.placaNumbers.length < units) {
-      throw new Error(`Faltan placas para "${line.producto}".`);
+    if (line.senalNumbers.length < units) {
+      throw new Error(`Faltan señales para "${line.producto}".`);
     }
 
     for (let i = 0; i < units; i += 1) {
-      const placaNumber = normalizePlacaNumber(line.placaNumbers[i]);
-      if (!placaNumber) {
-        throw new Error(`La PLACA de "${line.producto}" es inválida.`);
+      const senalNumber = normalizeSenalNumber(line.senalNumbers[i]);
+      if (!senalNumber) {
+        throw new Error(`La SEÑAL de "${line.producto}" es inválida.`);
       }
-      if (placaNumber > AUTO_PLACA_MAX) {
-        throw new Error(`La PLACA ${placaNumber} supera el máximo automático de ${AUTO_PLACA_MAX}.`);
+      if (senalNumber > AUTO_SENAL_MAX) {
+        throw new Error(`La SEÑAL ${senalNumber} supera el máximo automático de ${AUTO_SENAL_MAX}.`);
       }
-      if (unavailablePlacas.has(placaNumber)) {
-        throw new Error(`La PLACA ${placaNumber} ya está activa. Elige otra antes de importar.`);
+      if (unavailableSenales.has(senalNumber)) {
+        throw new Error(`La SEÑAL ${senalNumber} ya está activa. Elige otra antes de importar.`);
       }
-      if (placasInImport.has(placaNumber)) {
-        throw new Error(`La PLACA ${placaNumber} está repetida en esta importación.`);
+      if (senalesInImport.has(senalNumber)) {
+        throw new Error(`La SEÑAL ${senalNumber} está repetida en esta importación.`);
       }
-      placasInImport.add(placaNumber);
+      senalesInImport.add(senalNumber);
     }
   }
 
@@ -577,10 +577,10 @@ export async function importQuoteAction(input: {
     const units = Math.max(1, Math.round(line.unidades) || 1);
     for (let i = 0; i < units; i += 1) {
       position += 1;
-      const placaNumber = normalizePlacaNumber(line.placaNumbers[i]);
-      if (!placaNumber) throw new Error(`La PLACA de "${line.producto}" es inválida.`);
+      const senalNumber = normalizeSenalNumber(line.senalNumbers[i]);
+      if (!senalNumber) throw new Error(`La SEÑAL de "${line.producto}" es inválida.`);
       await createMachine({
-        placa_number: placaNumber,
+        senal_number: senalNumber,
         client_id: client.id,
         equipment_id: equipmentId,
         custom_equipment_name: null,
@@ -610,12 +610,12 @@ export async function updateMachineClientAction(formData: FormData) {
   revalidatePath("/admin/previos");
 }
 
-export async function updateMachinePlacaAction(formData: FormData) {
+export async function updateMachineSenalAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
-  const placaNumber = Number(formData.get("placaNumber"));
-  if (machineId && Number.isFinite(placaNumber) && placaNumber > 0) {
-    await updateMachine(machineId, { placa_number: placaNumber });
+  const senalNumber = Number(formData.get("senalNumber"));
+  if (machineId && Number.isFinite(senalNumber) && senalNumber > 0) {
+    await updateMachine(machineId, { senal_number: senalNumber });
   }
   revalidateFactoryData();
   revalidatePath("/admin/previos");

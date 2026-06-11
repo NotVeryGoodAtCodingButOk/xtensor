@@ -34,13 +34,13 @@ export default async function EditMachinePage({
     <AdminShell>
       <Card className="max-w-4xl">
         <CardHeader>
-          <CardTitle>Editar PLACA {machine.placaNumber}</CardTitle>
+          <CardTitle>Editar SEÑAL {machine.senalNumber}</CardTitle>
         </CardHeader>
         <CardContent>
           <form action={updateMachineAction} className="grid gap-4 md:grid-cols-2">
             <input type="hidden" name="machineId" value={machine.id} />
-            <Field label="PLACA">
-              <Input name="placaNumber" type="number" min="1" defaultValue={machine.placaNumber} required />
+            <Field label="SEÑAL">
+              <Input name="senalNumber" type="number" min="1" defaultValue={machine.senalNumber} required />
             </Field>
             <Field label="Cliente">
               <Input value={machine.clientName} readOnly />
@@ -83,7 +83,7 @@ export default async function EditMachinePage({
           <div className="mt-6 border-t border-[var(--xt-cement)] pt-4">
             <MachineEditActions
               machineId={machine.id}
-              placaNumber={machine.placaNumber}
+              senalNumber={machine.senalNumber}
               status={machine.status}
               undoPreviosMove={false}
             />

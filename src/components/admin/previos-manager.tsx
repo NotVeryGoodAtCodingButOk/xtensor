@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction, updateMachinePlacaAction, updateMachineClientAction } from "@/app/admin/actions";
+import { sendToProductionAction, toggleMachinePrevioAction, updateMachineSenalAction, updateMachineClientAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
 
-function InlinePlacaEdit({ machineId, placaNumber }: { machineId: string; placaNumber: number }) {
+function InlineSenalEdit({ machineId, senalNumber }: { machineId: string; senalNumber: number }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(String(placaNumber));
+  const [value, setValue] = useState(String(senalNumber));
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -22,21 +22,21 @@ function InlinePlacaEdit({ machineId, placaNumber }: { machineId: string; placaN
       e.preventDefault();
       formRef.current?.requestSubmit();
     } else if (e.key === "Escape") {
-      setValue(String(placaNumber));
+      setValue(String(senalNumber));
       setEditing(false);
     }
   }
 
   if (!editing) {
     return (
-      <ActionTooltip text="Edita el número de PLACA de esta máquina.">
+      <ActionTooltip text="Edita el número de SEÑAL de esta máquina.">
         <button
           type="button"
           onClick={() => setEditing(true)}
           className="font-semibold underline-offset-2 hover:underline cursor-text"
-          title="Haz clic para editar el PLACA"
+          title="Haz clic para editar la SEÑAL"
         >
-          {placaNumber}
+          {senalNumber}
         </button>
       </ActionTooltip>
     );
@@ -45,14 +45,14 @@ function InlinePlacaEdit({ machineId, placaNumber }: { machineId: string; placaN
   return (
     <form
       ref={formRef}
-      action={updateMachinePlacaAction}
+      action={updateMachineSenalAction}
       onSubmit={() => setEditing(false)}
     >
       <input type="hidden" name="machineId" value={machineId} />
       <input
         autoFocus
         type="number"
-        name="placaNumber"
+        name="senalNumber"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
@@ -230,7 +230,7 @@ export function PreviosManager({
       if (pendingReceived && !machine.summary.pendingReceived) return false;
       if (!term) return true;
       return (
-        String(machine.placaNumber).includes(term) ||
+        String(machine.senalNumber).includes(term) ||
         machine.clientName.toLowerCase().includes(term) ||
         machine.equipmentName.toLowerCase().includes(term) ||
         (machine.equipmentCode ?? "").toLowerCase().includes(term)
@@ -269,7 +269,7 @@ export function PreviosManager({
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por PLACA, cliente o equipo"
+              placeholder="Buscar por SEÑAL, cliente o equipo"
               className="h-9 w-72 text-sm"
             />
             <select className={selectCls} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
@@ -335,7 +335,7 @@ export function PreviosManager({
                     aria-label="Seleccionar todas"
                   />
                 </TableHead>
-                <TableHead>PLACA</TableHead>
+                <TableHead>SEÑAL</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Máquina</TableHead>
@@ -362,12 +362,12 @@ export function PreviosManager({
                         type="checkbox"
                         checked={selected.has(machine.machineId)}
                         onChange={() => toggleSelected(machine.machineId)}
-                        aria-label={`Seleccionar PLACA ${machine.placaNumber}`}
+                        aria-label={`Seleccionar SEÑAL ${machine.senalNumber}`}
                       />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <InlinePlacaEdit machineId={machine.machineId} placaNumber={machine.placaNumber} />
+                        <InlineSenalEdit machineId={machine.machineId} senalNumber={machine.senalNumber} />
                         <Link
                           href={`/admin/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
@@ -427,7 +427,7 @@ export function PreviosManager({
             <Table className="min-w-[1000px] text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead>PLACA</TableHead>
+                  <TableHead>SEÑAL</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Código</TableHead>
                   <TableHead>Máquina</TableHead>
@@ -440,7 +440,7 @@ export function PreviosManager({
                   <TableRow key={machine.machineId}>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <InlinePlacaEdit machineId={machine.machineId} placaNumber={machine.placaNumber} />
+                        <InlineSenalEdit machineId={machine.machineId} senalNumber={machine.senalNumber} />
                         <Link
                           href={`/admin/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"

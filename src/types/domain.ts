@@ -11,7 +11,7 @@ export type StageView = {
 
 export type MachineView = {
   id: string;
-  placaNumber: number;
+  senalNumber: number;
   clientId: string;
   clientName: string;
   equipmentId: string | null;
@@ -84,7 +84,7 @@ export type MachinePrevioSummary = {
 
 export type MachinePrevioListRow = {
   machineId: string;
-  placaNumber: number;
+  senalNumber: number;
   clientName: string;
   equipmentName: string;
   equipmentCode: string | null;

@@ -20,7 +20,7 @@ async function buildQuoteFixture(options: { includeReference?: boolean } = {}): 
   sheet.getCell("B6").value = "ventas@xtensor.co";
 
   // Header row of the line-item table.
-  const header = ["Producto", "Clave", "Descripción", "UNID.", "Descuento", "Impuesto", "P.UNIT.", "Importe", "Placa"];
+  const header = ["Producto", "Clave", "Descripción", "UNID.", "Descuento", "Impuesto", "P.UNIT.", "Importe", "Señal"];
   header.forEach((value, index) => {
     sheet.getCell(11, index + 1).value = value;
   });
@@ -54,7 +54,7 @@ describe("parseQuoteWorkbook", () => {
       producto: "Flexo Extensor",
       clave: "XM120",
       unidades: 1,
-      placaNumber: null,
+      senalNumber: null,
       pUnitCop: 4748100,
     });
     expect(quote.lines[1]).toMatchObject({
@@ -94,7 +94,7 @@ describe("parseQuoteWorkbook", () => {
     expect(quote.lines).toHaveLength(2);
   });
 
-  it("extracts optional row-level Coti/Placa values from the product table", async () => {
+  it("extracts optional row-level Coti/Señal values from the product table", async () => {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Cotizacion");
     ["Producto", "Clave", "Descripción", "UNID.", "Descuento", "Impuesto", "P.UNIT.", "Importe", "Coti"].forEach(
@@ -116,7 +116,7 @@ describe("parseQuoteWorkbook", () => {
 
     const quote = await parseQuoteWorkbook((await workbook.xlsx.writeBuffer()) as ArrayBuffer);
 
-    expect(quote.lines.map((line) => line.placaNumber)).toEqual([51, null]);
+    expect(quote.lines.map((line) => line.senalNumber)).toEqual([51, null]);
   });
 
   it("skips blank and total rows while continuing through the worksheet", async () => {

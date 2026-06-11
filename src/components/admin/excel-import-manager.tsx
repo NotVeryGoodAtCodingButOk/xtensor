@@ -10,14 +10,14 @@ import {
 } from "@/app/admin/actions";
 import {
   buildMachineRows,
-  collectPlacasFromEntries,
-  collectUsedPlacasForOtherLines,
+  collectSenalesFromEntries,
+  collectUsedSenalesForOtherLines,
   countEntryMachines,
-  getLinePlacaNumbers,
+  getLineSenalNumbers,
   getLineResolution,
   getLineUnitCount,
   initialLineState,
-  resizePlacaNumbers,
+  resizeSenalNumbers,
   validateEntries,
   type ImportFileEntry,
 } from "@/components/admin/excel-import-state";
@@ -43,7 +43,7 @@ function buildImportLines(preview: QuotePreview, lineState: ImportFileEntry["lin
     const base = {
       producto: line.producto || line.clave,
       unidades: getLineUnitCount(line, state),
-      placaNumbers: getLinePlacaNumbers(line, state),
+      senalNumbers: getLineSenalNumbers(line, state),
       pUnitCop: line.pUnitCop,
       // Leave línea unset: catalog matches keep their own line; custom items have none.
       line: null,
@@ -113,7 +113,7 @@ export function ExcelImportManager({
         setEntries((prev) => {
           const next = [...prev];
           for (const { fileName, preview } of parsed) {
-            const seedUsed = collectPlacasFromEntries(next);
+            const seedUsed = collectSenalesFromEntries(next);
             next.push({
               id: crypto.randomUUID(),
               fileName,
@@ -145,8 +145,8 @@ export function ExcelImportManager({
         if (entry.id !== entryId) return entry;
         const state = entry.lineState[line.rowIndex];
         const usedElsewhere = new Set([
-          ...collectUsedPlacasForOtherLines(entry.lineState, line.rowIndex),
-          ...collectPlacasFromEntries(prev, entry.id),
+          ...collectUsedSenalesForOtherLines(entry.lineState, line.rowIndex),
+          ...collectSenalesFromEntries(prev, entry.id),
         ]);
         return {
           ...entry,
@@ -155,7 +155,7 @@ export function ExcelImportManager({
             [line.rowIndex]: {
               resolution: getLineResolution(line, state),
               unidades,
-              placaNumbers: resizePlacaNumbers(state?.placaNumbers ?? line.placaNumbers, unidades, usedElsewhere),
+              senalNumbers: resizeSenalNumbers(state?.senalNumbers ?? line.senalNumbers, unidades, usedElsewhere),
             },
           },
         };
@@ -163,13 +163,13 @@ export function ExcelImportManager({
     );
   }
 
-  function updateLinePlacaNumber(entryId: string, line: PreviewLine, machineIndex: number, placaNumber: number) {
+  function updateLineSenalNumber(entryId: string, line: PreviewLine, machineIndex: number, senalNumber: number) {
     setEntries((prev) =>
       prev.map((entry) => {
         if (entry.id !== entryId) return entry;
         const state = entry.lineState[line.rowIndex];
-        const current = getLinePlacaNumbers(line, state);
-        current[machineIndex] = placaNumber;
+        const current = getLineSenalNumbers(line, state);
+        current[machineIndex] = senalNumber;
         return {
           ...entry,
           lineState: {
@@ -177,7 +177,7 @@ export function ExcelImportManager({
             [line.rowIndex]: {
               resolution: getLineResolution(line, state),
               unidades: getLineUnitCount(line, state),
-              placaNumbers: current,
+              senalNumbers: current,
             },
           },
         };
@@ -197,7 +197,7 @@ export function ExcelImportManager({
             [line.rowIndex]: {
               resolution,
               unidades: getLineUnitCount(line, state),
-              placaNumbers: getLinePlacaNumbers(line, state),
+              senalNumbers: getLineSenalNumbers(line, state),
             },
           },
         };
@@ -222,7 +222,7 @@ export function ExcelImportManager({
       for (const entry of importable) {
         try {
           const result = await importQuoteAction({
-            placaMode: "auto",
+            senalMode: "auto",
             clientName: entry.clientName.trim(),
             promisedDate: entry.promisedDate,
             lines: buildImportLines(entry.preview, entry.lineState),
@@ -354,9 +354,9 @@ export function ExcelImportManager({
             <CardContent className="grid gap-4">
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="grid gap-2 text-sm font-medium">
-                  PLACA
+                  SEÑAL
                   <div className="rounded-[2px] border border-[var(--xt-cement)] bg-[var(--xt-yellow-soft)] px-3 py-2 text-sm font-normal text-[var(--xt-black)]">
-                    Se asignó una PLACA por máquina; edítalas fila por fila en la tabla.
+                    Se asignó una SEÑAL por máquina; edítalas fila por fila en la tabla.
                   </div>
                 </div>
                 <label className="grid gap-2 text-sm font-medium">
@@ -392,7 +392,7 @@ export function ExcelImportManager({
                       <TableHead>Producto</TableHead>
                       <TableHead>Código</TableHead>
                       <TableHead className="w-24">Unidad</TableHead>
-                      <TableHead className="w-36">PLACA</TableHead>
+                      <TableHead className="w-36">SEÑAL</TableHead>
                       <TableHead className="text-right">P.UNIT.</TableHead>
                       <TableHead className="w-72">Acción</TableHead>
                     </TableRow>
@@ -446,13 +446,13 @@ export function ExcelImportManager({
                               type="number"
                               min="1"
                               max="999"
-                              value={row.placaNumber}
+                              value={row.senalNumber}
                               disabled={resolution === "skip"}
                               onChange={(e) =>
-                                updateLinePlacaNumber(entry.id, line, row.machineIndex, Number(e.target.value))
+                                updateLineSenalNumber(entry.id, line, row.machineIndex, Number(e.target.value))
                               }
                               className="h-9"
-                              aria-label={`PLACA ${row.machineIndex + 1} para ${line.producto || line.clave}`}
+                              aria-label={`SEÑAL ${row.machineIndex + 1} para ${line.producto || line.clave}`}
                             />
                           </TableCell>
                           {row.machineIndex === 0 ? (
