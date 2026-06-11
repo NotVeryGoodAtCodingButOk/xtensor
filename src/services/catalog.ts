@@ -150,6 +150,12 @@ export async function updateWorker(
   return data;
 }
 
+export async function deleteWorker(id: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase.from("workers").delete().eq("id", id);
+  if (error) throw new Error(`No se pudo eliminar el operario: ${error.message}`);
+}
+
 export async function createCatalogItem(input: {
   code: string;
   name: string;

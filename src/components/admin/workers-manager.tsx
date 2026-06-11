@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Plus, X } from "lucide-react";
-import { addWorkerAction, updateWorkerAction } from "@/app/admin/actions";
+import { Check, Pencil, Plus, Trash2, X } from "lucide-react";
+import { addWorkerAction, deleteWorkerAction, updateWorkerAction } from "@/app/admin/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -140,18 +140,37 @@ export function WorkersManager({ workers }: { workers: Worker[] }) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    type="button"
-                    onClick={() => {
-                      setEditingId(worker.id);
-                      setAdding(false);
-                    }}
-                  >
-                    <Pencil className="h-3 w-3" />
-                    Editar
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      type="button"
+                      onClick={() => {
+                        setEditingId(worker.id);
+                        setAdding(false);
+                      }}
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Editar
+                    </Button>
+                    <form
+                      action={deleteWorkerAction}
+                      onSubmit={(e) => {
+                        if (
+                          !confirm(
+                            `¿Eliminar a "${worker.full_name}"?\n\nEsta acción es permanente y no se puede deshacer. El historial de etapas atribuido a este operario quedará sin referencia.`,
+                          )
+                        )
+                          e.preventDefault();
+                      }}
+                    >
+                      <input type="hidden" name="id" value={worker.id} />
+                      <Button size="sm" variant="outline" type="submit" className="text-red-600 hover:bg-red-50 hover:text-red-700">
+                        <Trash2 className="h-3 w-3" />
+                        Eliminar
+                      </Button>
+                    </form>
+                  </div>
                 </TableCell>
               </TableRow>
             ),

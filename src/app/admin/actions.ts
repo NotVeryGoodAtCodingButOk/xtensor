@@ -14,6 +14,7 @@ import {
   deleteColor,
   createWorker,
   updateWorker,
+  deleteWorker,
   createCatalogItem,
   updateCatalogItem,
   deleteCatalogItem,
@@ -307,6 +308,14 @@ export async function updateWorkerAction(formData: FormData) {
   const display_color = String(formData.get("display_color") ?? "").trim() || null;
   const is_active = formData.get("is_active") !== "false";
   if (id) await updateWorker(id, { full_name, role, hourly_cost_cop, display_color, is_active });
+  revalidateFactoryData();
+  redirect("/admin/operarios");
+}
+
+export async function deleteWorkerAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (id) await deleteWorker(id);
   revalidateFactoryData();
   redirect("/admin/operarios");
 }
