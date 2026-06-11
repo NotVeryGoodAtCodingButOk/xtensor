@@ -63,7 +63,7 @@ export default async function FactoryMachineDetailPage({
         clearKeys={["toast"]}
       />
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
-      <header className="xt-machine-detail-header mb-5 border-b border-[var(--xt-black)]">
+      <header className="xt-machine-detail-header mb-3 border-b border-[var(--xt-black)]">
         <div
           className="xt-planta-worker-bar px-5 py-3 text-[var(--xt-white)]"
           style={{ background: workerHeaderBackground }}
@@ -95,18 +95,12 @@ export default async function FactoryMachineDetailPage({
           </div>
         </div>
         <div className="xt-hazard h-2" />
-        <div className="xt-machine-detail-hero grid gap-4 px-5 py-6 text-center">
-          <div className="xt-machine-detail-meta grid gap-1">
-            <p className="xt-eyebrow">Detalle de máquina</p>
-            <p className="xt-machine-detail-subtitle mx-auto max-w-4xl text-lg text-[var(--xt-steel)]">
-              PLACA {machine.placaNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"}
-            </p>
-          </div>
-          <h2 className="xt-machine-detail-title mx-auto max-w-5xl [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words lg:text-6xl xl:text-7xl">
+        <div className="xt-machine-detail-hero px-5 py-3 text-center">
+          <h2 className="xt-machine-detail-title mx-auto max-w-5xl [font-family:var(--font-barlow-condensed)] text-3xl font-bold leading-tight break-words lg:text-4xl">
             {machine.equipmentName}
           </h2>
-          <p className="xt-machine-detail-count [font-family:var(--font-barlow-condensed)] text-2xl font-bold">
-            {machine.stages.filter((stage) => stage.completion === 100).length} de {machine.stages.length} tareas hechas
+          <p className="xt-machine-detail-subtitle mx-auto max-w-4xl text-sm text-[var(--xt-steel)] mt-0.5">
+            PLACA {machine.placaNumber} · {machine.clientName} · {machine.city ?? "Sin ciudad"} · {machine.colorName ?? "Sin color"} · {machine.stages.filter((stage) => stage.completion === 100).length}/{machine.stages.length} tareas
           </p>
         </div>
       </header>
