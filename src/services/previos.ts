@@ -17,7 +17,11 @@ type PrevioEventType = Database["public"]["Tables"]["machine_previo_events"]["Ro
 type MachinePrevioSelectRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Pick<Database["public"]["Tables"]["clients"]["Row"], "name"> | null;
   equipment_catalog: (Pick<Database["public"]["Tables"]["equipment_catalog"]["Row"], "code" | "name"> & {
-    equipment_previos: Array<Pick<Database["public"]["Tables"]["equipment_previos"]["Row"], "previo_catalog_id">>;
+    equipment_previos: Array<
+      Pick<Database["public"]["Tables"]["equipment_previos"]["Row"], "previo_catalog_id"> & {
+        previo_catalog: Pick<PrevioCatalogRow, "name"> | null;
+      }
+    >;
   }) | null;
   machine_previos: Array<
     MachinePrevioRow & {
@@ -61,7 +65,7 @@ const MACHINE_PREVIOS_SELECT = `
   status,
   custom_equipment_name,
   clients(name),
-  equipment_catalog(code, name, equipment_previos(previo_catalog_id)),
+  equipment_catalog(code, name, equipment_previos(previo_catalog_id, previo_catalog(name))),
   machine_previos(
     *,
     previo_catalog(name)
@@ -322,16 +326,23 @@ export async function bulkApplyPrevioToMachines(input: {
 }
 
 export async function toggleMachinePrevio(input: {
-  machinePrevioId: string;
+  machineId: string;
+  previoCatalogId: string;
   field: "ordered" | "received";
   checked: boolean;
   actorProfileId: string;
 }) {
   const supabase = createSupabaseAdminClient();
+  // Ensure a machine_previos row exists for this (machine, previo) pair before
+  // toggling — the previos page can render previos straight from the equipment
+  // catalog, so the row may not have been created yet.
   const { data: current, error: currentError } = await supabase
     .from("machine_previos")
+    .upsert(
+      { machine_id: input.machineId, previo_catalog_id: input.previoCatalogId },
+      { onConflict: "machine_id,previo_catalog_id", ignoreDuplicates: false },
+    )
     .select("*")
-    .eq("id", input.machinePrevioId)
     .single();
 
   if (currentError || !current) {
@@ -352,7 +363,7 @@ export async function toggleMachinePrevio(input: {
           received_by: input.checked ? input.actorProfileId : null,
         };
 
-  const { error: updateError } = await supabase.from("machine_previos").update(patch).eq("id", input.machinePrevioId);
+  const { error: updateError } = await supabase.from("machine_previos").update(patch).eq("id", current.id);
   if (updateError) {
     throw new Error(`No se pudo actualizar el previo de la máquina: ${updateError.message}`);
   }
@@ -483,24 +494,32 @@ async function syncEquipmentPreviosFromFixture(fixtureMaps: FixturePrevioMaps, p
 }
 
 function mapMachinePrevioListRow(row: MachinePrevioSelectRow): MachinePrevioListRow {
-  const activeEquipmentPrevioIds = new Set(
-    (row.equipment_catalog?.equipment_previos ?? []).map((p) => p.previo_catalog_id),
+  // Per-machine ordered/received state, keyed by previo, for whatever rows exist.
+  const stateByPrevioId = new Map(
+    (row.machine_previos ?? []).map((previo) => [previo.previo_catalog_id, previo]),
   );
 
-  const previos = (row.machine_previos ?? [])
-    .filter((previo) => activeEquipmentPrevioIds.has(previo.previo_catalog_id))
-    .map<MachinePrevioView>((previo) => ({
-      id: previo.id,
-      previoCatalogId: previo.previo_catalog_id,
-      name: previo.previo_catalog?.name ?? "Previo",
-      ordered: previo.ordered,
-      orderedAt: previo.ordered_at,
-      orderedBy: previo.ordered_by,
-      received: previo.received,
-      receivedAt: previo.received_at,
-      receivedBy: previo.received_by,
-      createdAt: previo.created_at,
-    }))
+  // The equipment's previos (defined in catalogo) are the source of truth for
+  // which previos a machine needs. We render those directly and merge in any
+  // saved per-machine state, so the list always reflects the catalogo even when
+  // a machine_previos row hasn't been created yet (e.g. after changing a
+  // machine's code or editing the equipment's previos).
+  const previos = (row.equipment_catalog?.equipment_previos ?? [])
+    .map<MachinePrevioView>((equipmentPrevio) => {
+      const state = stateByPrevioId.get(equipmentPrevio.previo_catalog_id);
+      return {
+        id: state?.id ?? null,
+        previoCatalogId: equipmentPrevio.previo_catalog_id,
+        name: equipmentPrevio.previo_catalog?.name ?? state?.previo_catalog?.name ?? "Previo",
+        ordered: state?.ordered ?? false,
+        orderedAt: state?.ordered_at ?? null,
+        orderedBy: state?.ordered_by ?? null,
+        received: state?.received ?? false,
+        receivedAt: state?.received_at ?? null,
+        receivedBy: state?.received_by ?? null,
+        createdAt: state?.created_at ?? null,
+      };
+    })
     .sort((a, b) => a.name.localeCompare(b.name, "es"));
 
   return {

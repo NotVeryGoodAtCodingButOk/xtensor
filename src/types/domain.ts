@@ -58,7 +58,8 @@ export type EquipmentPrevioView = {
 };
 
 export type MachinePrevioView = {
-  id: string;
+  /** machine_previos row id, or null when no row exists yet (state defaults to false). */
+  id: string | null;
   previoCatalogId: string;
   name: string;
   ordered: boolean;
@@ -67,7 +68,7 @@ export type MachinePrevioView = {
   received: boolean;
   receivedAt: string | null;
   receivedBy: string | null;
-  createdAt: string;
+  createdAt: string | null;
 };
 
 export type MachinePrevioSummary = {

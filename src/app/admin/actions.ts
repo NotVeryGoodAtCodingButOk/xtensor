@@ -423,12 +423,13 @@ export async function removeMachinePrevioAction(formData: FormData) {
 }
 
 export async function toggleMachinePrevioAction(formData: FormData) {
-  const machinePrevioId = String(formData.get("machinePrevioId") ?? "").trim();
+  const machineId = String(formData.get("machineId") ?? "").trim();
+  const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
   const field = String(formData.get("field") ?? "") === "received" ? "received" : "ordered";
   const checked = String(formData.get("checked") ?? "") === "true";
   const actorProfileId = await requireActorProfileId();
-  if (machinePrevioId) {
-    await toggleMachinePrevio({ machinePrevioId, field, checked, actorProfileId });
+  if (machineId && previoCatalogId) {
+    await toggleMachinePrevio({ machineId, previoCatalogId, field, checked, actorProfileId });
   }
   revalidatePath("/admin/previos");
 }

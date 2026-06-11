@@ -117,7 +117,7 @@ function InlineClientEdit({ machineId, clientName }: { machineId: string; client
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
-function PrevioChip({ previo }: { previo: MachinePrevioView }) {
+function PrevioChip({ machineId, previo }: { machineId: string; previo: MachinePrevioView }) {
   const orderedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
 
@@ -139,7 +139,8 @@ function PrevioChip({ previo }: { previo: MachinePrevioView }) {
 
       {/* Pedido toggle */}
       <form action={toggleMachinePrevioAction} className="inline">
-        <input type="hidden" name="machinePrevioId" value={previo.id} />
+        <input type="hidden" name="machineId" value={machineId} />
+        <input type="hidden" name="previoCatalogId" value={previo.previoCatalogId} />
         <input type="hidden" name="field" value="ordered" />
         <input ref={orderedRef} type="hidden" name="checked" value={String(!previo.ordered)} />
         <label className="inline-flex cursor-pointer items-center gap-0.5">
@@ -158,7 +159,8 @@ function PrevioChip({ previo }: { previo: MachinePrevioView }) {
 
       {/* Recibido toggle */}
       <form action={toggleMachinePrevioAction} className="inline">
-        <input type="hidden" name="machinePrevioId" value={previo.id} />
+        <input type="hidden" name="machineId" value={machineId} />
+        <input type="hidden" name="previoCatalogId" value={previo.previoCatalogId} />
         <input type="hidden" name="field" value="received" />
         <input ref={receivedRef} type="hidden" name="checked" value={String(!previo.received)} />
         <label className="inline-flex cursor-pointer items-center gap-0.5">
@@ -185,7 +187,11 @@ function PreviosCell({ machine }: { machine: MachinePrevioListRow }) {
   return (
     <div className="flex flex-wrap gap-1">
       {machine.previos.map((previo) => (
-        <PrevioChip key={`${previo.id}-${previo.ordered}-${previo.received}`} previo={previo} />
+        <PrevioChip
+          key={`${previo.previoCatalogId}-${previo.ordered}-${previo.received}`}
+          machineId={machine.machineId}
+          previo={previo}
+        />
       ))}
     </div>
   );
