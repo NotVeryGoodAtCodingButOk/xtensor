@@ -46,6 +46,7 @@ import {
   addEquipmentPrevio,
   bootstrapPreviosFromFixture,
   bulkApplyPrevioToMachines,
+  createMachinePreviosFromEquipment,
   createPrevioCatalogItem,
   deletePrevioCatalogItem,
   removeMachinePrevio,
@@ -138,8 +139,13 @@ export async function updateMachineAction(formData: FormData) {
     line_override: normalizeMachineLine(formData.get("line")),
   });
 
+  // Keep machine_previos aligned with the (possibly new) equipment so the
+  // previos page reflects the equipment's default previos for this machine.
+  await createMachinePreviosFromEquipment(machineId, equipmentId);
+
   revalidateFactoryData();
   revalidatePath("/admin");
+  revalidatePath("/admin/previos");
   revalidatePath(`/admin/maquinas/${machineId}`);
   redirect("/admin");
 }
@@ -347,6 +353,7 @@ export async function addEquipmentPrevioAction(formData: FormData) {
     await addEquipmentPrevio(equipmentId, previoCatalogId);
     await syncMachinePreviosFromEquipment(equipmentId);
   }
+  revalidatePath("/admin/previos");
   redirect("/admin/catalogo");
 }
 
@@ -354,6 +361,7 @@ export async function removeEquipmentPrevioAction(formData: FormData) {
   await requireAdmin();
   const equipmentPrevioId = String(formData.get("equipmentPrevioId") ?? "").trim();
   if (equipmentPrevioId) await removeEquipmentPrevio(equipmentPrevioId);
+  revalidatePath("/admin/previos");
   redirect("/admin/catalogo");
 }
 
@@ -365,11 +373,15 @@ export async function toggleEquipmentPrevioAction(formData: FormData) {
   if (equipmentId && previoCatalogId) {
     if (isActive) {
       await addEquipmentPrevio(equipmentId, previoCatalogId);
+      // Propagate the new default previo to every machine of this equipment
+      // so it shows up on the previos page.
+      await syncMachinePreviosFromEquipment(equipmentId);
     } else {
       await removeEquipmentPrevioByIds(equipmentId, previoCatalogId);
     }
   }
   revalidatePath("/admin/catalogo");
+  revalidatePath("/admin/previos");
 }
 
 export async function updateCatalogItemAction(formData: FormData) {
