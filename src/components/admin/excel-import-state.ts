@@ -20,6 +20,7 @@ export type MachinePreviewRow = {
 };
 
 export function defaultLineResolution(line: PreviewLine) {
+  if (line.ignored) return "skip";
   return line.matchedCatalogId ?? "custom";
 }
 
