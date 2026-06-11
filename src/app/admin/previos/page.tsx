@@ -43,7 +43,7 @@ export default async function PreviosPage({
 
   return (
     <AdminShell>
-      <RealtimeRefresh channelName="admin-previos" tables={["machines", "machine_previos", "machine_previo_events"]} />
+      <RealtimeRefresh channelName="admin-previos" tables={["machines", "machine_previos", "machine_previo_events", "equipment_previos"]} />
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <p className="xt-eyebrow">Administración</p>
