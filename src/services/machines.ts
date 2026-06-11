@@ -523,6 +523,7 @@ function mapMachineRow(row: MachineRow): MachineView {
     equipmentId: row.equipment_id,
     equipmentCode: row.equipment_catalog?.code ?? null,
     equipmentName,
+    colorId: row.color_id ?? null,
     colorName: row.colors?.name ?? null,
     city: row.city,
     line: normalizeMachineLine(row.line_override ?? row.equipment_catalog?.line),

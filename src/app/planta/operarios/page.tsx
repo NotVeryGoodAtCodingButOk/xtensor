@@ -28,10 +28,6 @@ export default async function FactoryWorkersPage() {
         <div className="xt-hazard h-2" />
       </header>
       <section className="xt-planta-section p-6">
-        <div className="xt-planta-page-title mb-6">
-          <p className="xt-eyebrow">Operarios</p>
-          <h1 className="xt-planta-heading text-4xl font-bold">¿Quién eres?</h1>
-        </div>
         <WorkerPicker workers={workers} />
       </section>
     </main>

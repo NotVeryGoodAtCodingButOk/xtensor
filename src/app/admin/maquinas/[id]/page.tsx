@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasSupabaseConfig } from "@/lib/env";
 import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
-import { listCatalog } from "@/services/catalog";
+import { listCatalog, listColors } from "@/services/catalog";
 import { getMachine } from "@/services/machines";
 
 export default async function EditMachinePage({
@@ -28,7 +28,7 @@ export default async function EditMachinePage({
   }
 
   const { id } = await params;
-  const [machine, catalog] = await Promise.all([getMachine(id), listCatalog()]);
+  const [machine, catalog, colors] = await Promise.all([getMachine(id), listCatalog(), listColors()]);
 
   return (
     <AdminShell>
@@ -57,6 +57,7 @@ export default async function EditMachinePage({
                 }
               />
             </label>
+            <ColorField colors={colors} defaultId={machine.colorId} />
             <Field label="Ciudad">
               <Input name="city" defaultValue={machine.city ?? ""} />
             </Field>
@@ -98,6 +99,32 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
     <label className="grid gap-2 text-sm font-medium">
       {label}
       {children}
+    </label>
+  );
+}
+
+function ColorField({
+  colors,
+  defaultId,
+}: {
+  colors: { id: string; name: string }[];
+  defaultId: string | null;
+}) {
+  return (
+    <label className="grid gap-2 text-sm font-medium">
+      Color
+      <select
+        name="colorId"
+        defaultValue={defaultId ?? ""}
+        className="h-10 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]"
+      >
+        <option value="">Sin color</option>
+        {colors.map((color) => (
+          <option key={color.id} value={color.id}>
+            {color.name}
+          </option>
+        ))}
+      </select>
     </label>
   );
 }

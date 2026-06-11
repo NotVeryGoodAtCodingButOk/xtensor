@@ -131,6 +131,7 @@ export async function updateMachineAction(formData: FormData) {
   await updateMachine(machineId, {
     placa_number: Number(formData.get("placaNumber")),
     equipment_id: equipmentId,
+    color_id: String(formData.get("colorId") ?? "").trim() || null,
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),

@@ -17,6 +17,7 @@ export type MachineView = {
   equipmentId: string | null;
   equipmentCode: string | null;
   equipmentName: string;
+  colorId: string | null;
   colorName: string | null;
   city: string | null;
   line: string | null;
