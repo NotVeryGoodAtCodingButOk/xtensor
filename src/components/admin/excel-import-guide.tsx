@@ -65,7 +65,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
                     <th className="px-3 py-2">UNID.</th>
                     <th className="px-3 py-2">P.UNIT.</th>
                     <th className="px-3 py-2">Importe</th>
-                    <th className="px-3 py-2">Coti/Señal</th>
+                    <th className="px-3 py-2">Coti/Serial</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -82,7 +82,7 @@ export function ExcelImportGuide({ templateHref }: { templateHref: string }) {
               </table>
             </div>
             <p>La columna `Código` debe coincidir con el catálogo para hacer match automático.</p>
-            <p>La columna `Coti` o `Señal` es opcional; si queda vacía, se asigna una SEÑAL editable por máquina.</p>
+            <p>La columna `Coti` o `Serial` es opcional; si queda vacía, se asigna una SERIAL editable por máquina.</p>
             <p>El importador ignora filas vacías y filas de totales con `Suma`, `Subtotal` o `Total`.</p>
             <p>`UNID.` crea una máquina por cada unidad redondeada a entero.</p>
           </div>

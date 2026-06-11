@@ -40,7 +40,7 @@ import {
 } from "@/services/machines";
 import { parseQuoteWorkbook } from "@/services/excel";
 import { buildQuotePreview, type QuotePreview, type QuotePreviewLine } from "@/services/quote-preview";
-import { AUTO_SENAL_MAX, listActiveSenalNumbers, normalizeSenalNumber } from "@/services/senales";
+import { AUTO_SERIAL_MAX, listActiveSerialNumbers, normalizeSerialNumber } from "@/services/serials";
 import {
   addMachinePrevio,
   addEquipmentPrevio,
@@ -107,7 +107,7 @@ export async function createMachineAction(formData: FormData) {
         });
 
   await createMachine({
-    senal_number: Number(formData.get("senalNumber")),
+    serial_number: Number(formData.get("serialNumber")),
     client_id: client.id,
     equipment_id: equipmentIdInput || equipment?.id || null,
     custom_equipment_name: equipmentIdInput ? null : customEquipmentName,
@@ -129,7 +129,7 @@ export async function updateMachineAction(formData: FormData) {
   const machineId = String(formData.get("machineId") ?? "");
   const equipmentId = String(formData.get("equipmentId") ?? "").trim() || null;
   await updateMachine(machineId, {
-    senal_number: Number(formData.get("senalNumber")),
+    serial_number: Number(formData.get("serialNumber")),
     equipment_id: equipmentId,
     color_id: String(formData.get("colorId") ?? "").trim() || null,
     sale_price_cop: Number(formData.get("salePriceCop")),
@@ -155,7 +155,7 @@ export async function updateMachineInlineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   await updateMachine(machineId, {
-    senal_number: Number(formData.get("senalNumber")),
+    serial_number: Number(formData.get("serialNumber")),
     sale_price_cop: Number(formData.get("salePriceCop")),
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
@@ -488,13 +488,13 @@ export async function parseQuoteExcelAction(
     throw new Error("Selecciona un archivo de Excel.");
   }
 
-  const [quote, catalog, activeSenalNumbers] = await Promise.all([
+  const [quote, catalog, activeSerialNumbers] = await Promise.all([
     file.arrayBuffer().then(parseQuoteWorkbook),
     listCatalog(),
-    listActiveSenalNumbers(),
+    listActiveSerialNumbers(),
   ]);
 
-  return buildQuotePreview({ quote, catalog, activeSenalNumbers });
+  return buildQuotePreview({ quote, catalog, activeSerialNumbers });
 }
 
 export type ImportQuoteLineInput = {
@@ -504,12 +504,12 @@ export type ImportQuoteLineInput = {
   line?: string | null;
   producto: string;
   unidades: number;
-  senalNumbers: number[];
+  serialNumbers: number[];
   pUnitCop: number;
 };
 
 export async function importQuoteAction(input: {
-  senalMode: "auto";
+  serialMode: "auto";
   clientName: string;
   promisedDate: string;
   lines: ImportQuoteLineInput[];
@@ -524,30 +524,30 @@ export async function importQuoteAction(input: {
     throw new Error("No hay líneas seleccionadas para importar.");
   }
 
-  const activeSenalNumbers = await listActiveSenalNumbers();
-  const unavailableSenales = new Set(activeSenalNumbers);
-  const senalesInImport = new Set<number>();
+  const activeSerialNumbers = await listActiveSerialNumbers();
+  const unavailableSerials = new Set(activeSerialNumbers);
+  const serialsInImport = new Set<number>();
   for (const line of importable) {
     const units = Math.max(1, Math.round(line.unidades) || 1);
-    if (line.senalNumbers.length < units) {
-      throw new Error(`Faltan señales para "${line.producto}".`);
+    if (line.serialNumbers.length < units) {
+      throw new Error(`Faltan seriales para "${line.producto}".`);
     }
 
     for (let i = 0; i < units; i += 1) {
-      const senalNumber = normalizeSenalNumber(line.senalNumbers[i]);
-      if (!senalNumber) {
-        throw new Error(`La SEÑAL de "${line.producto}" es inválida.`);
+      const serialNumber = normalizeSerialNumber(line.serialNumbers[i]);
+      if (!serialNumber) {
+        throw new Error(`La SERIAL de "${line.producto}" es inválida.`);
       }
-      if (senalNumber > AUTO_SENAL_MAX) {
-        throw new Error(`La SEÑAL ${senalNumber} supera el máximo automático de ${AUTO_SENAL_MAX}.`);
+      if (serialNumber > AUTO_SERIAL_MAX) {
+        throw new Error(`La SERIAL ${serialNumber} supera el máximo automático de ${AUTO_SERIAL_MAX}.`);
       }
-      if (unavailableSenales.has(senalNumber)) {
-        throw new Error(`La SEÑAL ${senalNumber} ya está activa. Elige otra antes de importar.`);
+      if (unavailableSerials.has(serialNumber)) {
+        throw new Error(`La SERIAL ${serialNumber} ya está activa. Elige otra antes de importar.`);
       }
-      if (senalesInImport.has(senalNumber)) {
-        throw new Error(`La SEÑAL ${senalNumber} está repetida en esta importación.`);
+      if (serialsInImport.has(serialNumber)) {
+        throw new Error(`La SERIAL ${serialNumber} está repetida en esta importación.`);
       }
-      senalesInImport.add(senalNumber);
+      serialsInImport.add(serialNumber);
     }
   }
 
@@ -577,10 +577,10 @@ export async function importQuoteAction(input: {
     const units = Math.max(1, Math.round(line.unidades) || 1);
     for (let i = 0; i < units; i += 1) {
       position += 1;
-      const senalNumber = normalizeSenalNumber(line.senalNumbers[i]);
-      if (!senalNumber) throw new Error(`La SEÑAL de "${line.producto}" es inválida.`);
+      const serialNumber = normalizeSerialNumber(line.serialNumbers[i]);
+      if (!serialNumber) throw new Error(`La SERIAL de "${line.producto}" es inválida.`);
       await createMachine({
-        senal_number: senalNumber,
+        serial_number: serialNumber,
         client_id: client.id,
         equipment_id: equipmentId,
         custom_equipment_name: null,
@@ -610,12 +610,12 @@ export async function updateMachineClientAction(formData: FormData) {
   revalidatePath("/admin/previos");
 }
 
-export async function updateMachineSenalAction(formData: FormData) {
+export async function updateMachineSerialAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
-  const senalNumber = Number(formData.get("senalNumber"));
-  if (machineId && Number.isFinite(senalNumber) && senalNumber > 0) {
-    await updateMachine(machineId, { senal_number: senalNumber });
+  const serialNumber = Number(formData.get("serialNumber"));
+  if (machineId && Number.isFinite(serialNumber) && serialNumber > 0) {
+    await updateMachine(machineId, { serial_number: serialNumber });
   }
   revalidateFactoryData();
   revalidatePath("/admin/previos");

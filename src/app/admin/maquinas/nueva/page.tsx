@@ -30,8 +30,8 @@ export default async function NewMachinePage() {
         </CardHeader>
         <CardContent>
           <form action={createMachineAction} className="grid gap-4 md:grid-cols-2">
-            <Field label="SEÑAL">
-              <Input name="senalNumber" type="number" required />
+            <Field label="SERIAL">
+              <Input name="serialNumber" type="number" required />
             </Field>
             <Field label="Cliente">
               <Input name="clientName" required />

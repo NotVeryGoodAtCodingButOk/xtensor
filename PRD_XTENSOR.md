@@ -26,7 +26,7 @@ Toda la app funciona en **tiempo real** (cambios de un operario aparecen al inst
 
 - Tablero de operarios para registrar avances de máquinas en sus 7 etapas, con avances parciales (0/25/50/75/100 %).
 - Panel administrativo con vista tipo "Plan de Producción" replicando la planilla actual del Excel.
-- Creación y edición manual de máquinas (cada SEÑAL = una fila).
+- Creación y edición manual de máquinas (cada SERIAL = una fila).
 - Catálogo de equipos importable y editable (con búsqueda y soporte para productos personalizados).
 - Catálogo de colores administrable.
 - Lista de operarios con su rol y costo hora.
@@ -39,7 +39,7 @@ Toda la app funciona en **tiempo real** (cambios de un operario aparecen al inst
 ### Fuera del alcance (explícito)
 
 - **Hoja "Previos"** del Excel.
-- Sub-componentes (Torno A., Torno E., Láser, Carenaje, Señales, Tubos, Inox., Pintu., Zinc, Tornillos, Rodam., Cojines): no se trasladan al MVP.
+- Sub-componentes (Torno A., Torno E., Láser, Carenaje, Placas, Tubos, Inox., Pintu., Zinc, Tornillos, Rodam., Cojines): no se trasladan al MVP.
 - Login individual por operario, PIN, biometría, QR.
 - Tiempo de inicio y fin por tarea (cronometraje real). Queda como mejora futura.
 - Reportes de productividad por trabajador.
@@ -58,7 +58,7 @@ Toda la app funciona en **tiempo real** (cambios de un operario aparecen al inst
 
 | Término | Significado |
 | --- | --- |
-| **SEÑAL** | Identificador único por máquina (no por orden). Una misma compra de un cliente puede tener varias SEÑALES, una por cada máquina. |
+| **SERIAL** | Identificador único por máquina (no por orden). Una misma compra de un cliente puede tener varias SERIALES, una por cada máquina. |
 | **Etapa** | Una de las 7 fases de producción: Material, Armar, Resoldar, Pulir, Pintar, Ensamblar, Empacar. |
 | **Avance** | Porcentaje de avance total de una máquina (0–100 %), derivado de la combinación ponderada de las etapas. |
 | **Operario** | Empleado de planta que ejecuta tareas. Hoy son nueve. |
@@ -167,10 +167,10 @@ create table workers (
   created_at timestamptz default now()
 );
 
--- Cada fila = una máquina (= una SEÑAL) en producción
+-- Cada fila = una máquina (= una SERIAL) en producción
 create table machines (
   id uuid primary key default gen_random_uuid(),
-  senal_number integer not null,                   -- 977, 988, 999, etc.
+  serial_number integer not null,                   -- 977, 988, 999, etc.
   client_id uuid not null references clients(id),
   equipment_id uuid references equipment_catalog(id), -- nullable solo si is_custom_overflow
   custom_equipment_name text,                     -- usado si equipment_id es null
@@ -316,12 +316,12 @@ Esto permite que el panel de Santiago y el portal del cliente reciban cambios al
 - En la parte superior, una franja con el nombre del operario activo y un botón **"Cambiar de operario"** (vuelve a 7.2).
 - Lista vertical de todas las máquinas con `status = 'in_production'`, ordenadas por `order_position`.
 - Cada fila muestra:
-  - **SEÑAL** y **código del equipo** (p.ej. `#977 · XM165`).
+  - **SERIAL** y **código del equipo** (p.ej. `#977 · XM165`).
   - **Nombre del equipo** (p.ej. "Sentadilla Búlgara").
   - **Cliente** y **color**.
   - **Avance total** como una barra de progreso (0–100 %).
   - Una fila compacta con los **7 íconos de etapa**, cada uno con un check, una fracción (¼, ½, ¾) o vacío según `completion`.
-- Búsqueda rápida por SEÑAL o por nombre en la parte superior (opcional).
+- Búsqueda rápida por SERIAL o por nombre en la parte superior (opcional).
 - Filtro de "Mostrar solo en curso" / "Mostrar todas" (opcional).
 
 **Comportamiento:**
@@ -331,7 +331,7 @@ Esto permite que el panel de Santiago y el portal del cliente reciban cambios al
 ### 7.4 Detalle de máquina y etapas (`/planta/maquinas/[id]`)
 
 **Elementos:**
-- Encabezado con: SEÑAL, código, nombre del equipo, cliente, ciudad, color, fecha prometida y avance total.
+- Encabezado con: SERIAL, código, nombre del equipo, cliente, ciudad, color, fecha prometida y avance total.
 - 7 tarjetas grandes apiladas verticalmente, una por etapa, en el orden Material → Empacar. Cada tarjeta muestra:
   - Nombre de la etapa.
   - Estado actual de avance como una barra segmentada en 4 partes (25/50/75/100).
@@ -379,7 +379,7 @@ Esta es la pantalla más importante del panel administrativo y debe **replicar l
 - **Columnas**, de izquierda a derecha:
   1. `↕` (handle de arrastre para reordenar la cola de producción)
   2. **Avance %** (calculado, con barra de progreso compacta)
-  3. **SEÑAL**
+  3. **SERIAL**
   4. **Cliente**
   5. **Cód. equipo**
   6. **Equipo** (nombre)
@@ -416,7 +416,7 @@ Esta es la pantalla más importante del panel administrativo y debe **replicar l
 
 Formulario modal o pantalla con los siguientes campos:
 
-- **SEÑAL** (numérico, requerido, único)
+- **SERIAL** (numérico, requerido, único)
 - **Cliente** (combo con búsqueda; si no existe, opción "+ Crear cliente nuevo")
 - **Equipo** (combo con búsqueda por código o nombre sobre `equipment_catalog`; al final del listado, opción "+ Crear producto personalizado")
   - Si se elige existente: se pre-llenan `default_price_cop`, `line`.
@@ -604,7 +604,7 @@ Se ejecutará un script de seed que carga:
 2. **Colores** únicos extraídos de la columna `color` de `plan de producción` y `despachados`.
 3. **Clientes** únicos extraídos de la columna `CLIENTE`.
 4. **Operarios** desde la hoja `Mano de obra`.
-5. **Máquinas en producción** desde la hoja `plan de producción`, una fila por cada SEÑAL, preservando el orden actual como `order_position`. El estado actual de avance de cada etapa se infiere de las celdas marcadas con `x` o con texto:
+5. **Máquinas en producción** desde la hoja `plan de producción`, una fila por cada SERIAL, preservando el orden actual como `order_position`. El estado actual de avance de cada etapa se infiere de las celdas marcadas con `x` o con texto:
    - Si la celda contiene `x` → la etapa está **al 100 %**.
    - Si contiene el nombre de la etapa (p.ej. `Armar`, `Pulir`) → esa etapa está **pendiente o en curso**; las anteriores se asumen al 100 %.
 6. **Máquinas históricas** desde la hoja `despachados` con `status = 'shipped'`.

@@ -11,12 +11,12 @@ import type { MachineStatus } from "@/types/database";
 
 export function MachineEditActions({
   machineId,
-  senalNumber,
+  serialNumber,
   status,
   undoPreviosMove = false,
 }: {
   machineId: string;
-  senalNumber: number;
+  serialNumber: number;
   status: MachineStatus;
   undoPreviosMove?: boolean;
 }) {
@@ -34,7 +34,7 @@ export function MachineEditActions({
         <form
           action={sendMachineToPreviosAction}
           onSubmit={(event) => {
-            if (!confirm(`¿Enviar SEÑAL ${senalNumber} a previos?`)) event.preventDefault();
+            if (!confirm(`¿Enviar SERIAL ${serialNumber} a previos?`)) event.preventDefault();
           }}
         >
           <input type="hidden" name="machineId" value={machineId} />
@@ -47,7 +47,7 @@ export function MachineEditActions({
       <form
         action={deleteMachineAction}
         onSubmit={(event) => {
-          if (!confirm(`¿Eliminar definitivamente SEÑAL ${senalNumber}?`)) event.preventDefault();
+          if (!confirm(`¿Eliminar definitivamente SERIAL ${serialNumber}?`)) event.preventDefault();
         }}
       >
         <input type="hidden" name="machineId" value={machineId} />

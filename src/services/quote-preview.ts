@@ -1,5 +1,5 @@
 import type { ParsedQuote, ParsedQuoteLine } from "@/services/excel";
-import { generateSequentialSenalNumbers, normalizeSenalNumber } from "@/services/senales";
+import { generateSequentialSerialNumbers, normalizeSerialNumber } from "@/services/serials";
 
 export type QuotePreviewCatalogItem = {
   id: string;
@@ -17,13 +17,13 @@ export type QuotePreviewLine = ParsedQuoteLine & {
    * defaults these lines to "skip".
    */
   ignored: boolean;
-  senalNumbers: number[];
+  serialNumbers: number[];
 };
 
 export type QuotePreview = {
   reference: string | null;
-  senalNumber: number | null;
-  senalMode: "auto";
+  serialNumber: number | null;
+  serialMode: "auto";
   fecha: string | null;
   clientName: string | null;
   lines: QuotePreviewLine[];
@@ -48,7 +48,7 @@ export function normalizeCatalogCode(code: string): string {
  * Quote claves that don't resolve 1:1 to a catalog code by normalization.
  * Keyed by the normalized clave.
  *  - Aliases: a clave that should resolve to a different catalog code
- *    ("Señales adicionales" is quoted as XTM000 but is catalog item XM200).
+ *    ("Placas adicionales" is quoted as XTM000 but is catalog item XM200).
  */
 const CLAVE_CODE_ALIASES: Record<string, string> = {
   XTM000: "XM200",
@@ -98,50 +98,50 @@ function unitCount(line: Pick<ParsedQuoteLine, "unidades">) {
   return Math.max(1, Math.round(line.unidades) || 1);
 }
 
-function sourceSenalNumbers(line: ParsedQuoteLine) {
-  const senalNumber = normalizeSenalNumber(line.senalNumber);
-  if (!senalNumber) return null;
+function sourceSerialNumbers(line: ParsedQuoteLine) {
+  const serialNumber = normalizeSerialNumber(line.serialNumber);
+  if (!serialNumber) return null;
 
-  return Array.from({ length: unitCount(line) }, (_, index) => senalNumber + index);
+  return Array.from({ length: unitCount(line) }, (_, index) => serialNumber + index);
 }
 
 export function buildQuotePreview({
   quote,
   catalog,
-  activeSenalNumbers,
+  activeSerialNumbers,
 }: {
   quote: ParsedQuote;
   catalog: QuotePreviewCatalogItem[];
-  activeSenalNumbers: number[];
+  activeSerialNumbers: number[];
 }): QuotePreview {
   const byCode = buildCatalogIndex(catalog);
-  const explicitSenalNumbers = quote.lines.flatMap((line) => sourceSenalNumbers(line) ?? []);
-  const missingSenalUnits = quote.lines.reduce((sum, line) => {
-    return sourceSenalNumbers(line) ? sum : sum + unitCount(line);
+  const explicitSerialNumbers = quote.lines.flatMap((line) => sourceSerialNumbers(line) ?? []);
+  const missingSerialUnits = quote.lines.reduce((sum, line) => {
+    return sourceSerialNumbers(line) ? sum : sum + unitCount(line);
   }, 0);
-  const autoSenalNumbers = generateSequentialSenalNumbers(
-    [...activeSenalNumbers, ...explicitSenalNumbers],
-    missingSenalUnits,
+  const autoSerialNumbers = generateSequentialSerialNumbers(
+    [...activeSerialNumbers, ...explicitSerialNumbers],
+    missingSerialUnits,
   );
-  let autoSenalIndex = 0;
+  let autoSerialIndex = 0;
 
   return {
     reference: quote.reference,
-    senalNumber: null,
-    senalMode: "auto",
+    serialNumber: null,
+    serialMode: "auto",
     fecha: quote.fecha,
     clientName: quote.clientName,
     lines: quote.lines.map((line) => {
       const { ignored, lookupCode } = classifyClave(line.clave);
       const match = ignored ? null : (byCode.get(lookupCode) ?? null);
       const units = unitCount(line);
-      const explicit = sourceSenalNumbers(line);
-      const senalNumbers = explicit ?? autoSenalNumbers.slice(autoSenalIndex, autoSenalIndex + units);
-      if (!explicit) autoSenalIndex += units;
+      const explicit = sourceSerialNumbers(line);
+      const serialNumbers = explicit ?? autoSerialNumbers.slice(autoSerialIndex, autoSerialIndex + units);
+      if (!explicit) autoSerialIndex += units;
 
       return {
         ...line,
-        senalNumbers,
+        serialNumbers,
         ignored,
         matchedCatalogId: match?.id ?? null,
         matchedCatalogName: match ? `${match.code} · ${match.name}` : null,

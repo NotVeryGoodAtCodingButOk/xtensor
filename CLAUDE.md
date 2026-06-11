@@ -72,7 +72,7 @@ Services map from database rows → domain types. UI consumes domain types only.
 
 ### Key domain concepts
 
-- **Machine**: a production order identified by `senal_number` (cotización/quote number). Has `orderPosition` for queue ordering and `status: "in_production" | "shipped"`.
+- **Machine**: a production order identified by `serial_number` (cotización/quote number). Has `orderPosition` for queue ordering and `status: "in_production" | "shipped"`.
 - **Stages**: 7 fixed production stages (Material → Armar → Resoldar → Pulir → Pintar → Ensamblar → Empacar). Defined as constants in `calculations.ts` as `DEFAULT_STAGES`, also stored in the `stages` DB table.
 - **Settings**: single-row `settings` table with production parameters (labor factor, worker count, daily hours, etc.) and the factory floor password hash.
 - **Workers**: factory floor operarios, selected per session. Stage updates are attributed to the active worker.

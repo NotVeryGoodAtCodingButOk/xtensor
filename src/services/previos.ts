@@ -38,13 +38,13 @@ type CatalogMachineRow = Database["public"]["Tables"]["equipment_catalog"]["Row"
   >;
 };
 
-type MachineBootstrapRow = Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "senal_number"> & {
+type MachineBootstrapRow = Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "serial_number"> & {
   equipment_catalog: Pick<Database["public"]["Tables"]["equipment_catalog"]["Row"], "code" | "name"> | null;
   machine_previos: Array<Pick<Database["public"]["Tables"]["machine_previos"]["Row"], "previo_catalog_id">>;
 };
 
 type FixtureRow = {
-  senalNumber: number;
+  serialNumber: number;
   equipmentCode: string;
   previos?: string[];
 };
@@ -54,13 +54,13 @@ type Fixture = {
 };
 
 type FixturePrevioMaps = {
-  explicitBySenal: Map<number, string[]>;
+  explicitBySerial: Map<number, string[]>;
   byEquipmentCode: Map<string, string[]>;
 };
 
 const MACHINE_PREVIOS_SELECT = `
   id,
-  senal_number,
+  serial_number,
   promised_date,
   status,
   custom_equipment_name,
@@ -409,7 +409,7 @@ export async function bootstrapPreviosFromFixture() {
     .from("machines")
     .select(`
       id,
-      senal_number,
+      serial_number,
       equipment_catalog(code, name),
       machine_previos(previo_catalog_id)
     `);
@@ -429,7 +429,7 @@ export async function bootstrapPreviosFromFixture() {
     const equipmentCode = machine.equipment_catalog?.code ?? "";
     const inferred = resolveFixturePrevios(
       {
-        senalNumber: machine.senal_number,
+        serialNumber: machine.serial_number,
         equipmentCode,
       },
       fixtureMaps,
@@ -450,7 +450,7 @@ export async function bootstrapPreviosFromFixture() {
 
     const { error } = await supabase.from("machine_previos").insert(rowsToInsert);
     if (error) {
-      throw new Error(`No se pudieron crear previos para la máquina ${machine.senal_number}: ${error.message}`);
+      throw new Error(`No se pudieron crear previos para la máquina ${machine.serial_number}: ${error.message}`);
     }
 
     machinesTouched += 1;
@@ -524,7 +524,7 @@ function mapMachinePrevioListRow(row: MachinePrevioSelectRow): MachinePrevioList
 
   return {
     machineId: row.id,
-    senalNumber: row.senal_number,
+    serialNumber: row.serial_number,
     clientName: row.clients?.name ?? "Cliente sin nombre",
     equipmentName: row.equipment_catalog?.name ?? row.custom_equipment_name ?? "Producto personalizado",
     equipmentCode: row.equipment_catalog?.code ?? null,
@@ -582,12 +582,12 @@ function loadPrevioFixture(): Fixture {
 }
 
 export function buildFixturePrevioMaps(rows: FixtureRow[]): FixturePrevioMaps {
-  const explicitBySenal = new Map<number, string[]>();
+  const explicitBySerial = new Map<number, string[]>();
   const byEquipmentCodeSets = new Map<string, Set<string>>();
 
   for (const row of rows) {
     const names = Array.from(new Set((row.previos ?? []).map(normalizePrevioName).filter(Boolean)));
-    explicitBySenal.set(row.senalNumber, names);
+    explicitBySerial.set(row.serialNumber, names);
     if (row.equipmentCode && names.length > 0) {
       const existing = byEquipmentCodeSets.get(row.equipmentCode) ?? new Set<string>();
       names.forEach((name) => existing.add(name));
@@ -596,16 +596,16 @@ export function buildFixturePrevioMaps(rows: FixtureRow[]): FixturePrevioMaps {
   }
 
   return {
-    explicitBySenal,
+    explicitBySerial,
     byEquipmentCode: new Map(Array.from(byEquipmentCodeSets.entries()).map(([code, names]) => [code, Array.from(names).sort()])),
   };
 }
 
 export function resolveFixturePrevios(
-  machine: { senalNumber: number; equipmentCode: string | null },
+  machine: { serialNumber: number; equipmentCode: string | null },
   maps: FixturePrevioMaps,
 ) {
-  const explicit = maps.explicitBySenal.get(machine.senalNumber) ?? [];
+  const explicit = maps.explicitBySerial.get(machine.serialNumber) ?? [];
   if (explicit.length > 0) return explicit;
   return maps.byEquipmentCode.get(machine.equipmentCode ?? "") ?? [];
 }

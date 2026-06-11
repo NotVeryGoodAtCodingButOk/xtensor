@@ -1,6 +1,6 @@
 {
   "sourceWorkbook": "Plan Prod mayo 2026.xlsx",
-  "generatedAt": "2026-06-11T16:28:53.369228+00:00",
+  "generatedAt": "2026-06-11T18:42:32.773389+00:00",
   "settings": {
     "laborFactor": 0.3,
     "hourlyCostPerWorkerCop": 22019.57448559671,
@@ -264,7 +264,7 @@
     },
     {
       "code": "XM110",
-      "name": "Banco predicador con señales",
+      "name": "Banco predicador con placas",
       "defaultPriceCop": 4180000.0
     },
     {
@@ -289,7 +289,7 @@
     },
     {
       "code": "XM193",
-      "name": "Hammer isolateral vuelos con señales",
+      "name": "Hammer isolateral vuelos con placas",
       "defaultPriceCop": 4016806.722689076
     },
     {
@@ -624,7 +624,7 @@
     },
     {
       "code": "XB429",
-      "name": "Señal Informativa Individual",
+      "name": "Placa Informativa Individual",
       "defaultPriceCop": null
     },
     {
@@ -781,7 +781,7 @@
   "rows": [
     {
       "row": 5,
-      "senalNumber": 3,
+      "serialNumber": 3,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM161",
       "equipmentName": "Rack Sentadilla",
@@ -830,7 +830,7 @@
     },
     {
       "row": 6,
-      "senalNumber": 10,
+      "serialNumber": 10,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM104",
       "equipmentName": "Banco hombro peso libre",
@@ -881,7 +881,7 @@
     },
     {
       "row": 7,
-      "senalNumber": 974,
+      "serialNumber": 974,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM104",
       "equipmentName": "Banco hombro peso libre",
@@ -932,7 +932,7 @@
     },
     {
       "row": 8,
-      "senalNumber": 977,
+      "serialNumber": 977,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM165",
       "equipmentName": "Sentadilla Bulgara",
@@ -983,7 +983,7 @@
     },
     {
       "row": 9,
-      "senalNumber": 5,
+      "serialNumber": 5,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM108",
       "equipmentName": "banco olimpico plano",
@@ -1034,7 +1034,7 @@
     },
     {
       "row": 10,
-      "senalNumber": 1,
+      "serialNumber": 1,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -1086,7 +1086,7 @@
     },
     {
       "row": 11,
-      "senalNumber": 975,
+      "serialNumber": 975,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -1138,7 +1138,7 @@
     },
     {
       "row": 12,
-      "senalNumber": 976,
+      "serialNumber": 976,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -1190,7 +1190,7 @@
     },
     {
       "row": 13,
-      "senalNumber": 13,
+      "serialNumber": 13,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM111",
       "equipmentName": "Banco Predicador Libre",
@@ -1241,7 +1241,7 @@
     },
     {
       "row": 14,
-      "senalNumber": 12,
+      "serialNumber": 12,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM130",
       "equipmentName": "Hammer remo",
@@ -1293,7 +1293,7 @@
     },
     {
       "row": 15,
-      "senalNumber": 42,
+      "serialNumber": 42,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM162",
       "equipmentName": "Remo en punta",
@@ -1345,7 +1345,7 @@
     },
     {
       "row": 16,
-      "senalNumber": 32,
+      "serialNumber": 32,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM140",
       "equipmentName": "Pantorrillero",
@@ -1397,7 +1397,7 @@
     },
     {
       "row": 17,
-      "senalNumber": 2,
+      "serialNumber": 2,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM184",
       "equipmentName": "Prensa Atletica 3.0 lineal",
@@ -1449,7 +1449,7 @@
     },
     {
       "row": 18,
-      "senalNumber": 4,
+      "serialNumber": 4,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM100",
       "equipmentName": "Abductor Aductor",
@@ -1501,7 +1501,7 @@
     },
     {
       "row": 19,
-      "senalNumber": 978,
+      "serialNumber": 978,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XC103",
       "equipmentName": "PIVOTE DE BARRA PARA JAULA ",
@@ -1550,7 +1550,7 @@
     },
     {
       "row": 20,
-      "senalNumber": 979,
+      "serialNumber": 979,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XC101",
       "equipmentName": "Accesorio fondos para jaula",
@@ -1601,7 +1601,7 @@
     },
     {
       "row": 21,
-      "senalNumber": 980,
+      "serialNumber": 980,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM181",
       "equipmentName": "Jaula de Potencia para peso",
@@ -1654,7 +1654,7 @@
     },
     {
       "row": 22,
-      "senalNumber": 17,
+      "serialNumber": 17,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM148",
       "equipmentName": "Polea Alta",
@@ -1707,7 +1707,7 @@
     },
     {
       "row": 23,
-      "senalNumber": 981,
+      "serialNumber": 981,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM185",
       "equipmentName": "Sentadilla Hack  Up  3.0 Lineal",
@@ -1759,7 +1759,7 @@
     },
     {
       "row": 24,
-      "senalNumber": 28,
+      "serialNumber": 28,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM113",
       "equipmentName": "Crossover clásica",
@@ -1811,7 +1811,7 @@
     },
     {
       "row": 25,
-      "senalNumber": 16,
+      "serialNumber": 16,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM145",
       "equipmentName": "Peck Deck doble función",
@@ -1864,7 +1864,7 @@
     },
     {
       "row": 26,
-      "senalNumber": 982,
+      "serialNumber": 982,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM908",
       "equipmentName": "rack mancuernas 2 niveles",
@@ -1913,7 +1913,7 @@
     },
     {
       "row": 27,
-      "senalNumber": 983,
+      "serialNumber": 983,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM908",
       "equipmentName": "rack mancuernas 2 niveles",
@@ -1962,7 +1962,7 @@
     },
     {
       "row": 28,
-      "senalNumber": 984,
+      "serialNumber": 984,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM908",
       "equipmentName": "rack mancuernas 2 niveles",
@@ -2013,7 +2013,7 @@
     },
     {
       "row": 29,
-      "senalNumber": 8,
+      "serialNumber": 8,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM121",
       "equipmentName": "Flexor",
@@ -2066,7 +2066,7 @@
     },
     {
       "row": 30,
-      "senalNumber": 7,
+      "serialNumber": 7,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM120",
       "equipmentName": "Flexo Extensor",
@@ -2119,7 +2119,7 @@
     },
     {
       "row": 31,
-      "senalNumber": 9,
+      "serialNumber": 9,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM170",
       "equipmentName": "Sentadilla Smith 2.0",
@@ -2172,7 +2172,7 @@
     },
     {
       "row": 32,
-      "senalNumber": 29,
+      "serialNumber": 29,
       "clientName": "JHON - NICOLAS",
       "equipmentCode": "XM116",
       "equipmentName": "Elevador de pelvis",
@@ -2227,7 +2227,7 @@
     },
     {
       "row": 33,
-      "senalNumber": 985,
+      "serialNumber": 985,
       "clientName": "Diosivan Paez",
       "equipmentCode": "XM129",
       "equipmentName": "Hammer pecho plano",
@@ -2283,7 +2283,7 @@
     },
     {
       "row": 34,
-      "senalNumber": 986,
+      "serialNumber": 986,
       "clientName": "Diosivan Paez",
       "equipmentCode": "XM105",
       "equipmentName": "Banco Multifunción",
@@ -2338,7 +2338,7 @@
     },
     {
       "row": 35,
-      "senalNumber": 987,
+      "serialNumber": 987,
       "clientName": "Camilo Aristizabal",
       "equipmentCode": "XB457",
       "equipmentName": "Pasamanos para parque",
@@ -2356,7 +2356,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2400,7 +2400,7 @@
     },
     {
       "row": 36,
-      "senalNumber": 988,
+      "serialNumber": 988,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb449",
       "equipmentName": "Halon de espalda con discos",
@@ -2418,7 +2418,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2461,7 +2461,7 @@
     },
     {
       "row": 37,
-      "senalNumber": 989,
+      "serialNumber": 989,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb442",
       "equipmentName": "Sentadilla con discos",
@@ -2479,7 +2479,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2522,7 +2522,7 @@
     },
     {
       "row": 38,
-      "senalNumber": 990,
+      "serialNumber": 990,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb437",
       "equipmentName": "Press de pecho con discos",
@@ -2540,7 +2540,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2583,7 +2583,7 @@
     },
     {
       "row": 39,
-      "senalNumber": 991,
+      "serialNumber": 991,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb420",
       "equipmentName": "Dominadas y Fondos bio",
@@ -2601,7 +2601,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2644,7 +2644,7 @@
     },
     {
       "row": 40,
-      "senalNumber": 992,
+      "serialNumber": 992,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb402",
       "equipmentName": "Banco Abdominal doble",
@@ -2662,7 +2662,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2705,7 +2705,7 @@
     },
     {
       "row": 41,
-      "senalNumber": 993,
+      "serialNumber": 993,
       "clientName": "PETRA proyectos y construcciones",
       "equipmentCode": "xb440",
       "equipmentName": "Press de Pierna con discos",
@@ -2723,7 +2723,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2766,7 +2766,7 @@
     },
     {
       "row": 42,
-      "senalNumber": 994,
+      "serialNumber": 994,
       "clientName": "Inversiones aguas BARBOSA SAS",
       "equipmentCode": "xm171",
       "equipmentName": "Sentadilla Smith con Poleas 2.0",
@@ -2784,7 +2784,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Zinc",
@@ -2826,7 +2826,7 @@
     },
     {
       "row": 43,
-      "senalNumber": 995,
+      "serialNumber": 995,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb456",
       "equipmentName": "Circuito de calistenia #2",
@@ -2844,7 +2844,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -2887,7 +2887,7 @@
     },
     {
       "row": 44,
-      "senalNumber": 996,
+      "serialNumber": 996,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb449",
       "equipmentName": "Halon de espalda con discos",
@@ -2905,7 +2905,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Zinc",
@@ -2947,7 +2947,7 @@
     },
     {
       "row": 45,
-      "senalNumber": 997,
+      "serialNumber": 997,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb442",
       "equipmentName": "Sentadilla con discos",
@@ -2965,7 +2965,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -3008,7 +3008,7 @@
     },
     {
       "row": 46,
-      "senalNumber": 998,
+      "serialNumber": 998,
       "clientName": "Consorcio del sol",
       "equipmentCode": "xb437",
       "equipmentName": "Press de pecho con discos",
@@ -3026,7 +3026,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Zinc",
@@ -3068,7 +3068,7 @@
     },
     {
       "row": 47,
-      "senalNumber": 999,
+      "serialNumber": 999,
       "clientName": "Martha",
       "equipmentCode": "xm165",
       "equipmentName": "Sentadilla Bulgara",
@@ -3086,7 +3086,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",
@@ -3129,7 +3129,7 @@
     },
     {
       "row": 48,
-      "senalNumber": 500,
+      "serialNumber": 500,
       "clientName": "Martha",
       "equipmentCode": "xm148",
       "equipmentName": "Polea Alta",
@@ -3147,7 +3147,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Zinc",
@@ -3189,7 +3189,7 @@
     },
     {
       "row": 49,
-      "senalNumber": 501,
+      "serialNumber": 501,
       "clientName": "Martha",
       "equipmentCode": "xm145",
       "equipmentName": "Peck Deck doble función",
@@ -3207,7 +3207,7 @@
         "Torno E.",
         "Laser",
         "Carenaje",
-        "Señales",
+        "Placas",
         "Tubos",
         "Inox.",
         "Pintu.",

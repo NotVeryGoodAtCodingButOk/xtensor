@@ -104,7 +104,7 @@ describe("statistics dashboard aggregation", () => {
       machines: [
         machine({
           id: "m1",
-          senalNumber: 101,
+          serialNumber: 101,
           equipmentName: "Equipo A",
           stages: [
             stage(1, "Material", 1, 100, "2026-06-01T09:00:00-05:00"),
@@ -121,7 +121,7 @@ describe("statistics dashboard aggregation", () => {
         }),
         machine({
           id: "m2",
-          senalNumber: 102,
+          serialNumber: 102,
           equipmentName: "Equipo B",
           stages: [
             stage(1, "Material", 1, 100, "2026-05-20T09:00:00-05:00"),
@@ -139,7 +139,7 @@ describe("statistics dashboard aggregation", () => {
         {
           id: "w1",
           machineId: "m1",
-          senalNumber: 101,
+          serialNumber: 101,
           clientName: "Cliente A",
           equipmentName: "Equipo A",
           message: "Puerta desalineada",
@@ -170,7 +170,7 @@ describe("statistics dashboard aggregation", () => {
 function machine(overrides: Partial<MachineTimingInput> = {}): MachineTimingInput {
   return {
     id: "m1",
-    senalNumber: 100,
+    serialNumber: 100,
     clientName: "Cliente",
     equipmentName: "Equipo",
     line: "PRO",

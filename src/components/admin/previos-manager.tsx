@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction, updateMachineSenalAction, updateMachineClientAction } from "@/app/admin/actions";
+import { sendToProductionAction, toggleMachinePrevioAction, updateMachineSerialAction, updateMachineClientAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -12,9 +12,9 @@ import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
 import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
 
-function InlineSenalEdit({ machineId, senalNumber }: { machineId: string; senalNumber: number }) {
+function InlineSerialEdit({ machineId, serialNumber }: { machineId: string; serialNumber: number }) {
   const [editing, setEditing] = useState(false);
-  const [value, setValue] = useState(String(senalNumber));
+  const [value, setValue] = useState(String(serialNumber));
   const formRef = useRef<HTMLFormElement>(null);
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -22,21 +22,21 @@ function InlineSenalEdit({ machineId, senalNumber }: { machineId: string; senalN
       e.preventDefault();
       formRef.current?.requestSubmit();
     } else if (e.key === "Escape") {
-      setValue(String(senalNumber));
+      setValue(String(serialNumber));
       setEditing(false);
     }
   }
 
   if (!editing) {
     return (
-      <ActionTooltip text="Edita el número de SEÑAL de esta máquina.">
+      <ActionTooltip text="Edita el número de SERIAL de esta máquina.">
         <button
           type="button"
           onClick={() => setEditing(true)}
           className="font-semibold underline-offset-2 hover:underline cursor-text"
-          title="Haz clic para editar la SEÑAL"
+          title="Haz clic para editar la SERIAL"
         >
-          {senalNumber}
+          {serialNumber}
         </button>
       </ActionTooltip>
     );
@@ -45,14 +45,14 @@ function InlineSenalEdit({ machineId, senalNumber }: { machineId: string; senalN
   return (
     <form
       ref={formRef}
-      action={updateMachineSenalAction}
+      action={updateMachineSerialAction}
       onSubmit={() => setEditing(false)}
     >
       <input type="hidden" name="machineId" value={machineId} />
       <input
         autoFocus
         type="number"
-        name="senalNumber"
+        name="serialNumber"
         value={value}
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
@@ -230,7 +230,7 @@ export function PreviosManager({
       if (pendingReceived && !machine.summary.pendingReceived) return false;
       if (!term) return true;
       return (
-        String(machine.senalNumber).includes(term) ||
+        String(machine.serialNumber).includes(term) ||
         machine.clientName.toLowerCase().includes(term) ||
         machine.equipmentName.toLowerCase().includes(term) ||
         (machine.equipmentCode ?? "").toLowerCase().includes(term)
@@ -269,7 +269,7 @@ export function PreviosManager({
             <Input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
-              placeholder="Buscar por SEÑAL, cliente o equipo"
+              placeholder="Buscar por SERIAL, cliente o equipo"
               className="h-9 w-72 text-sm"
             />
             <select className={selectCls} value={clientFilter} onChange={(event) => setClientFilter(event.target.value)}>
@@ -335,7 +335,7 @@ export function PreviosManager({
                     aria-label="Seleccionar todas"
                   />
                 </TableHead>
-                <TableHead>SEÑAL</TableHead>
+                <TableHead>SERIAL</TableHead>
                 <TableHead>Cliente</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Máquina</TableHead>
@@ -362,12 +362,12 @@ export function PreviosManager({
                         type="checkbox"
                         checked={selected.has(machine.machineId)}
                         onChange={() => toggleSelected(machine.machineId)}
-                        aria-label={`Seleccionar SEÑAL ${machine.senalNumber}`}
+                        aria-label={`Seleccionar SERIAL ${machine.serialNumber}`}
                       />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <InlineSenalEdit machineId={machine.machineId} senalNumber={machine.senalNumber} />
+                        <InlineSerialEdit machineId={machine.machineId} serialNumber={machine.serialNumber} />
                         <Link
                           href={`/admin/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
@@ -427,7 +427,7 @@ export function PreviosManager({
             <Table className="min-w-[1000px] text-xs">
               <TableHeader>
                 <TableRow>
-                  <TableHead>SEÑAL</TableHead>
+                  <TableHead>SERIAL</TableHead>
                   <TableHead>Cliente</TableHead>
                   <TableHead>Código</TableHead>
                   <TableHead>Máquina</TableHead>
@@ -440,7 +440,7 @@ export function PreviosManager({
                   <TableRow key={machine.machineId}>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        <InlineSenalEdit machineId={machine.machineId} senalNumber={machine.senalNumber} />
+                        <InlineSerialEdit machineId={machine.machineId} serialNumber={machine.serialNumber} />
                         <Link
                           href={`/admin/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"

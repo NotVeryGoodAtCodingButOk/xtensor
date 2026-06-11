@@ -20,8 +20,8 @@ export type ParsedQuoteLine = {
   clave: string;
   descripcion: string;
   unidades: number;
-  /** Optional row-level Coti/Señal value from the product table. */
-  senalNumber: number | null;
+  /** Optional row-level Coti/Serial value from the product table. */
+  serialNumber: number | null;
   /** P.UNIT — unit sale price before tax. */
   pUnitCop: number;
   importeCop: number;
@@ -55,7 +55,7 @@ type ProductTableColumns = {
   unidades: number;
   pUnitCop: number;
   importeCop: number;
-  senalNumber: number | null;
+  serialNumber: number | null;
 };
 
 const DEFAULT_PRODUCT_COLUMNS: ProductTableColumns = {
@@ -65,7 +65,7 @@ const DEFAULT_PRODUCT_COLUMNS: ProductTableColumns = {
   unidades: 4,
   pUnitCop: 7,
   importeCop: 8,
-  senalNumber: null,
+  serialNumber: null,
 };
 
 function toNodeBuffer(input: ArrayBuffer | Uint8Array | Buffer): Buffer {
@@ -127,7 +127,7 @@ function resolveProductColumns(row: ExcelJS.Row): ProductTableColumns {
       columns.pUnitCop = colNumber;
     }
     if (label === "importe") columns.importeCop = colNumber;
-    if (label === "coti" || label === "cotizacion" || label === "senal") columns.senalNumber = colNumber;
+    if (label === "coti" || label === "cotizacion" || label === "serial") columns.serialNumber = colNumber;
   });
 
   return columns;
@@ -200,8 +200,8 @@ export async function parseQuoteWorkbook(
     const descripcion = cellString(row.getCell(columns.descripcion).value);
     const pUnitCop = cellNumber(row.getCell(columns.pUnitCop).value);
     const importeCop = cellNumber(row.getCell(columns.importeCop).value);
-    const senalNumber = columns.senalNumber
-      ? cellOptionalNumber(row.getCell(columns.senalNumber).value)
+    const serialNumber = columns.serialNumber
+      ? cellOptionalNumber(row.getCell(columns.serialNumber).value)
       : null;
 
     if (!producto && !clave && !descripcion && !pUnitCop && !importeCop) continue;
@@ -214,7 +214,7 @@ export async function parseQuoteWorkbook(
       clave,
       descripcion,
       unidades,
-      senalNumber,
+      serialNumber,
       pUnitCop,
       importeCop,
     });
@@ -232,7 +232,7 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
 
   const columns: Array<{ header: string; key: string; width: number }> = [
     { header: "Posición", key: "position", width: 10 },
-    { header: "SEÑAL", key: "senal", width: 10 },
+    { header: "SERIAL", key: "serial", width: 10 },
     { header: "Cliente", key: "client", width: 26 },
     { header: "Producto", key: "product", width: 30 },
     { header: "Clave", key: "code", width: 12 },
@@ -260,7 +260,7 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
   for (const machine of machines) {
     const row = sheet.addRow({
       position: machine.orderPosition,
-      senal: machine.senalNumber,
+      serial: machine.serialNumber,
       client: machine.clientName,
       product: machine.equipmentName,
       code: machine.equipmentCode ?? "",
@@ -291,7 +291,7 @@ export async function buildShippedWorkbook(machines: CalculatedMachineView[]): P
   const sheet = workbook.addWorksheet("Despachados");
 
   const columns: Array<{ header: string; key: string; width: number }> = [
-    { header: "SEÑAL", key: "senal", width: 10 },
+    { header: "SERIAL", key: "serial", width: 10 },
     { header: "Cliente", key: "client", width: 26 },
     { header: "Producto", key: "product", width: 30 },
     { header: "Clave", key: "code", width: 12 },
@@ -318,7 +318,7 @@ export async function buildShippedWorkbook(machines: CalculatedMachineView[]): P
 
   for (const machine of machines) {
     const row = sheet.addRow({
-      senal: machine.senalNumber,
+      serial: machine.serialNumber,
       client: machine.clientName,
       product: machine.equipmentName,
       code: machine.equipmentCode ?? "",
