@@ -125,11 +125,7 @@ export default async function FactoryMachineDetailPage({
                       {stage.name}
                     </h2>
                   </div>
-                  <p className="xt-task-meta text-sm text-[var(--xt-steel)]">
-                    Último cambio: {stage.lastWorkerName ?? "Sin registro"}
-                    {stage.lastUpdatedAt ? ` · ${stage.lastUpdatedAt.slice(0, 16).replace("T", " ")}` : ""}
-                  </p>
-                  <div className="xt-task-action">
+<div className="xt-task-action">
                     {isDone ? "Reproceso" : "Marcar como hecha"}
                   </div>
                 </div>
