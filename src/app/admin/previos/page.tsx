@@ -11,6 +11,7 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
 import { ActionTooltip } from "@/components/ui/tooltip";
 import { hasSupabaseConfig } from "@/lib/env";
+import { listColors } from "@/services/catalog";
 import { listMachinePrevioRows } from "@/services/previos";
 
 export default async function PreviosPage({
@@ -26,8 +27,9 @@ export default async function PreviosPage({
     );
   }
 
-  const [allMachines, params] = await Promise.all([
+  const [allMachines, colors, params] = await Promise.all([
     listMachinePrevioRows(),
+    listColors(),
     searchParams ?? Promise.resolve({ seed: undefined, machines: undefined, previos: undefined, imported: undefined }),
   ]);
 
@@ -66,6 +68,7 @@ export default async function PreviosPage({
         pendingMachines={pendingMachines}
         productionMachines={productionMachines}
         seededMessage={seededMessage}
+        colors={colors}
       />
     </AdminShell>
   );

@@ -10,7 +10,7 @@ import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
 import { ActionTooltip } from "@/components/ui/tooltip";
 import { hasSupabaseConfig } from "@/lib/env";
-import { listHolidays } from "@/services/catalog";
+import { listColors, listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 
@@ -24,7 +24,7 @@ export default async function AdminDashboardPage() {
   }
 
   const settings = mapSettings(await getSettings());
-  const holidays = await listHolidays();
+  const [holidays, colors] = await Promise.all([listHolidays(), listColors()]);
   const machines = await listCalculatedMachines({ settings, holidays, status: "in_production" });
 
   return (
@@ -55,7 +55,7 @@ export default async function AdminDashboardPage() {
           </ActionTooltip>
         </div>
       </div>
-      <ProductionTablePanel machines={machines} />
+      <ProductionTablePanel machines={machines} colors={colors} />
     </AdminShell>
   );
 }

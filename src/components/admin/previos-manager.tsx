@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction, updateMachineSerialAction, updateMachineClientAction } from "@/app/admin/actions";
+import { sendToProductionAction, toggleMachinePrevioAction, updateMachineSerialAction, updateMachineClientAction, updateMachineColorAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -114,6 +114,54 @@ function InlineClientEdit({ machineId, clientName }: { machineId: string; client
   );
 }
 
+function InlineColorEdit({ machineId, colorId, colorName, colors }: { machineId: string; colorId: string | null; colorName: string | null; colors: { id: string; name: string }[] }) {
+  const [editing, setEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  if (!editing) {
+    return (
+      <ActionTooltip text="Edita el color de esta máquina.">
+        <button
+          type="button"
+          onClick={() => setEditing(true)}
+          className="cursor-text hover:underline underline-offset-2 text-left"
+          title={colorName ?? "Sin color"}
+        >
+          {colorName ?? <span className="text-[var(--xt-aluminum)]">—</span>}
+        </button>
+      </ActionTooltip>
+    );
+  }
+
+  return (
+    <form
+      ref={formRef}
+      action={updateMachineColorAction}
+      onSubmit={() => setEditing(false)}
+    >
+      <input type="hidden" name="machineId" value={machineId} />
+      <select
+        ref={selectRef}
+        autoFocus
+        name="colorId"
+        defaultValue={colorId ?? ""}
+        onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
+        onChange={() => { formRef.current?.requestSubmit(); setEditing(false); }}
+        onKeyDown={(e) => {
+          if (e.key === "Escape") setEditing(false);
+        }}
+        className="rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-1 py-0.5 text-xs outline-none"
+      >
+        <option value="">Sin color</option>
+        {colors.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+    </form>
+  );
+}
+
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
@@ -201,10 +249,12 @@ export function PreviosManager({
   pendingMachines,
   productionMachines,
   seededMessage,
+  colors = [],
 }: {
   pendingMachines: MachinePrevioListRow[];
   productionMachines: MachinePrevioListRow[];
   seededMessage?: string | null;
+  colors?: { id: string; name: string }[];
 }) {
   const [clientFilter, setClientFilter] = useState("");
   const [search, setSearch] = useState("");
@@ -339,6 +389,7 @@ export function PreviosManager({
                 <TableHead>Cliente</TableHead>
                 <TableHead>Código</TableHead>
                 <TableHead>Máquina</TableHead>
+                <TableHead>Color</TableHead>
                 <TableHead>Prometido</TableHead>
                 <TableHead>Previos</TableHead>
                 <TableHead className="w-10" />
@@ -347,7 +398,7 @@ export function PreviosManager({
             <TableBody>
               {filteredPending.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="py-6 text-center text-[var(--xt-steel)]">
+                  <TableCell colSpan={9} className="py-6 text-center text-[var(--xt-steel)]">
                     No hay máquinas en previos.
                   </TableCell>
                 </TableRow>
@@ -387,6 +438,9 @@ export function PreviosManager({
                       <CellTooltip text={machine.equipmentName}>
                         <span className="line-clamp-1">{machine.equipmentName}</span>
                       </CellTooltip>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <InlineColorEdit machineId={machine.machineId} colorId={machine.colorId} colorName={machine.colorName} colors={colors} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
                     <TableCell>
@@ -431,6 +485,7 @@ export function PreviosManager({
                   <TableHead>Cliente</TableHead>
                   <TableHead>Código</TableHead>
                   <TableHead>Máquina</TableHead>
+                  <TableHead>Color</TableHead>
                   <TableHead>Prometido</TableHead>
                   <TableHead>Previos</TableHead>
                 </TableRow>
@@ -460,6 +515,9 @@ export function PreviosManager({
                       <CellTooltip text={machine.equipmentName}>
                         <span className="line-clamp-1">{machine.equipmentName}</span>
                       </CellTooltip>
+                    </TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      <InlineColorEdit machineId={machine.machineId} colorId={machine.colorId} colorName={machine.colorName} colors={colors} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
                     <TableCell>

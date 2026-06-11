@@ -88,6 +88,8 @@ export type MachinePrevioListRow = {
   clientName: string;
   equipmentName: string;
   equipmentCode: string | null;
+  colorId: string | null;
+  colorName: string | null;
   promisedDate: string;
   status: MachineStatus;
   previos: MachinePrevioView[];

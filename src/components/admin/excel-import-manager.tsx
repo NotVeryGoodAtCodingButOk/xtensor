@@ -29,6 +29,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { formatDateEs } from "@/services/schedule";
 
 type CatalogOption = { id: string; code: string; name: string };
+type ColorOption = { id: string; name: string };
 type PreviewLine = QuotePreview["lines"][number];
 
 const selectCls =
@@ -45,6 +46,7 @@ function buildImportLines(preview: QuotePreview, lineState: ImportFileEntry["lin
       unidades: getLineUnitCount(line, state),
       serialNumbers: getLineSerialNumbers(line, state),
       pUnitCop: line.pUnitCop,
+      colorId: state?.colorId ?? null,
       // Leave línea unset: catalog matches keep their own line; custom items have none.
       line: null,
     };
@@ -58,9 +60,11 @@ function buildImportLines(preview: QuotePreview, lineState: ImportFileEntry["lin
 
 export function ExcelImportManager({
   catalog,
+  colors = [],
   queueEndDate,
 }: {
   catalog: CatalogOption[];
+  colors?: ColorOption[];
   queueEndDate: string;
 }) {
   const router = useRouter();
@@ -178,6 +182,27 @@ export function ExcelImportManager({
               resolution: getLineResolution(line, state),
               unidades: getLineUnitCount(line, state),
               serialNumbers: current,
+            },
+          },
+        };
+      }),
+    );
+  }
+
+  function updateLineColor(entryId: string, line: PreviewLine, colorId: string) {
+    setEntries((prev) =>
+      prev.map((entry) => {
+        if (entry.id !== entryId) return entry;
+        const state = entry.lineState[line.rowIndex];
+        return {
+          ...entry,
+          lineState: {
+            ...entry.lineState,
+            [line.rowIndex]: {
+              resolution: getLineResolution(line, state),
+              unidades: getLineUnitCount(line, state),
+              serialNumbers: getLineSerialNumbers(line, state),
+              colorId: colorId || null,
             },
           },
         };
@@ -386,7 +411,7 @@ export function ExcelImportManager({
               ) : null}
 
               <div className="overflow-x-auto">
-                <Table className="min-w-[920px]">
+                <Table className="min-w-[1060px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Producto</TableHead>
@@ -394,6 +419,7 @@ export function ExcelImportManager({
                       <TableHead className="w-24">Unidad</TableHead>
                       <TableHead className="w-36">SERIAL</TableHead>
                       <TableHead className="text-right">P.UNIT.</TableHead>
+                      <TableHead className="w-36">Color</TableHead>
                       <TableHead className="w-72">Acción</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -458,6 +484,21 @@ export function ExcelImportManager({
                           {row.machineIndex === 0 ? (
                             <TableCell rowSpan={unitCount} className="align-top text-right tabular-nums">
                               {peso.format(line.pUnitCop)}
+                            </TableCell>
+                          ) : null}
+                          {row.machineIndex === 0 ? (
+                            <TableCell rowSpan={unitCount} className="align-top">
+                              <select
+                                className={selectCls}
+                                value={state?.colorId ?? ""}
+                                disabled={resolution === "skip"}
+                                onChange={(e) => updateLineColor(entry.id, line, e.target.value)}
+                              >
+                                <option value="">Sin color</option>
+                                {colors.map((c) => (
+                                  <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                              </select>
                             </TableCell>
                           ) : null}
                           {row.machineIndex === 0 ? (

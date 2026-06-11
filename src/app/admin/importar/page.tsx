@@ -6,7 +6,7 @@ import { ExcelImportGuide } from "@/components/admin/excel-import-guide";
 export const metadata: Metadata = { title: "Importar XTENSOR" };
 import { ExcelImportManager } from "@/components/admin/excel-import-manager";
 import { hasSupabaseConfig } from "@/lib/env";
-import { listCatalog, listHolidays } from "@/services/catalog";
+import { listCatalog, listColors, listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 
@@ -20,7 +20,7 @@ export default async function ImportQuotePage() {
   }
 
   const settings = mapSettings(await getSettings());
-  const [catalog, holidays] = await Promise.all([listCatalog(), listHolidays()]);
+  const [catalog, holidays, colors] = await Promise.all([listCatalog(), listHolidays(), listColors()]);
   const machines = await listCalculatedMachines({ settings, holidays, status: "in_production" });
 
   const queueEndDate =
@@ -36,7 +36,7 @@ export default async function ImportQuotePage() {
   return (
     <AdminShell>
       <ExcelImportGuide templateHref="/admin/importar/plantilla" />
-      <ExcelImportManager catalog={catalogOptions} queueEndDate={queueEndDate} />
+      <ExcelImportManager catalog={catalogOptions} colors={colors} queueEndDate={queueEndDate} />
     </AdminShell>
   );
 }

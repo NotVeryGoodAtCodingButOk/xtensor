@@ -20,7 +20,7 @@ import type { CalculatedMachineView } from "@/types/domain";
 
 export type SortKey = keyof CalculatedMachineView;
 export type SortConfig = { key: SortKey; dir: "asc" | "desc" } | null;
-type EditableField = "serialNumber" | "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line";
+type EditableField = "serialNumber" | "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line" | "colorId";
 
 function StagePin({ completion }: { completion: number }) {
   if (completion === 100) {
@@ -153,6 +153,7 @@ function HiddenMachineFields({ machine, omit }: { machine: CalculatedMachineView
     { name: "orderPosition", value: machine.orderPosition },
     { name: "city", value: machine.city ?? "" },
     { name: "line", value: machine.line ?? "" },
+    { name: "colorId", value: machine.colorId ?? "" },
   ];
 
   return (
@@ -244,6 +245,80 @@ function EditableMachineLineCell({
   );
 }
 
+function EditableMachineColorCell({
+  machine,
+  colors,
+}: {
+  machine: CalculatedMachineView;
+  colors: { id: string; name: string }[];
+}) {
+  const [editing, setEditing] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const selectRef = useRef<HTMLSelectElement>(null);
+
+  useEffect(() => {
+    if (!editing) return;
+    selectRef.current?.focus();
+  }, [editing]);
+
+  function submitEdit() {
+    formRef.current?.requestSubmit();
+    setEditing(false);
+  }
+
+  function handleKeyDown(event: KeyboardEvent<HTMLSelectElement>) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      setEditing(false);
+    }
+    if (event.key === "Enter") {
+      event.preventDefault();
+      submitEdit();
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div
+        className="w-full cursor-text rounded-[2px] px-1 -mx-1 transition-colors hover:bg-[var(--xt-yellow-soft)] whitespace-nowrap"
+        onDoubleClick={() => setEditing(true)}
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            setEditing(true);
+          }
+        }}
+        role="button"
+        tabIndex={0}
+        title="Doble clic para editar el color"
+      >
+        {machine.colorName ?? "—"}
+      </div>
+    );
+  }
+
+  return (
+    <form ref={formRef} action={updateMachineInlineAction} className="min-w-0">
+      <input type="hidden" name="machineId" value={machine.id} />
+      <HiddenMachineFields machine={machine} omit="colorId" />
+      <select
+        ref={selectRef}
+        name="colorId"
+        defaultValue={machine.colorId ?? ""}
+        onBlur={submitEdit}
+        onChange={submitEdit}
+        onKeyDown={handleKeyDown}
+        className="h-7 min-w-28 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-white)] px-2 text-xs shadow-none focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--xt-yellow)]"
+      >
+        <option value="">Sin color</option>
+        {colors.map((c) => (
+          <option key={c.id} value={c.id}>{c.name}</option>
+        ))}
+      </select>
+    </form>
+  );
+}
+
 type SortableHeadProps = {
   sortKey: SortKey;
   label: string;
@@ -306,6 +381,7 @@ function WarrantyButton({ machineId }: { machineId: string }) {
 
 export function ProductionTable({
   machines,
+  colors = [],
   shipped = false,
   colorRows = false,
   sortConfig = null,
@@ -315,6 +391,7 @@ export function ProductionTable({
   onDeleteShipped,
 }: {
   machines: CalculatedMachineView[];
+  colors?: { id: string; name: string }[];
   shipped?: boolean;
   colorRows?: boolean;
   sortConfig?: SortConfig;
@@ -446,7 +523,9 @@ export function ProductionTable({
                   </CellTooltip>
                 </TableCell>
 
-                <TableCell className={`${C} whitespace-nowrap`}>{machine.colorName ?? "—"}</TableCell>
+                <TableCell className={`${C} whitespace-nowrap`}>
+                  <EditableMachineColorCell machine={machine} colors={colors} />
+                </TableCell>
                 <TableCell className={C}>
                   <EditableMachineCell
                     machine={machine}

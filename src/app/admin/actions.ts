@@ -163,11 +163,23 @@ export async function updateMachineInlineAction(formData: FormData) {
     order_position: Number(formData.get("orderPosition")) || 9999,
     city: String(formData.get("city") ?? "").trim() || null,
     line_override: normalizeMachineLine(formData.get("line")),
+    color_id: String(formData.get("colorId") ?? "").trim() || null,
   });
 
   revalidateFactoryData();
   revalidatePath("/admin");
   revalidatePath(`/admin/maquinas/${machineId}`);
+}
+
+export async function updateMachineColorAction(formData: FormData) {
+  await requireAdmin();
+  const machineId = String(formData.get("machineId") ?? "");
+  const colorId = String(formData.get("colorId") ?? "").trim() || null;
+  if (machineId) {
+    await updateMachine(machineId, { color_id: colorId });
+  }
+  revalidateFactoryData();
+  revalidatePath("/admin/previos");
 }
 
 export async function unmarkShippedAction(formData: FormData) {
@@ -511,6 +523,7 @@ export type ImportQuoteLineInput = {
   catalogId?: string;
   customName?: string;
   line?: string | null;
+  colorId?: string | null;
   producto: string;
   unidades: number;
   serialNumbers: number[];
@@ -594,6 +607,7 @@ export async function importQuoteAction(input: {
         equipment_id: equipmentId,
         custom_equipment_name: null,
         line_override: lineOverride,
+        color_id: line.colorId ?? null,
         sale_price_cop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : 0,
         promised_date: input.promisedDate,
         order_position: position,

@@ -156,7 +156,7 @@ function FilterDropdown({
   );
 }
 
-export function ProductionTablePanel({ machines }: { machines: CalculatedMachineView[] }) {
+export function ProductionTablePanel({ machines, colors = [] }: { machines: CalculatedMachineView[]; colors?: { id: string; name: string }[] }) {
   const [colorRows, setColorRows] = useState(false);
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
   const [sortConfig, setSortConfig] = useState<SortConfig>(null);
@@ -291,6 +291,7 @@ export function ProductionTablePanel({ machines }: { machines: CalculatedMachine
 
       <ProductionTable
         machines={displayed}
+        colors={colors}
         colorRows={colorRows}
         sortConfig={sortConfig}
         onSort={handleSort}

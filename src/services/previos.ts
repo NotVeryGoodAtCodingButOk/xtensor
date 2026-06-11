@@ -16,6 +16,7 @@ type PrevioEventType = Database["public"]["Tables"]["machine_previo_events"]["Ro
 
 type MachinePrevioSelectRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Pick<Database["public"]["Tables"]["clients"]["Row"], "name"> | null;
+  colors: Pick<Database["public"]["Tables"]["colors"]["Row"], "id" | "name"> | null;
   equipment_catalog: (Pick<Database["public"]["Tables"]["equipment_catalog"]["Row"], "code" | "name"> & {
     equipment_previos: Array<
       Pick<Database["public"]["Tables"]["equipment_previos"]["Row"], "previo_catalog_id"> & {
@@ -63,8 +64,10 @@ const MACHINE_PREVIOS_SELECT = `
   serial_number,
   promised_date,
   status,
+  color_id,
   custom_equipment_name,
   clients(name),
+  colors(id, name),
   equipment_catalog(code, name, equipment_previos(previo_catalog_id, previo_catalog(name))),
   machine_previos(
     *,
@@ -528,6 +531,8 @@ function mapMachinePrevioListRow(row: MachinePrevioSelectRow): MachinePrevioList
     clientName: row.clients?.name ?? "Cliente sin nombre",
     equipmentName: row.equipment_catalog?.name ?? row.custom_equipment_name ?? "Producto personalizado",
     equipmentCode: row.equipment_catalog?.code ?? null,
+    colorId: row.colors?.id ?? null,
+    colorName: row.colors?.name ?? null,
     promisedDate: row.promised_date,
     status: row.status,
     previos,

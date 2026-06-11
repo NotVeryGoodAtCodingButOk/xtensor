@@ -6,6 +6,7 @@ export type LineState = {
   resolution: string;
   unidades: number;
   serialNumbers: number[];
+  colorId?: string | null;
 };
 
 type PreviewLine = QuotePreview["lines"][number];
