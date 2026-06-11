@@ -53,17 +53,49 @@ export function resizePlacaNumbers(current: number[], units: number, usedByOther
   return next;
 }
 
-export function initialLineState(preview: QuotePreview): Record<number, LineState> {
-  return Object.fromEntries(
-    preview.lines.map((line) => [
-      line.rowIndex,
-      {
-        resolution: defaultLineResolution(line),
-        unidades: normalizeUnitCount(line.unidades),
-        placaNumbers: resizePlacaNumbers(line.placaNumbers, line.unidades, new Set()),
-      },
-    ]),
-  );
+/**
+ * Assign one PLACA per unit, keeping any valid current value that does not
+ * collide with `used`, and re-numbering the rest. Unlike `resizePlacaNumbers`
+ * this also replaces existing values that collide — needed when seeding a new
+ * file against PLACAs already taken by other files in the same batch.
+ */
+function assignPlacaNumbers(current: number[], units: number, used: Set<number>) {
+  const target = normalizeUnitCount(units);
+  const taken = new Set(used);
+  const result: number[] = [];
+  let cursor = taken.size > 0 ? Math.max(...taken) : 0;
+
+  for (let i = 0; i < target; i += 1) {
+    let placa = current[i];
+    if (!Number.isInteger(placa) || placa <= 0 || taken.has(placa)) {
+      placa = nextAvailablePlaca(cursor, taken);
+    }
+    result.push(placa);
+    taken.add(placa);
+    cursor = placa;
+  }
+
+  return result;
+}
+
+export function initialLineState(
+  preview: QuotePreview,
+  seedUsed: Set<number> = new Set(),
+): Record<number, LineState> {
+  const used = new Set(seedUsed);
+  const result: Record<number, LineState> = {};
+
+  for (const line of preview.lines) {
+    const placaNumbers = assignPlacaNumbers(line.placaNumbers, line.unidades, used);
+    for (const placa of placaNumbers) used.add(placa);
+    result[line.rowIndex] = {
+      resolution: defaultLineResolution(line),
+      unidades: normalizeUnitCount(line.unidades),
+      placaNumbers,
+    };
+  }
+
+  return result;
 }
 
 export function getLineResolution(line: PreviewLine, state: LineState | undefined) {
@@ -111,6 +143,87 @@ export function buildMachineRows(
       resolution,
     }));
   });
+}
+
+/** One uploaded Excel file, with its own client header and editable lines. */
+export type ImportFileEntry = {
+  id: string;
+  fileName: string;
+  preview: QuotePreview;
+  clientName: string;
+  promisedDate: string;
+  lineState: Record<number, LineState>;
+};
+
+/** Count the machines (units) an entry will create, ignoring skipped lines. */
+export function countEntryMachines(entry: ImportFileEntry) {
+  return entry.preview.lines.reduce((sum, line) => {
+    const state = entry.lineState[line.rowIndex];
+    if (getLineResolution(line, state) === "skip") return sum;
+    return sum + getLineUnitCount(line, state);
+  }, 0);
+}
+
+/** Every PLACA in use across the given entries, optionally excluding one entry. */
+export function collectPlacasFromEntries(entries: ImportFileEntry[], exceptId?: string) {
+  const used = new Set<number>();
+  for (const entry of entries) {
+    if (entry.id === exceptId) continue;
+    for (const state of Object.values(entry.lineState)) {
+      for (const placa of state.placaNumbers) used.add(placa);
+    }
+  }
+  return used;
+}
+
+export type EntryValidation = { valid: boolean; reason: string | null };
+
+/**
+ * Validate each entry independently so valid files can import while invalid
+ * ones stay on screen. Detects in-file issues plus PLACAs that collide across
+ * files (both colliding files are flagged).
+ */
+export function validateEntries(entries: ImportFileEntry[]): Record<string, EntryValidation> {
+  const placaCount = new Map<number, number>();
+  for (const entry of entries) {
+    for (const line of entry.preview.lines) {
+      const state = entry.lineState[line.rowIndex];
+      if (getLineResolution(line, state) === "skip") continue;
+      for (const placa of getLinePlacaNumbers(line, state)) {
+        placaCount.set(placa, (placaCount.get(placa) ?? 0) + 1);
+      }
+    }
+  }
+
+  const out: Record<string, EntryValidation> = {};
+  for (const entry of entries) {
+    let reason: string | null = null;
+
+    if (!entry.clientName.trim()) {
+      reason = "Falta el nombre del cliente.";
+    } else if (!entry.promisedDate) {
+      reason = "Falta la fecha prometida.";
+    } else if (countEntryMachines(entry) === 0) {
+      reason = "No hay líneas seleccionadas para importar.";
+    } else {
+      reason = findPlacaIssue(entry.preview, entry.lineState);
+      if (!reason) {
+        for (const line of entry.preview.lines) {
+          const state = entry.lineState[line.rowIndex];
+          if (getLineResolution(line, state) === "skip") continue;
+          const clash = getLinePlacaNumbers(line, state).find((placa) => (placaCount.get(placa) ?? 0) > 1);
+          if (clash) {
+            reason = `La PLACA ${clash} se repite en otro archivo.`;
+            break;
+          }
+        }
+      }
+    }
+
+    out[entry.id] = { valid: reason === null, reason };
+  }
+
+  return out;
 }
 
 export function findPlacaIssue(preview: QuotePreview | null, lineState: Record<number, LineState>) {
