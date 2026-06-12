@@ -14,7 +14,7 @@ export default function FactoryMachinesLoading() {
 
       <div className="xt-machine-grid">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="xt-machine-card xt-loading-card min-h-[230px] border border-[var(--xt-black)] bg-[var(--xt-white)] p-5 shadow-[var(--shadow-sm)]">
+          <div key={index} className="xt-machine-card xt-loading-card min-h-[170px] border border-[var(--xt-black)] bg-[var(--xt-white)] p-4 shadow-[var(--shadow-sm)]">
             <div className="xt-loading-card-body grid h-full gap-4">
               <div className="xt-skeleton xt-skeleton-small h-4 w-20 animate-pulse bg-[var(--xt-cement)]" />
               <div className="xt-skeleton xt-skeleton-title h-12 w-3/4 animate-pulse bg-[var(--xt-cement)]" />

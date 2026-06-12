@@ -107,34 +107,28 @@ export default async function FactoryMachinesPage({
       ) : (
         <div className="xt-machine-grid">
           {orderedMachines.map((machine) => {
-            const completedStages = machine.stages.filter((stage) => stage.completion === 100).length;
-            const totalStages = machine.stages.length;
-            const isComplete = totalStages > 0 && completedStages === totalStages;
-            const isStarted = machine.stages.some((stage) => stage.completion > 0) && !isComplete;
-
             return (
               <Link
                 key={machine.id}
                 href={`/planta/maquinas/${machine.id}${workerQuery}`}
-                className="xt-machine-card flex min-h-[230px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
+                className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
               >
-                <div className="xt-machine-card-body flex flex-1 flex-col gap-3 p-5">
+                <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">
                   <div className="xt-machine-card-heading flex items-start justify-between gap-3">
-                    <div className="xt-machine-card-fields grid gap-1.5 min-w-0 flex-1">
+                    <div className="xt-machine-card-fields grid gap-1 min-w-0 flex-1">
                       <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentCode ?? "Personalizado"}</p>
                       <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentName}</p>
                       <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.clientName}</p>
-                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.serialNumber}</p>
+                      <div className="min-w-0">
+                        <span className="xt-eyebrow block text-[0.625rem] leading-none">Cotización</span>
+                        <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.serialNumber}</p>
+                      </div>
                     </div>
                     <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
                   </div>
-
-                  <div className="xt-machine-status [font-family:var(--font-barlow-condensed)] text-xl font-bold">
-                    {isComplete ? "Terminada" : isStarted ? `${completedStages} de ${totalStages} tareas listas` : "Sin iniciar"}
-                  </div>
                 </div>
 
-                <div className="xt-machine-stage-strip border-t border-[var(--xt-cement)] px-5 py-3">
+                <div className="xt-machine-stage-strip border-t border-[var(--xt-cement)] px-4 py-2">
                   <StageStrip stages={machine.stages} />
                 </div>
               </Link>
