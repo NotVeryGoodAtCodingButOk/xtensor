@@ -1,24 +1,21 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { updateStageAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
-import { QueryToast } from "@/components/ui/query-toast";
-import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
+import { TaskGrid } from "@/components/factory/task-grid";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
 import { getMachine } from "@/services/machines";
-import type { StageView } from "@/types/domain";
 
 export default async function FactoryMachineDetailPage({
   params,
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ logged?: string; toast?: string; workerId?: string }>;
+  searchParams: Promise<{ workerId?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -50,18 +47,11 @@ export default async function FactoryMachineDetailPage({
   }
   const workerColor = worker?.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
-  const orderedStages = [...machine.stages].sort(sortStagesForWorkers);
-  const toastMessage = query.toast === "finished" ? "Máquina terminada" : null;
   const workerQuery = cookieWorkerId ? "" : `?workerId=${resolvedWorkerId}`;
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
 
   return (
     <main className="xt-planta xt-planta-page xt-machine-detail min-h-screen bg-[var(--xt-paper)] pb-28">
-      <QueryToast
-        message={toastMessage}
-        description={toastMessage ? "Todas las etapas quedaron hechas." : null}
-        clearKeys={["toast"]}
-      />
       <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
       <header className="xt-machine-detail-header mb-3 border-b border-[var(--xt-black)]">
         <div
@@ -105,47 +95,15 @@ export default async function FactoryMachineDetailPage({
         </div>
       </header>
 
-      <div className="xt-task-grid grid gap-4 px-5 2xl:grid-cols-2">
-        {orderedStages.map((stage) => {
-          const isDone = stage.completion === 100;
-
-          return (
-            <form key={stage.id} action={updateStageAction}>
-              <input type="hidden" name="machineId" value={machine.id} />
-              <input type="hidden" name="stageId" value={stage.id} />
-              <input type="hidden" name="completion" value={isDone ? 0 : 100} />
-              <button
-                type="submit"
-                className={`xt-task-card ${isDone ? "xt-task-card-done" : ""}`}
-              >
-                <div className="xt-task-card-body">
-                  <div className="xt-task-card-heading">
-                    <p className="xt-eyebrow">{isDone ? "Hecha" : "Pendiente"}</p>
-                    <h2 className="xt-task-title [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words">
-                      {stage.name}
-                    </h2>
-                  </div>
-<div className="xt-task-action">
-                    {isDone ? "Reproceso" : "Marcar como hecha"}
-                  </div>
-                </div>
-              </button>
-            </form>
-          );
-        })}
-      </div>
-      {query.logged ? <ReturnToWorkersBar continueHref={`/planta/maquinas/${machine.id}${workerQuery}`} /> : null}
+      <TaskGrid
+        machineId={machine.id}
+        continueHref={`/planta/maquinas/${machine.id}${workerQuery}`}
+        stages={machine.stages.map((stage) => ({
+          id: stage.id,
+          name: stage.name,
+          completion: stage.completion,
+        }))}
+      />
     </main>
   );
-}
-
-function sortStagesForWorkers(a: StageView, b: StageView) {
-  const aDone = a.completion === 100;
-  const bDone = b.completion === 100;
-
-  if (aDone !== bDone) {
-    return aDone ? 1 : -1;
-  }
-
-  return a.id - b.id;
 }

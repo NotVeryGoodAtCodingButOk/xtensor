@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 
-export function ReturnToWorkersBar({ continueHref }: { continueHref: string }) {
+export function ReturnToWorkersBar({
+  continueHref,
+  onContinue,
+}: {
+  continueHref: string;
+  /** When provided, "Continuar registrando" dismisses the bar in place
+   *  instead of reloading the page — keeps the factory tablet snappy. */
+  onContinue?: () => void;
+}) {
   const [isVisible, setIsVisible] = useState(true);
 
   useEffect(() => {
@@ -31,6 +39,10 @@ export function ReturnToWorkersBar({ continueHref }: { continueHref: string }) {
           className="xt-return-continue xt-return-continue-btn"
           onClick={() => {
             setIsVisible(false);
+            if (onContinue) {
+              onContinue();
+              return;
+            }
             window.location.assign(continueHref);
           }}
         >

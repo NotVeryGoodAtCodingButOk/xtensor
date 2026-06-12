@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { revalidateFactoryData } from "@/lib/factory-cache";
 import {
@@ -52,38 +53,47 @@ export async function changeWorkerAction() {
   redirect("/planta/operarios");
 }
 
-export async function updateStageAction(formData: FormData) {
+export type LogStageResult = {
+  ok: boolean;
+  logged: boolean;
+  finished: boolean;
+};
+
+/**
+ * Toggles a stage and returns the outcome instead of redirecting, so the
+ * factory tablet can update optimistically without a full page navigation.
+ */
+export async function logStageAction(input: {
+  machineId: string;
+  stageId: number;
+  completion: number;
+}): Promise<LogStageResult> {
   const workerId = await getActiveWorkerId();
-  const machineId = String(formData.get("machineId") ?? "");
-  const stageId = Number(formData.get("stageId"));
-  const completion = Number(formData.get("completion")) === 100 ? 100 : 0;
 
-  if (!(await isFactoryUnlocked())) {
-    redirect("/planta");
+  if (!(await isFactoryUnlocked()) || !workerId) {
+    return { ok: false, logged: false, finished: false };
   }
 
-  if (!workerId) {
-    redirect("/planta/operarios");
-  }
-
-  const result = await updateStageProgress({ machineId, stageId, completion, workerId });
+  const completion = input.completion === 100 ? 100 : 0;
+  const result = await updateStageProgress({
+    machineId: input.machineId,
+    stageId: input.stageId,
+    completion,
+    workerId,
+  });
   revalidateFactoryData();
-  const nextParams = new URLSearchParams();
 
-  if (result.log?.id) {
-    nextParams.set("logged", "1");
-  }
-
+  let finished = false;
   if (completion === 100) {
-    const machine = await getMachine(machineId);
-    const isCompleted = machine.stages.every((stage) => stage.completion === 100);
-    if (isCompleted) {
-      nextParams.set("toast", "finished");
-    }
+    const machine = await getMachine(input.machineId);
+    finished = machine.stages.every((stage) => stage.completion === 100);
   }
 
-  const query = nextParams.toString();
-  redirect(`/planta/maquinas/${machineId}${query ? `?${query}` : ""}`);
+  // Refresh the detail route's server data so the optimistic UI reconciles
+  // against the real stage state once the mutation lands.
+  revalidatePath(`/planta/maquinas/${input.machineId}`);
+
+  return { ok: true, logged: Boolean(result.log?.id), finished };
 }
 
 export async function undoStageAction(formData: FormData) {
