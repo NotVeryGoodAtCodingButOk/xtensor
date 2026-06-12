@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
-import type { CalculatedMachineView } from "@/types/domain";
 
 export default async function FactoryMachinesPage({
   searchParams,
@@ -45,7 +44,7 @@ export default async function FactoryMachinesPage({
   }
 
   const machines = shared.machines;
-  const orderedMachines = [...machines].sort(sortMachinesForWorkers);
+  const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
   const workerColor = worker?.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
   const workerQuery = cookieWorkerId ? "" : `?workerId=${workerId}`;
@@ -106,7 +105,7 @@ export default async function FactoryMachinesPage({
           </div>
         </section>
       ) : (
-        <div className="xt-machine-grid grid gap-4 p-5 xl:grid-cols-2 2xl:grid-cols-3">
+        <div className="xt-machine-grid">
           {orderedMachines.map((machine) => {
             const completedStages = machine.stages.filter((stage) => stage.completion === 100).length;
             const totalStages = machine.stages.length;
@@ -119,23 +118,27 @@ export default async function FactoryMachinesPage({
                 href={`/planta/maquinas/${machine.id}${workerQuery}`}
                 className="xt-machine-card flex min-h-[230px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
               >
-                <div className="xt-machine-card-body flex flex-1 flex-col gap-4 p-5">
+                <div className="xt-machine-card-body flex flex-1 flex-col gap-3 p-5">
                   <div className="xt-machine-card-heading flex items-start justify-between gap-3">
-                    <div className="xt-machine-card-title-wrap min-w-0">
-                      <h2 className="xt-machine-card-title [font-family:var(--font-barlow-condensed)] text-4xl font-bold leading-none break-words">
-                        {machine.equipmentName}
-                      </h2>
+                    <div className="xt-machine-card-fields grid gap-1.5 min-w-0 flex-1">
+                      <div className="xt-machine-field flex items-baseline gap-2">
+                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Código</span>
+                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.equipmentCode ?? "Personalizado"}</span>
+                      </div>
+                      <div className="xt-machine-field flex items-baseline gap-2">
+                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Máquina</span>
+                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.equipmentName}</span>
+                      </div>
+                      <div className="xt-machine-field flex items-baseline gap-2">
+                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Cliente</span>
+                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.clientName}</span>
+                      </div>
+                      <div className="xt-machine-field flex items-baseline gap-2">
+                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Serial</span>
+                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.serialNumber}</span>
+                      </div>
                     </div>
-                    <ChevronRight className="xt-machine-chevron mt-2 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
-                  </div>
-
-                  <div className="xt-machine-meta grid gap-1 text-base text-[var(--xt-steel)]">
-                    <p className="xt-machine-meta-line truncate">
-                      {machine.clientName} · {machine.colorName ?? "Sin color"}
-                    </p>
-                    <p className="xt-machine-meta-line truncate">
-                      SERIAL {machine.serialNumber} · {machine.equipmentCode ?? "Personalizado"}
-                    </p>
+                    <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
                   </div>
 
                   <div className="xt-machine-status [font-family:var(--font-barlow-condensed)] text-xl font-bold">
@@ -155,29 +158,3 @@ export default async function FactoryMachinesPage({
   );
 }
 
-function sortMachinesForWorkers(a: CalculatedMachineView, b: CalculatedMachineView) {
-  const aGroup = getWorkerSortGroup(a);
-  const bGroup = getWorkerSortGroup(b);
-
-  if (aGroup !== bGroup) {
-    return aGroup - bGroup;
-  }
-
-  if (aGroup === 0 && a.progressPct !== b.progressPct) {
-    return b.progressPct - a.progressPct;
-  }
-
-  return a.orderPosition - b.orderPosition;
-}
-
-function getWorkerSortGroup(machine: CalculatedMachineView) {
-  if (machine.progressPct >= 1) {
-    return 2;
-  }
-
-  if (machine.progressPct > 0) {
-    return 0;
-  }
-
-  return 1;
-}
