@@ -9,19 +9,19 @@ export const FACTORY_TIME_ZONE = "America/Bogota";
 export const WORKDAY_START_HOUR = 8;
 
 // Precise factory labor schedule used to derive worker-time cost (Stat 3).
-// Real hours: shift starts 7:00, with a 45-min rest deducted each day.
-// Mon-Thu close 17:00 → 10h − 0.75 = 9.25 productive hours.
-// Fri close 14:45 → 7.75h − 0.75 = 7 productive hours. Sat/Sun off.
+// Real hours: shift starts 8:00, with a 45-min rest deducted each day.
+// Mon-Thu close 17:00 → 9h − 0.75 = 8.25 productive hours.
+// Fri close 14:30 → 6.5h − 0.75 = 5.75 productive hours. Sat/Sun off.
 // Kept separate from WORKDAY_START_HOUR so the existing order/production/shipment
 // timing stats (Stats 1, 2) keep their established calendar untouched.
-export const LABOR_WORKDAY_START_HOUR = 7;
+export const LABOR_WORKDAY_START_HOUR = 8;
 const LABOR_DAILY_HOURS: Record<number, number> = {
   0: 0, // Sunday
-  1: 9.25, // Monday
-  2: 9.25, // Tuesday
-  3: 9.25, // Wednesday
-  4: 9.25, // Thursday
-  5: 7, // Friday
+  1: 8.25, // Monday
+  2: 8.25, // Tuesday
+  3: 8.25, // Wednesday
+  4: 8.25, // Thursday
+  5: 5.75, // Friday
   6: 0, // Saturday
 };
 

@@ -49,8 +49,8 @@ describe("statistics working-time calculations", () => {
 });
 
 describe("labor schedule calculations", () => {
-  it("counts Monday labor hours within the 7:00-16:15 productive window", () => {
-    // 2026-06-01 is a Monday; productive window is 7:00 to 16:15 (9.25h).
+  it("counts Monday labor hours within the 8:00-16:15 productive window", () => {
+    // 2026-06-01 is a Monday; productive window is 8:00 to 16:15 (8.25h).
     const hours = calculateLaborHoursBetween(
       "2026-06-01T09:00:00-05:00",
       "2026-06-01T14:00:00-05:00",
@@ -60,15 +60,15 @@ describe("labor schedule calculations", () => {
     expect(hours).toBe(5);
   });
 
-  it("closes Friday labor early at 14:00", () => {
-    // 2026-06-05 is a Friday; productive window is 7:00 to 14:00 (7h).
+  it("closes Friday labor early at 13:45", () => {
+    // 2026-06-05 is a Friday; productive window is 8:00 to 13:45 (5.75h).
     const hours = calculateLaborHoursBetween(
       "2026-06-05T13:00:00-05:00",
       "2026-06-05T18:00:00-05:00",
       noHolidays,
     );
 
-    expect(hours).toBe(1);
+    expect(hours).toBe(0.75);
   });
 });
 
