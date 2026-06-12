@@ -24,6 +24,7 @@ import {
 } from "@/services/catalog";
 import { ensureClientByName, regenerateClientToken, updateClient, deleteClient } from "@/services/clients";
 import {
+  bulkMarkFinished,
   bulkMarkShipped,
   bulkSendToProduction,
   createMachine,
@@ -650,6 +651,14 @@ export async function sendToProductionAction(formData: FormData) {
   if (machineIds.length > 0) await bulkSendToProduction(machineIds);
   revalidateFactoryData();
   redirect(`/admin/previos?toast=sent-production&count=${machineIds.length || 1}`);
+}
+
+export async function bulkMarkFinishedAction(formData: FormData) {
+  await requireAdmin();
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (machineIds.length > 0) await bulkMarkFinished(machineIds);
+  revalidateFactoryData();
+  redirect(`/admin/terminados?toast=finished&count=${machineIds.length || 1}`);
 }
 
 export async function bulkMarkShippedAction(formData: FormData) {

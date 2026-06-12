@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronDown, Palette, Search, Truck, X } from "lucide-react";
-import { bulkMarkShippedAction } from "@/app/admin/actions";
+import { ChevronDown, CheckCircle, Palette, Search, X } from "lucide-react";
+import { bulkMarkFinishedAction } from "@/app/admin/actions";
 import { ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
 import { Button } from "@/components/ui/button";
@@ -270,15 +270,15 @@ export function ProductionTablePanel({ machines, colors = [] }: { machines: Calc
       )}
 
       {selectedIds.size > 0 && (
-        <form action={bulkMarkShippedAction} className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">
+        <form action={bulkMarkFinishedAction} className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">
           {Array.from(selectedIds).map((id) => (
             <input key={id} type="hidden" name="machineIds" value={id} />
           ))}
           <span className="text-xs font-medium">{selectedIds.size} seleccionada{selectedIds.size === 1 ? "" : "s"}</span>
-          <ActionTooltip text="Marca como despachadas todas las máquinas seleccionadas.">
+          <ActionTooltip text="Mueve las máquinas seleccionadas a terminados.">
             <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
-              <Truck className="h-3.5 w-3.5" />
-              Despachar seleccionadas
+              <CheckCircle className="h-3.5 w-3.5" />
+              Mover a terminados
             </Button>
           </ActionTooltip>
           <ActionTooltip text="Limpia la selección actual de máquinas.">

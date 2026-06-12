@@ -457,6 +457,18 @@ export async function bulkSendToProduction(ids: string[]) {
   await normalizeProductionQueue(supabase);
 }
 
+export async function bulkMarkFinished(ids: string[]) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("machines")
+    .update({ status: "finished", completed_at: new Date().toISOString() })
+    .in("id", ids)
+    .eq("status", "in_production");
+  if (error) throw new Error(`No se pudo mover a terminados: ${error.message}`);
+
+  await normalizeProductionQueue(supabase);
+}
+
 export async function bulkMarkShipped(ids: string[]) {
   const supabase = createSupabaseAdminClient();
   const { error } = await supabase
