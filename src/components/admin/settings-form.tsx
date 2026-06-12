@@ -10,6 +10,7 @@ type Settings = {
   labor_factor: number;
   active_workers_count: number;
   daily_hours_mon_fri: number;
+  daily_hours_fri: number;
   daily_hours_sat: number;
   daily_hours_sun: number;
   client_buffer_days: number;
@@ -45,9 +46,15 @@ export function SettingsForm({ settings, savedOk }: { settings: Settings; savedO
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Horas lunes a viernes</TableCell>
+            <TableCell>Horas lunes a jueves</TableCell>
             <TableCell className="text-right">
-              <Input name="daily_hours_mon_fri" type="number" step="0.5" min="0" defaultValue={Number(settings.daily_hours_mon_fri).toFixed(2)} required className={inputCls} />
+              <Input name="daily_hours_mon_fri" type="number" step="0.25" min="0" defaultValue={Number(settings.daily_hours_mon_fri).toFixed(2)} required className={inputCls} />
+            </TableCell>
+          </TableRow>
+          <TableRow>
+            <TableCell>Horas viernes</TableCell>
+            <TableCell className="text-right">
+              <Input name="daily_hours_fri" type="number" step="0.25" min="0" defaultValue={Number(settings.daily_hours_fri).toFixed(2)} required className={inputCls} />
             </TableCell>
           </TableRow>
           <TableRow>

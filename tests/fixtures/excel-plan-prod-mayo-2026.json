@@ -6,6 +6,7 @@
     "hourlyCostPerWorkerCop": 22019.57448559671,
     "activeWorkersCount": 9,
     "dailyHoursMonFri": 9,
+    "dailyHoursFri": 9,
     "dailyHoursSat": 6,
     "dailyHoursSun": 0,
     "clientBufferDays": 3

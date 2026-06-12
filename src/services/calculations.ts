@@ -14,6 +14,7 @@ export type ProductionSettings = {
   hourlyCostPerWorkerCop: number;
   laborFactor: number;
   dailyHoursMonFri: number;
+  dailyHoursFri: number;
   dailyHoursSat: number;
   dailyHoursSun: number;
   activeWorkersCount: number;
@@ -51,8 +52,9 @@ export const DEFAULT_STAGES: StageDefinition[] = [
 export const DEFAULT_SETTINGS: ProductionSettings = {
   hourlyCostPerWorkerCop: 22019.57,
   laborFactor: 0.3,
-  dailyHoursMonFri: 9,
-  dailyHoursSat: 6,
+  dailyHoursMonFri: 8.25,
+  dailyHoursFri: 5.75,
+  dailyHoursSat: 0,
   dailyHoursSun: 0,
   activeWorkersCount: 9,
   clientBufferDays: 3,

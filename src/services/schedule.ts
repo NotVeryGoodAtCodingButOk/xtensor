@@ -35,7 +35,9 @@ export function buildLaborCalendar(
         ? settings.dailyHoursSun
         : day === 6
           ? settings.dailyHoursSat
-          : settings.dailyHoursMonFri;
+          : day === 5
+            ? settings.dailyHoursFri
+            : settings.dailyHoursMonFri;
     const plantHours = personHours * settings.activeWorkersCount;
     cumulativeHours += plantHours;
 

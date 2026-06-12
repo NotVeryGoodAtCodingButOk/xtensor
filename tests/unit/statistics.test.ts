@@ -14,6 +14,7 @@ const settings: ProductionSettings = {
   hourlyCostPerWorkerCop: 22019.57,
   laborFactor: 0.3,
   dailyHoursMonFri: 9,
+  dailyHoursFri: 9,
   dailyHoursSat: 6,
   dailyHoursSun: 0,
   activeWorkersCount: 9,

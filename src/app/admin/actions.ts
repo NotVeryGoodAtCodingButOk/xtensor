@@ -471,6 +471,7 @@ export async function updateSettingsAction(formData: FormData) {
     labor_factor: Number(formData.get("labor_factor")),
     active_workers_count: Number(formData.get("active_workers_count")),
     daily_hours_mon_fri: Number(formData.get("daily_hours_mon_fri")),
+    daily_hours_fri: Number(formData.get("daily_hours_fri")),
     daily_hours_sat: Number(formData.get("daily_hours_sat")),
     daily_hours_sun: Number(formData.get("daily_hours_sun") ?? 0),
     client_buffer_days: Number(formData.get("client_buffer_days")),

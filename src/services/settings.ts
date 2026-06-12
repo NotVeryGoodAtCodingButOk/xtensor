@@ -11,6 +11,7 @@ export function mapSettings(row: SettingsRow): ProductionSettings {
     hourlyCostPerWorkerCop: Number(row.hourly_cost_per_worker_cop),
     laborFactor: Number(row.labor_factor),
     dailyHoursMonFri: Number(row.daily_hours_mon_fri),
+    dailyHoursFri: Number(row.daily_hours_fri),
     dailyHoursSat: Number(row.daily_hours_sat),
     dailyHoursSun: Number(row.daily_hours_sun),
     activeWorkersCount: Number(row.active_workers_count),

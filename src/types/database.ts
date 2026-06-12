@@ -351,6 +351,7 @@ export type Database = {
           hourly_cost_per_worker_cop: number;
           labor_factor: number;
           daily_hours_mon_fri: number;
+          daily_hours_fri: number;
           daily_hours_sat: number;
           daily_hours_sun: number;
           active_workers_count: number;
@@ -364,6 +365,7 @@ export type Database = {
           hourly_cost_per_worker_cop?: number;
           labor_factor?: number;
           daily_hours_mon_fri?: number;
+          daily_hours_fri?: number;
           daily_hours_sat?: number;
           daily_hours_sun?: number;
           active_workers_count?: number;
@@ -377,6 +379,7 @@ export type Database = {
           hourly_cost_per_worker_cop?: number;
           labor_factor?: number;
           daily_hours_mon_fri?: number;
+          daily_hours_fri?: number;
           daily_hours_sat?: number;
           daily_hours_sun?: number;
           active_workers_count?: number;

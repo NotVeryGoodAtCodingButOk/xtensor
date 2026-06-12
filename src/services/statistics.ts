@@ -1074,6 +1074,9 @@ function getDailyWorkingHours(
   if (day === 6) {
     return settings.dailyHoursSat;
   }
+  if (day === 5) {
+    return settings.dailyHoursFri;
+  }
 
   return settings.dailyHoursMonFri;
 }
