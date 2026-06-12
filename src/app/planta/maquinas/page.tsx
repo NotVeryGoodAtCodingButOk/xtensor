@@ -119,10 +119,10 @@ export default async function FactoryMachinesPage({
                       <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentCode ?? "Personalizado"}</p>
                       <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentName}</p>
                       <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.clientName}</p>
-                      <div className="min-w-0">
-                        <span className="xt-eyebrow block text-[0.625rem] leading-none">Cotización</span>
-                        <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.serialNumber}</p>
-                      </div>
+                      <p className="flex min-w-0 items-baseline gap-1.5 text-sm font-bold text-[var(--xt-black)]">
+                        <span className="xt-eyebrow shrink-0 text-[0.625rem] leading-none">Cotización</span>
+                        <span className="truncate">{machine.serialNumber}</span>
+                      </p>
                     </div>
                     <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
                   </div>
