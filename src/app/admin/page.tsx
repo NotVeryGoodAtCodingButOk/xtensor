@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { Download, Plus } from "lucide-react";
+import { Download } from "lucide-react";
 
 export const metadata: Metadata = { title: "Producción XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
@@ -43,14 +42,6 @@ export default async function AdminDashboardPage() {
                 <Download className="h-4 w-4" />
                 Exportar Excel
               </a>
-            </Button>
-          </ActionTooltip>
-          <ActionTooltip text="Crea una nueva máquina en el plan de producción.">
-            <Button asChild>
-              <Link href="/admin/maquinas/nueva">
-                <Plus className="h-4 w-4" />
-                Agregar máquina
-              </Link>
             </Button>
           </ActionTooltip>
         </div>

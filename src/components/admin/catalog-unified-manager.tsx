@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useState } from "react";
-import { Check, ChevronDown, ChevronUp, Plus, Trash2, X } from "lucide-react";
+import { Check, ChevronDown, ChevronUp, Download, Plus, Trash2, X } from "lucide-react";
 import {
   addCatalogItemAction,
   addPrevioCatalogItemAction,
@@ -174,6 +174,27 @@ function InlinePrevioChip({
   );
 }
 
+function downloadCatalogCsv(catalog: CatalogRow[]) {
+  const headers = ["Código", "Equipo", "Línea", "Precio COP", "Estado"];
+  const rows = catalog.map((item) => [
+    item.code,
+    item.name,
+    item.line ?? "",
+    item.default_price_cop ?? "",
+    item.is_active ? "Activo" : "Inactivo",
+  ]);
+  const csv = [headers, ...rows]
+    .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(","))
+    .join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `catalogo-xtensor-${new Date().toISOString().slice(0, 10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 export function CatalogUnifiedManager({
   catalog,
   previosCatalog,
@@ -227,7 +248,11 @@ export function CatalogUnifiedManager({
             onChange={(e) => setSearch(e.target.value)}
             className="max-w-sm"
           />
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <Button size="sm" variant="outline" onClick={() => downloadCatalogCsv(catalog)}>
+              <Download className="h-4 w-4" />
+              Descargar
+            </Button>
             <Button
               size="sm"
               onClick={() => {

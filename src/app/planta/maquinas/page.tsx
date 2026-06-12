@@ -121,22 +121,10 @@ export default async function FactoryMachinesPage({
                 <div className="xt-machine-card-body flex flex-1 flex-col gap-3 p-5">
                   <div className="xt-machine-card-heading flex items-start justify-between gap-3">
                     <div className="xt-machine-card-fields grid gap-1.5 min-w-0 flex-1">
-                      <div className="xt-machine-field flex items-baseline gap-2">
-                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Código</span>
-                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.equipmentCode ?? "Personalizado"}</span>
-                      </div>
-                      <div className="xt-machine-field flex items-baseline gap-2">
-                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Máquina</span>
-                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.equipmentName}</span>
-                      </div>
-                      <div className="xt-machine-field flex items-baseline gap-2">
-                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Cliente</span>
-                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.clientName}</span>
-                      </div>
-                      <div className="xt-machine-field flex items-baseline gap-2">
-                        <span className="xt-machine-field-label shrink-0 text-sm font-bold uppercase tracking-wide text-[var(--xt-black)]">Serial</span>
-                        <span className="xt-machine-field-value truncate text-sm text-[var(--xt-steel)]">{machine.serialNumber}</span>
-                      </div>
+                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentCode ?? "Personalizado"}</p>
+                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentName}</p>
+                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.clientName}</p>
+                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.serialNumber}</p>
                     </div>
                     <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
                   </div>

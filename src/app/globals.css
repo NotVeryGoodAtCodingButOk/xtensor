@@ -1262,6 +1262,22 @@ select {
   }
 }
 
+/* iPad portrait (768px–1023px): 2 machine cards per row */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .xt-machine-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
+/* iPad landscape / medium desktop (1024px–1279px): 3 machine cards per row */
+@media (min-width: 1024px) and (max-width: 1279px) {
+  .xt-machine-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+}
+
 /* iPad + medium desktop: 768px–1535px — 4 task cards per row */
 @media (min-width: 768px) and (max-width: 1535px) {
   .xt-task-grid {

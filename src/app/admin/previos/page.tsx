@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Upload } from "lucide-react";
+import { Plus, Upload } from "lucide-react";
 
 export const metadata: Metadata = { title: "Previos XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
@@ -52,14 +52,24 @@ export default async function PreviosPage({
           <h1 className="text-3xl font-bold">Previos</h1>
           <p className="text-sm text-[var(--xt-steel)]">Revisión de cotizaciones y seguimiento de materiales.</p>
         </div>
-        <ActionTooltip text="Importa máquinas y previos desde la plantilla de Excel.">
-          <Button asChild>
-            <Link href="/admin/importar">
-              <Upload className="h-4 w-4" />
-              Importar Excel
-            </Link>
-          </Button>
-        </ActionTooltip>
+        <div className="flex items-center gap-2">
+          <ActionTooltip text="Crea una nueva máquina manualmente en previos.">
+            <Button asChild variant="outline">
+              <Link href="/admin/maquinas/nueva">
+                <Plus className="h-4 w-4" />
+                Agregar máquina
+              </Link>
+            </Button>
+          </ActionTooltip>
+          <ActionTooltip text="Importa máquinas y previos desde la plantilla de Excel.">
+            <Button asChild>
+              <Link href="/admin/importar">
+                <Upload className="h-4 w-4" />
+                Importar Excel
+              </Link>
+            </Button>
+          </ActionTooltip>
+        </div>
       </div>
       <div className="mb-5">
         <ExcelImportGuide templateHref="/admin/importar/plantilla" />

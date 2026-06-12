@@ -120,10 +120,11 @@ export async function createMachineAction(formData: FormData) {
     assigned_to: String(formData.get("assignedTo") ?? "").trim() || null,
     promised_date: String(formData.get("promisedDate") ?? ""),
     order_position: Number(formData.get("orderPosition")) || 9999,
+    status: "pending",
   });
 
   revalidateFactoryData();
-  redirect("/admin");
+  redirect("/admin/previos");
 }
 
 export async function updateMachineAction(formData: FormData) {
