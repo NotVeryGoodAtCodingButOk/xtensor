@@ -118,7 +118,7 @@ export default async function StatisticsPage({
           eyebrow="Entrada a despacho"
           title="Promedio"
           value={formatHours(dashboard.summary.inputToShipment.averageHours)}
-          detail="Ciclo completo hasta despacho."
+          detail="Desde creación del pedido (entrada al sistema) hasta despacho."
         />
         <MetricCard
           icon={Coins}

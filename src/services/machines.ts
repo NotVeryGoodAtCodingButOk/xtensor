@@ -25,6 +25,7 @@ type MachineRow = Database["public"]["Tables"]["machines"]["Row"] & {
       workers: Database["public"]["Tables"]["workers"]["Row"] | null;
     }
   >;
+  stage_logs: Array<Pick<Database["public"]["Tables"]["stage_logs"]["Row"], "created_at" | "is_undone">>;
   machine_warranty_events: Array<Pick<Database["public"]["Tables"]["machine_warranty_events"]["Row"], "id">>;
 };
 
@@ -38,6 +39,7 @@ const MACHINE_SELECT = `
     stages(*),
     workers(*)
   ),
+  stage_logs(created_at, is_undone),
   machine_warranty_events(id)
 `;
 
@@ -527,6 +529,15 @@ function mapMachineRow(row: MachineRow): MachineView {
     }))
     .sort((a, b) => a.id - b.id);
 
+  // Production "start" is when the first worker logs the first real task, not
+  // when the machine was moved into the production queue (production_started_at).
+  // Derived live from the earliest non-undone stage log; null until a task exists.
+  const firstTaskAt =
+    row.stage_logs
+      .filter((log) => !log.is_undone)
+      .map((log) => log.created_at)
+      .sort((a, b) => new Date(a).getTime() - new Date(b).getTime())[0] ?? null;
+
   return {
     id: row.id,
     serialNumber: row.serial_number,
@@ -546,6 +557,7 @@ function mapMachineRow(row: MachineRow): MachineView {
     status: row.status,
     shippedAt: row.shipped_at,
     productionStartedAt: row.production_started_at,
+    firstTaskAt,
     completedAt: row.completed_at,
     isReproceso: row.is_reproceso,
     isWarranty: row.machine_warranty_events.length > 0,

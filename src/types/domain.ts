@@ -28,6 +28,7 @@ export type MachineView = {
   status: MachineStatus;
   shippedAt: string | null;
   productionStartedAt: string | null;
+  firstTaskAt: string | null;
   completedAt: string | null;
   isReproceso: boolean;
   isWarranty: boolean;

@@ -330,7 +330,7 @@ export async function buildShippedWorkbook(machines: CalculatedMachineView[]): P
       hours: machine.totalHours,
       assigned: machine.assignedTo ?? "",
       promised: machine.promisedDate ? formatDateEs(machine.promisedDate) : "",
-      started: machine.productionStartedAt ? formatDateEs(machine.productionStartedAt) : "",
+      started: machine.firstTaskAt ? formatDateEs(machine.firstTaskAt) : "",
       completed: machine.completedAt ? formatDateEs(machine.completedAt) : "",
       shipped: machine.shippedAt ? formatDateEs(machine.shippedAt) : "",
     });

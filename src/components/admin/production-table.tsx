@@ -432,8 +432,8 @@ export function ProductionTable({
             {sh("assignedTo", "Quién")}
             {sh("promisedDate", "Prom.", C, "Fecha prometida")}
             {shipped && sh("shippedAt", "Despach.", C, "Fecha de despacho")}
+            {sh("firstTaskAt", "Inicio", C, "Inicio: primera tarea de un operario")}
             {!shipped && sh("estimatedDate", "Act.", C, "Fecha actualizada")}
-            {sh("productionStartedAt", "Inicio", C, "Inicio en producción")}
             {sh("completedAt", "Term.", C, "Fecha terminada")}
             {!shipped && STAGES_SHORT.map((s, i) => (
               <TableHead key={s} className={`${C} text-center`} title={STAGES_FULL[i]}>{s}</TableHead>
@@ -590,6 +590,9 @@ export function ProductionTable({
                     {machine.shippedAt ? formatDateEs(machine.shippedAt) : "—"}
                   </TableCell>
                 )}
+                <TableCell className={`${C} whitespace-nowrap`}>
+                  {machine.firstTaskAt ? formatDateEs(machine.firstTaskAt) : "—"}
+                </TableCell>
                 {!shipped && (
                   <TableCell
                     className={cn(`${C} whitespace-nowrap`, isLate && "bg-red-50 text-[var(--line-pro-red)]")}
@@ -597,9 +600,6 @@ export function ProductionTable({
                     {formatDateEs(machine.estimatedDate)}
                   </TableCell>
                 )}
-                <TableCell className={`${C} whitespace-nowrap`}>
-                  {machine.productionStartedAt ? formatDateEs(machine.productionStartedAt) : "—"}
-                </TableCell>
                 <TableCell className={`${C} whitespace-nowrap`}>
                   {machine.completedAt ? formatDateEs(machine.completedAt) : "—"}
                 </TableCell>
