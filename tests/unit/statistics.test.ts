@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildStatisticsDashboard,
+  calculateLaborHoursBetween,
   calculateMachineTiming,
   calculateWorkingHoursBetween,
   resolveStatisticsRange,
@@ -46,7 +47,90 @@ describe("statistics working-time calculations", () => {
   });
 });
 
+describe("labor schedule calculations", () => {
+  it("counts Monday labor hours within the 7:00-16:15 productive window", () => {
+    // 2026-06-01 is a Monday; productive window is 7:00 to 16:15 (9.25h).
+    const hours = calculateLaborHoursBetween(
+      "2026-06-01T09:00:00-05:00",
+      "2026-06-01T14:00:00-05:00",
+      noHolidays,
+    );
+
+    expect(hours).toBe(5);
+  });
+
+  it("closes Friday labor early at 14:00", () => {
+    // 2026-06-05 is a Friday; productive window is 7:00 to 14:00 (7h).
+    const hours = calculateLaborHoursBetween(
+      "2026-06-05T13:00:00-05:00",
+      "2026-06-05T18:00:00-05:00",
+      noHolidays,
+    );
+
+    expect(hours).toBe(1);
+  });
+});
+
 describe("machine timing", () => {
+  it("derives labor cost as a share of sale price", () => {
+    const timing = calculateMachineTiming(
+      machine({
+        salePriceCop: 1_000_000,
+        stages: [
+          stage(1, "Material", 1, 100, "2026-06-01T09:00:00-05:00"),
+          stage(2, "Empacar", 2, 100, "2026-06-01T14:00:00-05:00"),
+        ],
+        logs: [
+          log("l1", 1, 0, 100, "2026-06-01T09:00:00-05:00"),
+          log("l2", 2, 0, 100, "2026-06-01T14:00:00-05:00"),
+        ],
+      }),
+      settings,
+      noHolidays,
+      new Date("2026-06-02T10:00:00-05:00"),
+    );
+
+    // 09:00 → 14:00 on a Monday = 5 labor hours.
+    expect(timing.laborHours).toBe(5);
+    expect(timing.laborCostCop).toBeCloseTo(5 * settings.hourlyCostPerWorkerCop, 2);
+    expect(timing.laborCostPctOfSale).toBeCloseTo((5 * settings.hourlyCostPerWorkerCop) / 1_000_000 * 100, 4);
+  });
+
+  it("computes previo lead time from ordered to received", () => {
+    const timing = calculateMachineTiming(
+      machine({
+        previos: [
+          {
+            previoCatalogId: "p1",
+            name: "Láser",
+            ordered: true,
+            orderedAt: "2026-06-01T08:00:00-05:00",
+            received: true,
+            receivedAt: "2026-06-03T08:00:00-05:00",
+          },
+          {
+            previoCatalogId: "p2",
+            name: "Doblado",
+            ordered: true,
+            orderedAt: "2026-06-01T08:00:00-05:00",
+            received: false,
+            receivedAt: null,
+          },
+        ],
+      }),
+      settings,
+      noHolidays,
+      new Date("2026-06-02T08:00:00-05:00"),
+    );
+
+    // Calendar lead time: 2 days = 48 hours.
+    expect(timing.previos[0].leadTimeHours).toBe(48);
+    expect(timing.previos[1].isOrderedPending).toBe(true);
+    expect(timing.previos[1].pendingAgingHours).toBe(24);
+  });
+});
+
+describe("machine timing legacy", () => {
   it("uses the latest valid 100% completion after rework", () => {
     const timing = calculateMachineTiming(
       machine({
@@ -178,10 +262,12 @@ function machine(overrides: Partial<MachineTimingInput> = {}): MachineTimingInpu
     city: "Bogotá",
     promisedDate: "2026-06-03",
     status: "in_production",
+    salePriceCop: 10_000_000,
     createdAt: "2026-06-01T08:00:00-05:00",
     shippedAt: null,
     stages: [],
     logs: [],
+    previos: [],
     ...overrides,
   };
 }

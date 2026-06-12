@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Activity, AlertTriangle, BarChart3, Clock, Factory, RefreshCcw, Timer, Truck, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Clock, Coins, Factory, Package, RefreshCcw, Timer, Truck, Users } from "lucide-react";
 
 export const metadata: Metadata = { title: "Estadísticas XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
@@ -121,6 +121,20 @@ export default async function StatisticsPage({
           detail="Ciclo completo hasta despacho."
         />
         <MetricCard
+          icon={Coins}
+          eyebrow="Mano de obra vs. venta"
+          title="% del precio"
+          value={formatPct(dashboard.summary.laborCostShare.averagePct)}
+          detail={`${dashboard.summary.laborCostShare.count} máquinas · mediana ${formatPct(dashboard.summary.laborCostShare.medianPct)} · horas laborales × costo/hora ÷ precio de venta`}
+        />
+        <MetricCard
+          icon={Package}
+          eyebrow="Previos"
+          title="Pedido a recibido"
+          value={formatLeadTime(dashboard.summary.previoLeadTime.averageHours)}
+          detail={`${dashboard.summary.previoLeadTime.count} previos recibidos · mediana ${formatLeadTime(dashboard.summary.previoLeadTime.medianHours)}`}
+        />
+        <MetricCard
           icon={Activity}
           eyebrow="WIP actual"
           title="En producción"
@@ -232,6 +246,80 @@ export default async function StatisticsPage({
         <BreakdownCard title="Por línea" rows={dashboard.breakdowns.byLine} />
         <BreakdownCard title="Por cliente" rows={dashboard.breakdowns.byClient} />
         <BreakdownCard title="Por ciudad" rows={dashboard.breakdowns.byCity} />
+      </section>
+
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Coins className="h-5 w-5" />
+              Costo por tipo de máquina
+            </CardTitle>
+            <CardDescription>
+              Tiempo de producción, lead time de previos y costo de mano de obra (% del precio de venta) por tipo de
+              equipo, para máquinas completadas en el rango.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay máquinas completadas en este rango."
+              headers={["Tipo de equipo", "Máquinas", "Producción prom.", "Previos prom.", "Mano de obra %", "Costo mano de obra"]}
+              rows={dashboard.equipmentCosts.map((equipment) => [
+                equipment.label,
+                String(equipment.count),
+                formatHours(equipment.averageProductionHours),
+                formatLeadTime(equipment.averagePrevioLeadHours),
+                formatPct(equipment.averageLaborCostPct),
+                formatCop(equipment.totalLaborCostCop),
+              ])}
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1.2fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Tiempo de previos por tipo
+            </CardTitle>
+            <CardDescription>Días calendario desde que el previo se pide hasta que se recibe, por previo.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay previos recibidos en este rango."
+              headers={["Previo", "Recibidos", "Promedio", "Mediana", "P90", "Máximo"]}
+              rows={dashboard.breakdowns.byPrevio.map((previo) => [
+                previo.label,
+                String(previo.count),
+                formatLeadTime(previo.averageHours),
+                formatLeadTime(previo.medianHours),
+                formatLeadTime(previo.p90Hours),
+                formatLeadTime(previo.maxHours),
+              ])}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Previos pendientes más antiguos</CardTitle>
+            <CardDescription>Previos pedidos que aún no se reciben, ordenados por antigüedad.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay previos pendientes de recibir."
+              headers={["SERIAL", "Previo", "Antigüedad", "Cliente"]}
+              rows={dashboard.pendingPrevios.map((previo) => [
+                `#${previo.serialNumber}`,
+                previo.previoName,
+                formatLeadTime(previo.agingHours),
+                previo.clientName,
+              ])}
+            />
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mb-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
@@ -401,6 +489,38 @@ function formatHours(value: number | null | undefined) {
   }
 
   return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value)} h`;
+}
+
+function formatPct(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "Sin datos";
+  }
+
+  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value)} %`;
+}
+
+function formatCop(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value) || value === 0) {
+    return "Sin datos";
+  }
+
+  return new Intl.NumberFormat("es-CO", {
+    style: "currency",
+    currency: "COP",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
+function formatLeadTime(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "Sin datos";
+  }
+  if (value < 24) {
+    return formatHours(value);
+  }
+
+  const days = value / 24;
+  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(days)} d`;
 }
 
 function formatDateTime(value: string) {

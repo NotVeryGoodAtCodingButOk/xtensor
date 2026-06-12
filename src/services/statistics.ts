@@ -8,6 +8,23 @@ import type { Database, MachineStatus } from "@/types/database";
 export const FACTORY_TIME_ZONE = "America/Bogota";
 export const WORKDAY_START_HOUR = 8;
 
+// Precise factory labor schedule used to derive worker-time cost (Stat 3).
+// Real hours: shift starts 7:00, with a 45-min rest deducted each day.
+// Mon-Thu close 17:00 → 10h − 0.75 = 9.25 productive hours.
+// Fri close 14:45 → 7.75h − 0.75 = 7 productive hours. Sat/Sun off.
+// Kept separate from WORKDAY_START_HOUR so the existing order/production/shipment
+// timing stats (Stats 1, 2) keep their established calendar untouched.
+export const LABOR_WORKDAY_START_HOUR = 7;
+const LABOR_DAILY_HOURS: Record<number, number> = {
+  0: 0, // Sunday
+  1: 9.25, // Monday
+  2: 9.25, // Tuesday
+  3: 9.25, // Wednesday
+  4: 9.25, // Thursday
+  5: 7, // Friday
+  6: 0, // Saturday
+};
+
 export type StatisticsRangePreset = "current-month" | "previous-month" | "last-90-days" | "all-time";
 
 export type StatisticsRange = {
@@ -29,10 +46,21 @@ export type MachineTimingInput = {
   city: string | null;
   promisedDate: string;
   status: MachineStatus;
+  salePriceCop: number;
   createdAt: string;
   shippedAt: string | null;
   stages: StageTimingInput[];
   logs: StageLogTimingInput[];
+  previos: PrevioTimingInput[];
+};
+
+export type PrevioTimingInput = {
+  previoCatalogId: string;
+  name: string;
+  ordered: boolean;
+  orderedAt: string | null;
+  received: boolean;
+  receivedAt: string | null;
 };
 
 export type StageTimingInput = {
@@ -85,6 +113,16 @@ export type CurrentOpenStageTiming = {
   lastUpdatedAt: string | null;
 };
 
+export type PrevioLeadTiming = {
+  previoCatalogId: string;
+  name: string;
+  orderedAt: string | null;
+  receivedAt: string | null;
+  leadTimeHours: number | null;
+  isOrderedPending: boolean;
+  pendingAgingHours: number | null;
+};
+
 export type MachineTimingStats = {
   id: string;
   serialNumber: number;
@@ -95,6 +133,7 @@ export type MachineTimingStats = {
   city: string | null;
   promisedDate: string;
   status: MachineStatus;
+  salePriceCop: number;
   createdAt: string;
   shippedAt: string | null;
   productionCompletedAt: string | null;
@@ -107,8 +146,12 @@ export type MachineTimingStats = {
   shipmentDelayHours: number;
   isProductionLate: boolean;
   isShipmentLate: boolean;
+  laborHours: number | null;
+  laborCostCop: number | null;
+  laborCostPctOfSale: number | null;
   stages: StageTiming[];
   currentOpenStage: CurrentOpenStageTiming | null;
+  previos: PrevioLeadTiming[];
 };
 
 export type HourSummary = {
@@ -127,6 +170,32 @@ export type StageTimingStats = HourSummary & {
 
 export type BreakdownTimingStats = HourSummary & {
   label: string;
+};
+
+export type PctSummary = {
+  count: number;
+  averagePct: number | null;
+  medianPct: number | null;
+  totalLaborCostCop: number;
+  totalSalePriceCop: number;
+};
+
+export type EquipmentCostStats = {
+  label: string;
+  count: number;
+  averageProductionHours: number | null;
+  averagePrevioLeadHours: number | null;
+  averageLaborCostPct: number | null;
+  totalLaborCostCop: number;
+};
+
+export type PendingPrevioStats = {
+  machineId: string;
+  serialNumber: number;
+  clientName: string;
+  previoName: string;
+  orderedAt: string;
+  agingHours: number;
 };
 
 export type WorkerActivityStats = {
@@ -169,6 +238,8 @@ export type StatisticsDashboardData = {
     averageShipmentDelayHours: number | null;
     warrantyCount: number;
     reprocessCount: number;
+    laborCostShare: PctSummary;
+    previoLeadTime: HourSummary;
   };
   stages: StageTimingStats[];
   currentOpenStages: CurrentOpenStageStats[];
@@ -179,7 +250,10 @@ export type StatisticsDashboardData = {
     byClient: BreakdownTimingStats[];
     byCity: BreakdownTimingStats[];
     byColor: BreakdownTimingStats[];
+    byPrevio: BreakdownTimingStats[];
   };
+  equipmentCosts: EquipmentCostStats[];
+  pendingPrevios: PendingPrevioStats[];
   workers: WorkerActivityStats[];
   dataQuality: {
     missingProductionCompletion: DataQualityIssue[];
@@ -199,12 +273,16 @@ type StageLogRow = Database["public"]["Tables"]["stage_logs"]["Row"] & {
   stages: StageRow | null;
   workers: WorkerRow | null;
 };
+type MachinePrevioStatisticsRow = Database["public"]["Tables"]["machine_previos"]["Row"] & {
+  previo_catalog: Pick<Database["public"]["Tables"]["previo_catalog"]["Row"], "name"> | null;
+};
 type MachineStatisticsRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Database["public"]["Tables"]["clients"]["Row"] | null;
   colors: Database["public"]["Tables"]["colors"]["Row"] | null;
   equipment_catalog: Database["public"]["Tables"]["equipment_catalog"]["Row"] | null;
   machine_stages: MachineStageRow[];
   stage_logs: StageLogRow[];
+  machine_previos: MachinePrevioStatisticsRow[];
 };
 type WarrantyEventRow = Database["public"]["Tables"]["machine_warranty_events"]["Row"] & {
   machines: Pick<MachineStatisticsRow, "id" | "serial_number" | "clients" | "equipment_catalog"> | null;
@@ -224,6 +302,10 @@ const STATISTICS_MACHINE_SELECT = `
     *,
     stages(*),
     workers(*)
+  ),
+  machine_previos(
+    *,
+    previo_catalog(name)
   )
 `;
 
@@ -330,6 +412,28 @@ export function buildStatisticsDashboard(input: {
     machine.logs.filter((log) => isWithinRange(log.createdAt, input.range)),
   );
   const warrantyEvents = input.warrantyEvents.filter((event) => isWithinRange(event.createdAt, input.range));
+  const previoLeadEntries = machineTimings.flatMap((machine) =>
+    machine.previos
+      .filter(
+        (previo) => previo.receivedAt && previo.leadTimeHours !== null && isWithinRange(previo.receivedAt, input.range),
+      )
+      .map((previo) => ({ ...previo, machine })),
+  );
+  const pendingPrevios = machineTimings
+    .flatMap((machine) =>
+      machine.previos
+        .filter((previo) => previo.isOrderedPending && previo.orderedAt)
+        .map((previo) => ({
+          machineId: machine.id,
+          serialNumber: machine.serialNumber,
+          clientName: machine.clientName,
+          previoName: previo.name,
+          orderedAt: previo.orderedAt as string,
+          agingHours: previo.pendingAgingHours ?? 0,
+        })),
+    )
+    .sort((a, b) => b.agingHours - a.agingHours)
+    .slice(0, 12);
   const lateProductionDelays = completedMachines
     .filter((machine) => machine.isProductionLate)
     .map((machine) => machine.productionDelayHours);
@@ -354,6 +458,8 @@ export function buildStatisticsDashboard(input: {
       averageShipmentDelayHours: average(lateShipmentDelays),
       warrantyCount: warrantyEvents.length,
       reprocessCount: logsInRange.filter((log) => log.isReprocess && !log.isUndone).length,
+      laborCostShare: summarizePct(completedMachines),
+      previoLeadTime: summarizeHours(previoLeadEntries.map((entry) => entry.leadTimeHours)),
     },
     stages: summarizeStages(stageEntries, logsInRange),
     currentOpenStages: machineTimings
@@ -374,7 +480,10 @@ export function buildStatisticsDashboard(input: {
       byClient: summarizeBreakdown(completedMachines, (machine) => machine.clientName),
       byCity: summarizeBreakdown(completedMachines, (machine) => machine.city ?? "Sin ciudad"),
       byColor: summarizeBreakdown(completedMachines, (machine) => machine.colorName ?? "Sin color"),
+      byPrevio: summarizePrevioBreakdown(previoLeadEntries),
     },
+    equipmentCosts: summarizeEquipmentCosts(completedMachines),
+    pendingPrevios,
     workers: summarizeWorkers(logsInRange),
     dataQuality: {
       missingProductionCompletion: machineTimings
@@ -468,6 +577,36 @@ export function calculateMachineTiming(
     : null;
   const currentOpenStage = resolveCurrentOpenStage(stageTimings, input, settings, holidays, now);
 
+  // Worker-time cost (Stat 3): production span over the real labor schedule,
+  // valued at the hourly cost per worker, expressed as a share of sale price.
+  const laborHours =
+    productionActualStartAt && productionCompletedAt
+      ? calculateLaborHoursBetween(productionActualStartAt, productionCompletedAt, holidays)
+      : null;
+  const laborCostCop = laborHours !== null ? laborHours * settings.hourlyCostPerWorkerCop : null;
+  const laborCostPctOfSale =
+    laborCostCop !== null && input.salePriceCop > 0 ? (laborCostCop / input.salePriceCop) * 100 : null;
+
+  // Previo procurement lead time (Stat 4): calendar time from ordered to received.
+  const previos: PrevioLeadTiming[] = input.previos.map((previo) => {
+    const leadTimeHours =
+      previo.orderedAt && previo.receivedAt
+        ? calculateCalendarHoursBetween(previo.orderedAt, previo.receivedAt)
+        : null;
+    const isOrderedPending = Boolean(previo.orderedAt) && !previo.receivedAt;
+
+    return {
+      previoCatalogId: previo.previoCatalogId,
+      name: previo.name,
+      orderedAt: previo.orderedAt,
+      receivedAt: previo.receivedAt,
+      leadTimeHours,
+      isOrderedPending,
+      pendingAgingHours:
+        isOrderedPending && previo.orderedAt ? calculateCalendarHoursBetween(previo.orderedAt, now) : null,
+    };
+  });
+
   return {
     id: input.id,
     serialNumber: input.serialNumber,
@@ -478,6 +617,7 @@ export function calculateMachineTiming(
     city: input.city,
     promisedDate: input.promisedDate,
     status: input.status,
+    salePriceCop: input.salePriceCop,
     createdAt: input.createdAt,
     shippedAt: input.shippedAt,
     productionCompletedAt,
@@ -494,8 +634,12 @@ export function calculateMachineTiming(
       : 0,
     isProductionLate: productionCompletedAt ? toFactoryDateKey(productionCompletedAt) > input.promisedDate : false,
     isShipmentLate: input.shippedAt ? toFactoryDateKey(input.shippedAt) > input.promisedDate : false,
+    laborHours,
+    laborCostCop,
+    laborCostPctOfSale,
     stages: stageTimings,
     currentOpenStage,
+    previos,
   };
 }
 
@@ -537,6 +681,59 @@ export function calculateWorkingHoursBetween(
   return workingMilliseconds / 3_600_000;
 }
 
+// Working hours over the real factory labor schedule (7:00 start, day-specific
+// productive hours, 45-min rest already deducted). Used only to derive the
+// worker-time cost of a machine (Stat 3).
+export function calculateLaborHoursBetween(
+  startInput: string | Date,
+  endInput: string | Date,
+  holidays: Holiday[],
+) {
+  const start = typeof startInput === "string" ? new Date(startInput) : startInput;
+  const end = typeof endInput === "string" ? new Date(endInput) : endInput;
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end.getTime() <= start.getTime()) {
+    return 0;
+  }
+
+  const holidayDates = new Set(holidays.map((holiday) => holiday.date));
+  let dateKey = toFactoryDateKey(start);
+  const endDateKey = toFactoryDateKey(end);
+  let laborMilliseconds = 0;
+
+  while (dateKey <= endDateKey) {
+    const dailyHours = holidayDates.has(dateKey) ? 0 : LABOR_DAILY_HOURS[getDateKeyWeekday(dateKey)] ?? 0;
+
+    if (dailyHours > 0) {
+      const dayStart = localFactoryDateTimeToUtc(dateKey, LABOR_WORKDAY_START_HOUR);
+      const dayEnd = localFactoryDateTimeToUtc(dateKey, LABOR_WORKDAY_START_HOUR + dailyHours);
+      const overlapStart = Math.max(start.getTime(), dayStart.getTime());
+      const overlapEnd = Math.min(end.getTime(), dayEnd.getTime());
+
+      if (overlapEnd > overlapStart) {
+        laborMilliseconds += overlapEnd - overlapStart;
+      }
+    }
+
+    dateKey = addDaysToDateKey(dateKey, 1);
+  }
+
+  return laborMilliseconds / 3_600_000;
+}
+
+// Calendar (wall-clock) hours — used for procurement lead time of previos, where
+// suppliers deliver regardless of the factory shift (Stats 4, 5).
+export function calculateCalendarHoursBetween(startInput: string | Date, endInput: string | Date) {
+  const start = typeof startInput === "string" ? new Date(startInput) : startInput;
+  const end = typeof endInput === "string" ? new Date(endInput) : endInput;
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end.getTime() <= start.getTime()) {
+    return 0;
+  }
+
+  return (end.getTime() - start.getTime()) / 3_600_000;
+}
+
 export function toFactoryDateKey(date: string | Date) {
   return formatInTimeZone(date, FACTORY_TIME_ZONE, "yyyy-MM-dd");
 }
@@ -554,8 +751,17 @@ function mapStatisticsMachineRow(row: MachineStatisticsRow): MachineTimingInput 
     city: row.city,
     promisedDate: row.promised_date,
     status: row.status,
+    salePriceCop: Number(row.sale_price_cop) || 0,
     createdAt: row.created_at,
     shippedAt: row.shipped_at,
+    previos: (row.machine_previos ?? []).map((previo) => ({
+      previoCatalogId: previo.previo_catalog_id,
+      name: previo.previo_catalog?.name ?? "Previo",
+      ordered: previo.ordered,
+      orderedAt: previo.ordered_at,
+      received: previo.received,
+      receivedAt: previo.received_at,
+    })),
     stages: row.machine_stages.map((stage) => ({
       id: stage.stage_id,
       name: stage.stages?.name ?? `Etapa ${stage.stage_id}`,
@@ -671,6 +877,60 @@ function summarizeBreakdown(
     .map(([label, values]) => ({ label, ...summarizeHours(values) }))
     .sort((a, b) => (b.averageHours ?? 0) - (a.averageHours ?? 0))
     .slice(0, 10);
+}
+
+function summarizePct(machines: MachineTimingStats[]): PctSummary {
+  const valued = machines.filter((machine) => machine.laborCostPctOfSale !== null && machine.laborCostCop !== null);
+  const sortedPcts = valued.map((machine) => machine.laborCostPctOfSale as number).sort((a, b) => a - b);
+
+  return {
+    count: valued.length,
+    averagePct: average(valued.map((machine) => machine.laborCostPctOfSale as number)),
+    medianPct: percentile(sortedPcts, 50),
+    totalLaborCostCop: valued.reduce((total, machine) => total + (machine.laborCostCop ?? 0), 0),
+    totalSalePriceCop: valued.reduce((total, machine) => total + machine.salePriceCop, 0),
+  };
+}
+
+function summarizePrevioBreakdown(
+  entries: Array<PrevioLeadTiming & { machine: MachineTimingStats }>,
+): BreakdownTimingStats[] {
+  const byName = new Map<string, number[]>();
+
+  for (const entry of entries) {
+    if (entry.leadTimeHours === null) continue;
+    const label = entry.name.trim() || "Sin nombre";
+    byName.set(label, [...(byName.get(label) ?? []), entry.leadTimeHours]);
+  }
+
+  return [...byName.entries()]
+    .map(([label, values]) => ({ label, ...summarizeHours(values) }))
+    .sort((a, b) => (b.averageHours ?? 0) - (a.averageHours ?? 0))
+    .slice(0, 12);
+}
+
+function summarizeEquipmentCosts(machines: MachineTimingStats[]): EquipmentCostStats[] {
+  const byEquipment = new Map<string, MachineTimingStats[]>();
+
+  for (const machine of machines) {
+    const label = machine.equipmentName.trim() || "Sin equipo";
+    byEquipment.set(label, [...(byEquipment.get(label) ?? []), machine]);
+  }
+
+  const onlyNumbers = (values: Array<number | null>) =>
+    values.filter((value): value is number => typeof value === "number" && Number.isFinite(value));
+
+  return [...byEquipment.entries()]
+    .map(([label, group]) => ({
+      label,
+      count: group.length,
+      averageProductionHours: average(onlyNumbers(group.map((machine) => machine.productionHours))),
+      averagePrevioLeadHours: average(onlyNumbers(group.flatMap((machine) => machine.previos.map((p) => p.leadTimeHours)))),
+      averageLaborCostPct: average(onlyNumbers(group.map((machine) => machine.laborCostPctOfSale))),
+      totalLaborCostCop: group.reduce((total, machine) => total + (machine.laborCostCop ?? 0), 0),
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
 }
 
 function summarizeWorkers(logs: StageLogTimingInput[]): WorkerActivityStats[] {
