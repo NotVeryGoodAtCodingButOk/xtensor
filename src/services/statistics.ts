@@ -1,8 +1,8 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeMachineLine } from "@/lib/machine-lines";
-import type { ProductionSettings } from "@/services/calculations";
-import type { Holiday } from "@/services/schedule";
+import { calculateQueue, DEFAULT_STAGES, type ProductionSettings } from "@/services/calculations";
+import { estimateDeliveryDate, type Holiday } from "@/services/schedule";
 import type { Database, MachineStatus } from "@/types/database";
 
 export const FACTORY_TIME_ZONE = "America/Bogota";
@@ -49,6 +49,7 @@ export type MachineTimingInput = {
   salePriceCop: number;
   createdAt: string;
   shippedAt: string | null;
+  orderPosition: number;
   stages: StageTimingInput[];
   logs: StageLogTimingInput[];
   previos: PrevioTimingInput[];
@@ -240,6 +241,32 @@ export type StatisticsDashboardData = {
     reprocessCount: number;
     laborCostShare: PctSummary;
     previoLeadTime: HourSummary;
+    currentPreviosCount: number;
+    last30Days: {
+      startDate: string;
+      endDate: string;
+      totalProductionCop: number;
+      finishedMachinesCount: number;
+      workerCount: number;
+      productionPerWorkerCop: number | null;
+      laborCostShareAvgPct: number | null;
+    };
+    onTimeCompletion: {
+      count: number;
+      onTimeCount: number;
+      pct: number | null;
+    };
+    shippedThisMonth: {
+      monthLabel: string;
+      count: number;
+      totalCop: number;
+    };
+    monthEndShipmentForecast: {
+      committedCop: number;
+      forecastCount: number;
+      forecastCop: number;
+      totalCop: number;
+    };
   };
   stages: StageTimingStats[];
   currentOpenStages: CurrentOpenStageStats[];
@@ -261,6 +288,18 @@ export type StatisticsDashboardData = {
     outOfSequenceStages: DataQualityIssue[];
     undoneLogsCount: number;
   };
+  productivityByMachine: Array<{
+    machineId: string;
+    serialNumber: number;
+    clientName: string;
+    equipmentName: string;
+    orderToCompletionHours: number | null;
+    productionHours: number | null;
+    laborCostPctOfSale: number | null;
+    isProductionLate: boolean;
+    promisedDate: string;
+    productionCompletedAt: string | null;
+  }>;
 };
 
 type StageRow = Database["public"]["Tables"]["stages"]["Row"];
@@ -441,6 +480,90 @@ export function buildStatisticsDashboard(input: {
     .filter((machine) => machine.isShipmentLate)
     .map((machine) => machine.shipmentDelayHours);
 
+  // --- New KPIs ---
+  const todayKey = toFactoryDateKey(now);
+  const currentMonthPrefix = todayKey.slice(0, 7);
+  const l30dStartKey = addDaysToDateKey(todayKey, -29);
+  const l30dEndKey = todayKey;
+
+  // L30D: machines whose productionCompletedAt falls in the last 30 calendar days
+  const l30dMachines = machineTimings.filter((machine) => {
+    if (!machine.productionCompletedAt) return false;
+    const dateKey = toFactoryDateKey(machine.productionCompletedAt);
+    return dateKey >= l30dStartKey && dateKey <= l30dEndKey;
+  });
+  const l30dTotalCop = l30dMachines.reduce((sum, m) => sum + m.salePriceCop, 0);
+  const workerCount = input.settings.activeWorkersCount;
+  const l30dLaborPcts = l30dMachines
+    .map((m) => m.laborCostPctOfSale)
+    .filter((pct): pct is number => pct !== null);
+
+  // Shipped this month
+  const shippedThisMonthMachines = machineTimings.filter((machine) => {
+    if (!machine.shippedAt) return false;
+    return toFactoryDateKey(machine.shippedAt).startsWith(currentMonthPrefix);
+  });
+  const shippedThisMonthCop = shippedThisMonthMachines.reduce((sum, m) => sum + m.salePriceCop, 0);
+  const monthLabelRaw = new Intl.DateTimeFormat("es-CO", {
+    month: "long",
+    year: "numeric",
+    timeZone: FACTORY_TIME_ZONE,
+  }).format(now);
+  const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
+
+  // Month-end shipment forecast: estimate delivery dates for in_production machines
+  const inProductionMachines = input.machines.filter((m) => m.status === "in_production");
+  const queue = calculateQueue(
+    inProductionMachines.map((m) => ({
+      id: m.id,
+      salePriceCop: m.salePriceCop,
+      orderPosition: m.orderPosition,
+      promisedDate: m.promisedDate,
+      stages: m.stages.map((s) => ({ stageId: s.id, completion: s.completion })),
+    })),
+    input.settings,
+    DEFAULT_STAGES,
+  );
+  const currentMonthStart = `${currentMonthPrefix}-01`;
+  const nextMonthStart = addMonthsToMonthStart(currentMonthStart, 1);
+  let forecastCount = 0;
+  let forecastCop = 0;
+  for (const calc of queue) {
+    const estimatedDate = estimateDeliveryDate(calc.accumulatedHours, now, input.settings, input.holidays);
+    // Counts if estimated date is within current month and on/after today
+    if (estimatedDate >= todayKey && estimatedDate >= currentMonthStart && estimatedDate < nextMonthStart) {
+      const sourceMachine = inProductionMachines.find((m) => m.id === calc.machineId);
+      if (sourceMachine) {
+        forecastCount += 1;
+        forecastCop += sourceMachine.salePriceCop;
+      }
+    }
+  }
+
+  // On-time completion (among completed machines in selected range)
+  const onTimeCount = completedMachines.filter((m) => !m.isProductionLate).length;
+
+  // productivityByMachine: completed machines in range, sorted desc by productionCompletedAt, capped at 30
+  const productivityByMachine = [...completedMachines]
+    .sort((a, b) => {
+      if (!a.productionCompletedAt) return 1;
+      if (!b.productionCompletedAt) return -1;
+      return compareIso(b.productionCompletedAt, a.productionCompletedAt);
+    })
+    .slice(0, 30)
+    .map((m) => ({
+      machineId: m.id,
+      serialNumber: m.serialNumber,
+      clientName: m.clientName,
+      equipmentName: m.equipmentName,
+      orderToCompletionHours: m.orderToCompletionHours,
+      productionHours: m.productionHours,
+      laborCostPctOfSale: m.laborCostPctOfSale,
+      isProductionLate: m.isProductionLate,
+      promisedDate: m.promisedDate,
+      productionCompletedAt: m.productionCompletedAt,
+    }));
+
   return {
     range: input.range,
     generatedAt: now.toISOString(),
@@ -460,6 +583,32 @@ export function buildStatisticsDashboard(input: {
       reprocessCount: logsInRange.filter((log) => log.isReprocess && !log.isUndone).length,
       laborCostShare: summarizePct(completedMachines),
       previoLeadTime: summarizeHours(previoLeadEntries.map((entry) => entry.leadTimeHours)),
+      currentPreviosCount: machineTimings.filter((machine) => machine.status === "pending").length,
+      last30Days: {
+        startDate: l30dStartKey,
+        endDate: l30dEndKey,
+        totalProductionCop: l30dTotalCop,
+        finishedMachinesCount: l30dMachines.length,
+        workerCount,
+        productionPerWorkerCop: workerCount > 0 ? l30dTotalCop / workerCount : null,
+        laborCostShareAvgPct: average(l30dLaborPcts),
+      },
+      onTimeCompletion: {
+        count: completedMachines.length,
+        onTimeCount,
+        pct: completedMachines.length > 0 ? (onTimeCount / completedMachines.length) * 100 : null,
+      },
+      shippedThisMonth: {
+        monthLabel,
+        count: shippedThisMonthMachines.length,
+        totalCop: shippedThisMonthCop,
+      },
+      monthEndShipmentForecast: {
+        committedCop: shippedThisMonthCop,
+        forecastCount,
+        forecastCop,
+        totalCop: shippedThisMonthCop + forecastCop,
+      },
     },
     stages: summarizeStages(stageEntries, logsInRange),
     currentOpenStages: machineTimings
@@ -515,6 +664,7 @@ export function buildStatisticsDashboard(input: {
       ),
       undoneLogsCount: logsInRange.filter((log) => log.isUndone).length,
     },
+    productivityByMachine,
   };
 }
 
@@ -754,6 +904,7 @@ function mapStatisticsMachineRow(row: MachineStatisticsRow): MachineTimingInput 
     salePriceCop: Number(row.sale_price_cop) || 0,
     createdAt: row.created_at,
     shippedAt: row.shipped_at,
+    orderPosition: row.order_position,
     previos: (row.machine_previos ?? []).map((previo) => ({
       previoCatalogId: previo.previo_catalog_id,
       name: previo.previo_catalog?.name ?? "Previo",
