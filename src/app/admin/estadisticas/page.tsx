@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Activity, AlertTriangle, BarChart3, Clock, Coins, Factory, Package, RefreshCcw, Timer, Truck, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Coins, Package, Truck, Users } from "lucide-react";
 
 export const metadata: Metadata = { title: "Estadísticas XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
@@ -17,7 +17,6 @@ import { getSettings, mapSettings } from "@/services/settings";
 import {
   getStatisticsDashboard,
   resolveStatisticsRange,
-  type BreakdownTimingStats,
   type StatisticsRangePreset,
 } from "@/services/statistics";
 
@@ -51,6 +50,8 @@ export default async function StatisticsPage({
       ? `${dashboard.range.startDate} a ${dashboard.range.endDate}`
       : "todo el histórico";
 
+  const { summary } = dashboard;
+
   return (
     <AdminShell>
       <RealtimeRefresh channelName="admin-statistics" tables={["machines", "machine_stages", "stage_logs", "machine_warranty_events"]} />
@@ -76,6 +77,7 @@ export default async function StatisticsPage({
         </div>
       </div>
 
+      {/* Rango summary bar */}
       <div className="mb-4 border border-[var(--xt-black)] bg-[var(--xt-white)] p-4 shadow-[var(--shadow-sm)]">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
@@ -87,241 +89,97 @@ export default async function StatisticsPage({
         </div>
       </div>
 
-      <section className="mb-5 grid gap-4 lg:grid-cols-[1.3fr_1fr_1fr]">
-        <MetricCard
-          icon={Timer}
-          eyebrow="KPI principal"
-          title="Tiempo de producción"
-          value={formatHours(dashboard.summary.production.averageHours)}
-          detail={`${dashboard.summary.production.count} máquinas · mediana ${formatHours(dashboard.summary.production.medianHours)} · p90 ${formatHours(dashboard.summary.production.p90Hours)} · desde primera tarea hasta Empacar 100%`}
-          prominent
-        />
-        <MetricCard
-          icon={Factory}
-          eyebrow="Pedido a terminado"
-          title="Ciclo total"
-          value={formatHours(dashboard.summary.orderToCompletion.averageHours)}
-          detail="Desde creación del pedido hasta Empacar 100%."
-        />
-        <MetricCard
-          icon={Truck}
-          eyebrow="Producción a despacho"
-          title="Espera promedio"
-          value={formatHours(dashboard.summary.productionToShipment.averageHours)}
-          detail={`${dashboard.summary.shippedMachinesCount} despachos en el rango.`}
-        />
+      {/* Dashboard compact grid */}
+      <section className="mb-5">
+        <p className="xt-eyebrow mb-2">Dashboard</p>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <MetricCard
+            icon={Package}
+            eyebrow="Estado"
+            title="Previos"
+            value={String(summary.currentPreviosCount)}
+            detail="Máquinas en previos"
+          />
+          <MetricCard
+            icon={Activity}
+            eyebrow="WIP actual"
+            title="En producción"
+            value={String(summary.currentWipCount)}
+            detail="Máquinas activas ahora."
+          />
+          <MetricCard
+            icon={Coins}
+            eyebrow="Producción L30D"
+            title="Producción"
+            value={formatCop(summary.last30Days.totalProductionCop)}
+            detail={`${summary.last30Days.finishedMachinesCount} máquinas terminadas · últimos 30 días`}
+          />
+          <MetricCard
+            icon={Users}
+            eyebrow="Por persona L30D"
+            title="Producción / persona"
+            value={formatCop(summary.last30Days.productionPerWorkerCop)}
+            detail={`${summary.last30Days.workerCount} personas en nómina`}
+          />
+          <MetricCard
+            icon={BarChart3}
+            eyebrow="Mano de obra L30D"
+            title="% del precio"
+            value={formatPct(summary.last30Days.laborCostShareAvgPct)}
+            detail="% promedio del precio de venta (L30D)"
+          />
+          <MetricCard
+            icon={AlertTriangle}
+            eyebrow="Cumplimiento"
+            title="A tiempo"
+            value={formatPct(summary.onTimeCompletion.pct)}
+            detail={`${summary.onTimeCompletion.onTimeCount}/${summary.onTimeCompletion.count} máquinas a tiempo`}
+          />
+          <MetricCard
+            icon={Truck}
+            eyebrow={summary.shippedThisMonth.monthLabel}
+            title="Despachado este mes"
+            value={formatCop(summary.shippedThisMonth.totalCop)}
+            detail={`${summary.shippedThisMonth.count} despachos · ${summary.shippedThisMonth.monthLabel}`}
+          />
+          <MetricCard
+            icon={Coins}
+            eyebrow="Cierre del mes"
+            title="Expectativa"
+            value={formatCop(summary.monthEndShipmentForecast.totalCop)}
+            detail={`Despachado ${formatCop(summary.monthEndShipmentForecast.committedCop)} + proyectado ${formatCop(summary.monthEndShipmentForecast.forecastCop)} (${summary.monthEndShipmentForecast.forecastCount} por despachar)`}
+          />
+        </div>
       </section>
 
-      <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <MetricCard
-          icon={Clock}
-          eyebrow="Entrada a despacho"
-          title="Promedio"
-          value={formatHours(dashboard.summary.inputToShipment.averageHours)}
-          detail="Desde creación del pedido (entrada al sistema) hasta despacho."
-        />
-        <MetricCard
-          icon={Coins}
-          eyebrow="Mano de obra vs. venta"
-          title="% del precio"
-          value={formatPct(dashboard.summary.laborCostShare.averagePct)}
-          detail={`${dashboard.summary.laborCostShare.count} máquinas · mediana ${formatPct(dashboard.summary.laborCostShare.medianPct)} · horas laborales × costo/hora ÷ precio de venta`}
-        />
-        <MetricCard
-          icon={Package}
-          eyebrow="Previos"
-          title="Pedido a recibido"
-          value={formatLeadTime(dashboard.summary.previoLeadTime.averageHours)}
-          detail={`${dashboard.summary.previoLeadTime.count} previos recibidos · mediana ${formatLeadTime(dashboard.summary.previoLeadTime.medianHours)}`}
-        />
-        <MetricCard
-          icon={Activity}
-          eyebrow="WIP actual"
-          title="En producción"
-          value={String(dashboard.summary.currentWipCount)}
-          detail="Máquinas activas ahora."
-        />
-        <MetricCard
-          icon={RefreshCcw}
-          eyebrow="Calidad"
-          title="Reprocesos"
-          value={String(dashboard.summary.reprocessCount)}
-          detail="Veces que una tarea hecha volvió a abrirse."
-        />
-        <MetricCard
-          icon={AlertTriangle}
-          eyebrow="Cumplimiento"
-          title="Producción tarde"
-          value={String(dashboard.summary.lateProductionCount)}
-          detail={`Retraso promedio ${formatHours(dashboard.summary.averageProductionDelayHours)}.`}
-        />
-        <MetricCard
-          icon={BarChart3}
-          eyebrow="Cumplimiento"
-          title="Despachos tarde"
-          value={String(dashboard.summary.lateShipmentCount)}
-          detail={`Retraso promedio ${formatHours(dashboard.summary.averageShipmentDelayHours)}.`}
-        />
-      </section>
-
+      {/* Productividad por máquina */}
       <section className="mb-5">
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <RefreshCcw className="h-5 w-5" />
-              Garantías
-            </CardTitle>
-            <CardDescription>Máquinas devueltas a producción por garantía dentro del rango seleccionado.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="xt-eyebrow">Registro</p>
-                <p className="text-3xl font-bold">{dashboard.summary.warrantyCount}</p>
-              </div>
-              <Badge variant="muted">
-                {dashboard.summary.warrantyCount} garantía{dashboard.summary.warrantyCount === 1 ? "" : "s"}
-              </Badge>
-            </div>
-            <StatsTable
-              empty="No hay garantías en este rango."
-              headers={["SERIAL", "Cliente", "Equipo", "Mensaje", "Fecha"]}
-              rows={dashboard.warrantyEvents.map((event) => [
-                `#${event.serialNumber}`,
-                event.clientName,
-                event.equipmentName,
-                event.message,
-                formatDateTime(event.createdAt),
-              ])}
-            />
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="mb-5 grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle>Cuellos de botella por etapa</CardTitle>
-            <CardDescription>Tiempo laboral desde que la etapa queda habilitada hasta que llega a 100%.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StatsTable
-              empty="No hay etapas completadas en este rango."
-              headers={["Etapa", "Completadas", "Reprocesos", "Promedio", "Mediana", "P90", "Máximo"]}
-              rows={dashboard.stages.map((stage) => [
-                stage.stageName,
-                String(stage.count),
-                String(stage.reprocessCount),
-                formatHours(stage.averageHours),
-                formatHours(stage.medianHours),
-                formatHours(stage.p90Hours),
-                formatHours(stage.maxHours),
-              ])}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Etapas abiertas más antiguas</CardTitle>
-            <CardDescription>Máquinas activas que llevan más tiempo laboral esperando cierre de etapa.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StatsTable
-              empty="No hay etapas abiertas con fecha de inicio."
-              headers={["SERIAL", "Etapa", "Antigüedad", "Cliente"]}
-              rows={dashboard.currentOpenStages.map((stage) => [
-                `#${stage.serialNumber}`,
-                stage.stageName,
-                formatHours(stage.agingHours),
-                stage.clientName,
-              ])}
-            />
-          </CardContent>
-        </Card>
-      </section>
-
-      <section className="mb-5 grid gap-5 xl:grid-cols-2">
-        <BreakdownCard title="Por equipo" rows={dashboard.breakdowns.byEquipment} />
-        <BreakdownCard title="Por línea" rows={dashboard.breakdowns.byLine} />
-        <BreakdownCard title="Por cliente" rows={dashboard.breakdowns.byClient} />
-        <BreakdownCard title="Por ciudad" rows={dashboard.breakdowns.byCity} />
-      </section>
-
-      <section className="mb-5">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Coins className="h-5 w-5" />
-              Costo por tipo de máquina
-            </CardTitle>
+            <CardTitle>Productividad por máquina</CardTitle>
             <CardDescription>
-              Tiempo de producción, lead time de previos y costo de mano de obra (% del precio de venta) por tipo de
-              equipo, para máquinas completadas en el rango.
+              Tiempo desde el pedido y desde el inicio de producción hasta Empacar 100%, por máquina del rango.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <StatsTable
-              empty="No hay máquinas completadas en este rango."
-              headers={["Tipo de equipo", "Máquinas", "Producción prom.", "Previos prom.", "Mano de obra %", "Costo mano de obra"]}
-              rows={dashboard.equipmentCosts.map((equipment) => [
-                equipment.label,
-                String(equipment.count),
-                formatHours(equipment.averageProductionHours),
-                formatLeadTime(equipment.averagePrevioLeadHours),
-                formatPct(equipment.averageLaborCostPct),
-                formatCop(equipment.totalLaborCostCop),
+              empty="No hay máquinas con datos de productividad en este rango."
+              headers={["SERIAL", "Cliente", "Equipo", "Pedido → terminado", "Producción → terminado", "Mano de obra %", "A tiempo"]}
+              rows={dashboard.productivityByMachine.map((m) => [
+                `#${m.serialNumber}`,
+                m.clientName,
+                m.equipmentName,
+                formatHours(m.orderToCompletionHours),
+                formatHours(m.productionHours),
+                formatPct(m.laborCostPctOfSale),
+                m.isProductionLate ? "No" : "Sí",
               ])}
             />
           </CardContent>
         </Card>
       </section>
 
-      <section className="mb-5 grid gap-5 xl:grid-cols-[1.2fr_1fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              Tiempo de previos por tipo
-            </CardTitle>
-            <CardDescription>Días calendario desde que el previo se pide hasta que se recibe, por previo.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StatsTable
-              empty="No hay previos recibidos en este rango."
-              headers={["Previo", "Recibidos", "Promedio", "Mediana", "P90", "Máximo"]}
-              rows={dashboard.breakdowns.byPrevio.map((previo) => [
-                previo.label,
-                String(previo.count),
-                formatLeadTime(previo.averageHours),
-                formatLeadTime(previo.medianHours),
-                formatLeadTime(previo.p90Hours),
-                formatLeadTime(previo.maxHours),
-              ])}
-            />
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Previos pendientes más antiguos</CardTitle>
-            <CardDescription>Previos pedidos que aún no se reciben, ordenados por antigüedad.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StatsTable
-              empty="No hay previos pendientes de recibir."
-              headers={["SERIAL", "Previo", "Antigüedad", "Cliente"]}
-              rows={dashboard.pendingPrevios.map((previo) => [
-                `#${previo.serialNumber}`,
-                previo.previoName,
-                formatLeadTime(previo.agingHours),
-                previo.clientName,
-              ])}
-            />
-          </CardContent>
-        </Card>
-      </section>
-
+      {/* Operario + Calidad de datos */}
       <section className="mb-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
         <Card>
           <CardHeader>
@@ -388,7 +246,7 @@ function MetricCard({
   detail,
   prominent = false,
 }: {
-  icon: typeof Timer;
+  icon: typeof Activity;
   eyebrow: string;
   title: string;
   value: string;
@@ -409,24 +267,6 @@ function MetricCard({
       </CardHeader>
       <CardContent>
         <p className="text-sm text-[var(--xt-steel)]">{detail}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function BreakdownCard({ title, rows }: { title: string; rows: BreakdownTimingStats[] }) {
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        <CardDescription>Promedio de producción total para máquinas completadas en el rango.</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <StatsTable
-          empty="No hay máquinas completadas en este rango."
-          headers={["Grupo", "Máquinas", "Promedio", "P90"]}
-          rows={rows.map((row) => [row.label, String(row.count), formatHours(row.averageHours), formatHours(row.p90Hours)])}
-        />
       </CardContent>
     </Card>
   );
@@ -509,18 +349,6 @@ function formatCop(value: number | null | undefined) {
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function formatLeadTime(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "Sin datos";
-  }
-  if (value < 24) {
-    return formatHours(value);
-  }
-
-  const days = value / 24;
-  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(days)} d`;
 }
 
 function formatDateTime(value: string) {
