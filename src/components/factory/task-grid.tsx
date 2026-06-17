@@ -76,6 +76,7 @@ export function TaskGrid({
               key={stage.id}
               type="button"
               onClick={() => handleToggle(stage)}
+              aria-pressed={isDone}
               className={`xt-task-card ${isDone ? "xt-task-card-done" : ""}`}
             >
               <div className="xt-task-card-body">

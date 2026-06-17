@@ -183,6 +183,43 @@ describe("machine timing legacy", () => {
 });
 
 describe("statistics dashboard aggregation", () => {
+  it("resolves calendar and rolling range presets", () => {
+    const now = new Date("2026-06-17T12:00:00-05:00");
+
+    expect(resolveStatisticsRange("this-month", now)).toMatchObject({
+      preset: "this-month",
+      startDate: "2026-06-01",
+      endDate: "2026-06-30",
+    });
+    expect(resolveStatisticsRange("last-month", now)).toMatchObject({
+      preset: "last-month",
+      startDate: "2026-05-01",
+      endDate: "2026-05-31",
+    });
+    expect(resolveStatisticsRange("last-30-days", now)).toMatchObject({
+      preset: "last-30-days",
+      startDate: "2026-05-19",
+      endDate: "2026-06-17",
+    });
+    expect(resolveStatisticsRange("last-60-days", now)).toMatchObject({
+      preset: "last-60-days",
+      startDate: "2026-04-19",
+      endDate: "2026-06-17",
+    });
+    expect(resolveStatisticsRange("last-90-days", now)).toMatchObject({
+      preset: "last-90-days",
+      startDate: "2026-03-20",
+      endDate: "2026-06-17",
+    });
+  });
+
+  it("keeps legacy range query aliases working", () => {
+    const now = new Date("2026-06-17T12:00:00-05:00");
+
+    expect(resolveStatisticsRange("current-month", now).preset).toBe("this-month");
+    expect(resolveStatisticsRange("previous-month", now).preset).toBe("last-month");
+  });
+
   it("aggregates completed machines in the selected range", () => {
     const range = resolveStatisticsRange("current-month", new Date("2026-06-15T12:00:00-05:00"));
     const dashboard = buildStatisticsDashboard({
@@ -314,6 +351,7 @@ describe("new dashboard KPIs", () => {
   // now = 2026-06-13 (Saturday); L30D window = 2026-05-15 .. 2026-06-13
   const now = new Date("2026-06-13T12:00:00-05:00");
   const range = resolveStatisticsRange("all-time", now);
+  const last30DaysRange = resolveStatisticsRange("last-30-days", now);
 
   // Machine completed inside L30D (2026-06-01) — on-time (promised 2026-06-03)
   const mInsideL30d = machine({
@@ -386,9 +424,16 @@ describe("new dashboard KPIs", () => {
     expect(dashboard.summary.currentPreviosCount).toBe(1);
   });
 
-  it("last30Days: totalProductionCop and finishedMachinesCount cover only machines in L30D window", () => {
-    const dashboard = buildDashboard([mInsideL30d, mOutsideL30d]);
-    const l30 = dashboard.summary.last30Days;
+  it("rangeProduction: totalProductionCop and finishedMachinesCount follow the selected range", () => {
+    const dashboard = buildStatisticsDashboard({
+      machines: [mInsideL30d, mOutsideL30d],
+      warrantyEvents: [],
+      range: last30DaysRange,
+      settings,
+      holidays: [],
+      now,
+    });
+    const l30 = dashboard.summary.rangeProduction;
     // Only mInsideL30d (completed 2026-06-01) falls in the L30D window
     expect(l30.finishedMachinesCount).toBe(1);
     expect(l30.totalProductionCop).toBe(6_000_000);
@@ -396,17 +441,17 @@ describe("new dashboard KPIs", () => {
     expect(l30.productionPerWorkerCop).toBeCloseTo(6_000_000 / 9, 2);
   });
 
-  it("last30Days: productionPerWorkerCop is null when workerCount is 0", () => {
+  it("rangeProduction: productionPerWorkerCop is null when workerCount is 0", () => {
     const zeroWorkerSettings = { ...settings, activeWorkersCount: 0 };
     const dashboard = buildStatisticsDashboard({
       machines: [mInsideL30d],
       warrantyEvents: [],
-      range,
+      range: last30DaysRange,
       settings: zeroWorkerSettings,
       holidays: [],
       now,
     });
-    expect(dashboard.summary.last30Days.productionPerWorkerCop).toBeNull();
+    expect(dashboard.summary.rangeProduction.productionPerWorkerCop).toBeNull();
   });
 
   it("onTimeCompletion.pct is correct", () => {

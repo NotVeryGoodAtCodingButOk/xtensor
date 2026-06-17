@@ -25,7 +25,13 @@ const LABOR_DAILY_HOURS: Record<number, number> = {
   6: 0, // Saturday
 };
 
-export type StatisticsRangePreset = "current-month" | "previous-month" | "last-90-days" | "all-time";
+export type StatisticsRangePreset =
+  | "this-month"
+  | "last-month"
+  | "last-30-days"
+  | "last-60-days"
+  | "last-90-days"
+  | "all-time";
 
 export type StatisticsRange = {
   preset: StatisticsRangePreset;
@@ -242,7 +248,7 @@ export type StatisticsDashboardData = {
     laborCostShare: PctSummary;
     previoLeadTime: HourSummary;
     currentPreviosCount: number;
-    last30Days: {
+    rangeProduction: {
       startDate: string;
       endDate: string;
       totalProductionCop: number;
@@ -258,6 +264,10 @@ export type StatisticsDashboardData = {
     };
     shippedThisMonth: {
       monthLabel: string;
+      count: number;
+      totalCop: number;
+    };
+    shippedInRange: {
       count: number;
       totalCop: number;
     };
@@ -381,7 +391,7 @@ export async function getStatisticsDashboard(input: {
 }
 
 export function resolveStatisticsRange(preset: string | undefined, now = new Date()): StatisticsRange {
-  const selectedPreset = isStatisticsRangePreset(preset) ? preset : "current-month";
+  const selectedPreset = normalizeStatisticsRangePreset(preset);
   const today = toFactoryDateKey(now);
   const currentMonthStart = `${today.slice(0, 7)}-01`;
   const nextMonthStart = addMonthsToMonthStart(currentMonthStart, 1);
@@ -397,7 +407,7 @@ export function resolveStatisticsRange(preset: string | undefined, now = new Dat
     };
   }
 
-  if (selectedPreset === "previous-month") {
+  if (selectedPreset === "last-month") {
     const previousMonthStart = addMonthsToMonthStart(currentMonthStart, -1);
     return createRange({
       preset: selectedPreset,
@@ -407,18 +417,19 @@ export function resolveStatisticsRange(preset: string | undefined, now = new Dat
     });
   }
 
-  if (selectedPreset === "last-90-days") {
+  if (selectedPreset === "last-30-days" || selectedPreset === "last-60-days" || selectedPreset === "last-90-days") {
+    const days = selectedPreset === "last-30-days" ? 30 : selectedPreset === "last-60-days" ? 60 : 90;
     return createRange({
       preset: selectedPreset,
-      label: "Últimos 90 días",
-      startDate: addDaysToDateKey(today, -89),
+      label: `Últimos ${days} días`,
+      startDate: addDaysToDateKey(today, -(days - 1)),
       endExclusiveDate: addDaysToDateKey(today, 1),
     });
   }
 
   return createRange({
-    preset: "current-month",
-    label: "Mes actual",
+    preset: "this-month",
+    label: "Este mes",
     startDate: currentMonthStart,
     endExclusiveDate: nextMonthStart,
   });
@@ -481,29 +492,17 @@ export function buildStatisticsDashboard(input: {
     .map((machine) => machine.shipmentDelayHours);
 
   // --- New KPIs ---
+  const workerCount = input.settings.activeWorkersCount;
+  const rangeProductionCop = sumSalePrice(completedMachines);
   const todayKey = toFactoryDateKey(now);
   const currentMonthPrefix = todayKey.slice(0, 7);
-  const l30dStartKey = addDaysToDateKey(todayKey, -29);
-  const l30dEndKey = todayKey;
-
-  // L30D: machines whose productionCompletedAt falls in the last 30 calendar days
-  const l30dMachines = machineTimings.filter((machine) => {
-    if (!machine.productionCompletedAt) return false;
-    const dateKey = toFactoryDateKey(machine.productionCompletedAt);
-    return dateKey >= l30dStartKey && dateKey <= l30dEndKey;
-  });
-  const l30dTotalCop = l30dMachines.reduce((sum, m) => sum + m.salePriceCop, 0);
-  const workerCount = input.settings.activeWorkersCount;
-  const l30dLaborPcts = l30dMachines
-    .map((m) => m.laborCostPctOfSale)
-    .filter((pct): pct is number => pct !== null);
 
   // Shipped this month
   const shippedThisMonthMachines = machineTimings.filter((machine) => {
     if (!machine.shippedAt) return false;
     return toFactoryDateKey(machine.shippedAt).startsWith(currentMonthPrefix);
   });
-  const shippedThisMonthCop = shippedThisMonthMachines.reduce((sum, m) => sum + m.salePriceCop, 0);
+  const shippedThisMonthCop = sumSalePrice(shippedThisMonthMachines);
   const monthLabelRaw = new Intl.DateTimeFormat("es-CO", {
     month: "long",
     year: "numeric",
@@ -511,37 +510,20 @@ export function buildStatisticsDashboard(input: {
   }).format(now);
   const monthLabel = monthLabelRaw.charAt(0).toUpperCase() + monthLabelRaw.slice(1);
 
-  // Month-end shipment forecast: estimate delivery dates for in_production machines
-  const inProductionMachines = input.machines.filter((m) => m.status === "in_production");
-  const queue = calculateQueue(
-    inProductionMachines.map((m) => ({
-      id: m.id,
-      salePriceCop: m.salePriceCop,
-      orderPosition: m.orderPosition,
-      promisedDate: m.promisedDate,
-      stages: m.stages.map((s) => ({ stageId: s.id, completion: s.completion })),
-    })),
-    input.settings,
-    DEFAULT_STAGES,
-  );
   const currentMonthStart = `${currentMonthPrefix}-01`;
   const nextMonthStart = addMonthsToMonthStart(currentMonthStart, 1);
-  let forecastCount = 0;
-  let forecastCop = 0;
-  for (const calc of queue) {
-    const estimatedDate = estimateDeliveryDate(calc.accumulatedHours, now, input.settings, input.holidays);
-    // Counts if estimated date is within current month and on/after today
-    if (estimatedDate >= todayKey && estimatedDate >= currentMonthStart && estimatedDate < nextMonthStart) {
-      const sourceMachine = inProductionMachines.find((m) => m.id === calc.machineId);
-      if (sourceMachine) {
-        forecastCount += 1;
-        forecastCop += sourceMachine.salePriceCop;
-      }
-    }
-  }
+  const { forecastCount, forecastCop } = calculateMonthEndShipmentForecast({
+    machines: input.machines,
+    settings: input.settings,
+    holidays: input.holidays,
+    now,
+    todayKey,
+    currentMonthStart,
+    nextMonthStart,
+  });
 
   // On-time completion (among completed machines in selected range)
-  const onTimeCount = completedMachines.filter((m) => !m.isProductionLate).length;
+  const onTimeCompletion = calculateOnTimeCompletion(completedMachines);
 
   // productivityByMachine: completed machines in range, sorted desc by productionCompletedAt, capped at 30
   const productivityByMachine = [...completedMachines]
@@ -574,7 +556,7 @@ export function buildStatisticsDashboard(input: {
       inputToShipment: summarizeHours(shippedMachines.map((machine) => machine.inputToShipmentHours)),
       completedMachinesCount: completedMachines.length,
       shippedMachinesCount: shippedMachines.length,
-      currentWipCount: machineTimings.filter((machine) => machine.status === "in_production").length,
+      currentWipCount: countMachinesByStatus(machineTimings, "in_production"),
       lateProductionCount: completedMachines.filter((machine) => machine.isProductionLate).length,
       lateShipmentCount: shippedMachines.filter((machine) => machine.isShipmentLate).length,
       averageProductionDelayHours: average(lateProductionDelays),
@@ -583,25 +565,25 @@ export function buildStatisticsDashboard(input: {
       reprocessCount: logsInRange.filter((log) => log.isReprocess && !log.isUndone).length,
       laborCostShare: summarizePct(completedMachines),
       previoLeadTime: summarizeHours(previoLeadEntries.map((entry) => entry.leadTimeHours)),
-      currentPreviosCount: machineTimings.filter((machine) => machine.status === "pending").length,
-      last30Days: {
-        startDate: l30dStartKey,
-        endDate: l30dEndKey,
-        totalProductionCop: l30dTotalCop,
-        finishedMachinesCount: l30dMachines.length,
+      currentPreviosCount: countMachinesByStatus(machineTimings, "pending"),
+      rangeProduction: {
+        startDate: input.range.startDate ?? "",
+        endDate: input.range.endDate ?? "",
+        totalProductionCop: rangeProductionCop,
+        finishedMachinesCount: completedMachines.length,
         workerCount,
-        productionPerWorkerCop: workerCount > 0 ? l30dTotalCop / workerCount : null,
-        laborCostShareAvgPct: average(l30dLaborPcts),
+        productionPerWorkerCop: divideByActiveWorkers(rangeProductionCop, workerCount),
+        laborCostShareAvgPct: averageLaborCostPct(completedMachines),
       },
-      onTimeCompletion: {
-        count: completedMachines.length,
-        onTimeCount,
-        pct: completedMachines.length > 0 ? (onTimeCount / completedMachines.length) * 100 : null,
-      },
+      onTimeCompletion,
       shippedThisMonth: {
         monthLabel,
         count: shippedThisMonthMachines.length,
         totalCop: shippedThisMonthCop,
+      },
+      shippedInRange: {
+        count: shippedMachines.length,
+        totalCop: sumSalePrice(shippedMachines),
       },
       monthEndShipmentForecast: {
         committedCop: shippedThisMonthCop,
@@ -1145,6 +1127,83 @@ function average(values: number[]) {
   return values.reduce((total, value) => total + value, 0) / values.length;
 }
 
+function countMachinesByStatus(machines: MachineTimingStats[], status: MachineStatus) {
+  return machines.filter((machine) => machine.status === status).length;
+}
+
+function sumSalePrice(machines: Array<{ salePriceCop: number }>) {
+  return machines.reduce((sum, machine) => sum + machine.salePriceCop, 0);
+}
+
+function divideByActiveWorkers(totalCop: number, workerCount: number) {
+  return workerCount > 0 ? totalCop / workerCount : null;
+}
+
+function averageLaborCostPct(machines: MachineTimingStats[]) {
+  const values = machines
+    .map((machine) => machine.laborCostPctOfSale)
+    .filter((value): value is number => value !== null);
+
+  return average(values);
+}
+
+function calculateOnTimeCompletion(machines: MachineTimingStats[]) {
+  const onTimeCount = machines.filter((machine) => !machine.isProductionLate).length;
+
+  return {
+    count: machines.length,
+    onTimeCount,
+    pct: machines.length > 0 ? (onTimeCount / machines.length) * 100 : null,
+  };
+}
+
+function calculateMonthEndShipmentForecast({
+  machines,
+  settings,
+  holidays,
+  now,
+  todayKey,
+  currentMonthStart,
+  nextMonthStart,
+}: {
+  machines: MachineTimingInput[];
+  settings: ProductionSettings;
+  holidays: Holiday[];
+  now: Date;
+  todayKey: string;
+  currentMonthStart: string;
+  nextMonthStart: string;
+}) {
+  const inProductionMachines = machines.filter((machine) => machine.status === "in_production");
+  const queue = calculateQueue(
+    inProductionMachines.map((machine) => ({
+      id: machine.id,
+      salePriceCop: machine.salePriceCop,
+      orderPosition: machine.orderPosition,
+      promisedDate: machine.promisedDate,
+      stages: machine.stages.map((stage) => ({ stageId: stage.id, completion: stage.completion })),
+    })),
+    settings,
+    DEFAULT_STAGES,
+  );
+  let forecastCount = 0;
+  let forecastCop = 0;
+
+  for (const calc of queue) {
+    const estimatedDate = estimateDeliveryDate(calc.accumulatedHours, now, settings, holidays);
+
+    if (estimatedDate >= todayKey && estimatedDate >= currentMonthStart && estimatedDate < nextMonthStart) {
+      const sourceMachine = inProductionMachines.find((machine) => machine.id === calc.machineId);
+      if (sourceMachine) {
+        forecastCount += 1;
+        forecastCop += sourceMachine.salePriceCop;
+      }
+    }
+  }
+
+  return { forecastCount, forecastCop };
+}
+
 function percentile(sortedValues: number[], percentileValue: number) {
   if (sortedValues.length === 0) {
     return null;
@@ -1205,8 +1264,29 @@ function createRange(input: {
   };
 }
 
+function normalizeStatisticsRangePreset(value: string | undefined): StatisticsRangePreset {
+  if (value === "current-month") {
+    return "this-month";
+  }
+  if (value === "previous-month") {
+    return "last-month";
+  }
+  if (isStatisticsRangePreset(value)) {
+    return value;
+  }
+
+  return "this-month";
+}
+
 function isStatisticsRangePreset(value: string | undefined): value is StatisticsRangePreset {
-  return value === "current-month" || value === "previous-month" || value === "last-90-days" || value === "all-time";
+  return (
+    value === "this-month" ||
+    value === "last-month" ||
+    value === "last-30-days" ||
+    value === "last-60-days" ||
+    value === "last-90-days" ||
+    value === "all-time"
+  );
 }
 
 function getDailyWorkingHours(

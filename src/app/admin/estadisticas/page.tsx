@@ -21,10 +21,11 @@ import {
 } from "@/services/statistics";
 
 const rangeOptions: Array<{ preset: StatisticsRangePreset; label: string }> = [
-  { preset: "current-month", label: "Mes actual" },
-  { preset: "previous-month", label: "Mes anterior" },
+  { preset: "this-month", label: "Este mes" },
+  { preset: "last-month", label: "Mes anterior" },
+  { preset: "last-30-days", label: "30 días" },
+  { preset: "last-60-days", label: "60 días" },
   { preset: "last-90-days", label: "90 días" },
-  { preset: "all-time", label: "Histórico" },
 ];
 
 // Previos surfaced on the statistics page: láser, torno armado, torno ensamble y cojines.
@@ -105,7 +106,8 @@ export default async function StatisticsPage({
             eyebrow="Estado"
             title="Previos"
             value={String(summary.currentPreviosCount)}
-            detail="Máquinas en previos"
+            detail="Máquinas en previos ahora."
+            formula='countMachinesByStatus(machineTimings, "pending")'
           />
           <MetricCard
             icon={Activity}
@@ -113,27 +115,31 @@ export default async function StatisticsPage({
             title="En producción"
             value={String(summary.currentWipCount)}
             detail="Máquinas activas ahora."
+            formula='countMachinesByStatus(machineTimings, "in_production")'
           />
           <MetricCard
             icon={Coins}
-            eyebrow="Producción L30D"
+            eyebrow="Producción"
             title="Producción"
-            value={formatCop(summary.last30Days.totalProductionCop)}
-            detail={`${summary.last30Days.finishedMachinesCount} máquinas terminadas · últimos 30 días`}
+            value={formatCop(summary.rangeProduction.totalProductionCop)}
+            detail={`${summary.rangeProduction.finishedMachinesCount} máquinas terminadas · ${dashboard.range.label}`}
+            formula="sumSalePrice(completedMachinesInRange)"
           />
           <MetricCard
             icon={Users}
-            eyebrow="Por persona L30D"
+            eyebrow="Por persona"
             title="Producción / persona"
-            value={formatCop(summary.last30Days.productionPerWorkerCop)}
-            detail={`${summary.last30Days.workerCount} personas en nómina`}
+            value={formatCop(summary.rangeProduction.productionPerWorkerCop)}
+            detail={`${summary.rangeProduction.workerCount} personas en nómina · ${dashboard.range.label}`}
+            formula="divideByActiveWorkers(rangeProductionCop, activeWorkersCount)"
           />
           <MetricCard
             icon={BarChart3}
-            eyebrow="Mano de obra L30D"
+            eyebrow="Mano de obra"
             title="% del precio"
-            value={formatPct(summary.last30Days.laborCostShareAvgPct)}
-            detail="% promedio del precio de venta (L30D)"
+            value={formatPct(summary.rangeProduction.laborCostShareAvgPct)}
+            detail={`% promedio del precio de venta · ${dashboard.range.label}`}
+            formula="averageLaborCostPct(completedMachinesInRange)"
           />
           <MetricCard
             icon={AlertTriangle}
@@ -141,13 +147,15 @@ export default async function StatisticsPage({
             title="A tiempo"
             value={formatPct(summary.onTimeCompletion.pct)}
             detail={`${summary.onTimeCompletion.onTimeCount}/${summary.onTimeCompletion.count} máquinas a tiempo`}
+            formula="calculateOnTimeCompletion(completedMachinesInRange)"
           />
           <MetricCard
             icon={Truck}
-            eyebrow={summary.shippedThisMonth.monthLabel}
-            title="Despachado este mes"
-            value={formatCop(summary.shippedThisMonth.totalCop)}
-            detail={`${summary.shippedThisMonth.count} despachos · ${summary.shippedThisMonth.monthLabel}`}
+            eyebrow="Despachos"
+            title="Despachado"
+            value={formatCop(summary.shippedInRange.totalCop)}
+            detail={`${summary.shippedInRange.count} despachos · ${dashboard.range.label}`}
+            formula="sumSalePrice(shippedMachinesInRange)"
           />
           <MetricCard
             icon={Coins}
@@ -155,6 +163,7 @@ export default async function StatisticsPage({
             title="Expectativa"
             value={formatCop(summary.monthEndShipmentForecast.totalCop)}
             detail={`Despachado ${formatCop(summary.monthEndShipmentForecast.committedCop)} + proyectado ${formatCop(summary.monthEndShipmentForecast.forecastCop)} (${summary.monthEndShipmentForecast.forecastCount} por despachar)`}
+            formula="calculateMonthEndShipmentForecast({ machines, settings, holidays, now })"
           />
         </div>
       </section>
@@ -361,6 +370,7 @@ function MetricCard({
   title,
   value,
   detail,
+  formula,
   prominent = false,
 }: {
   icon: typeof Activity;
@@ -368,6 +378,7 @@ function MetricCard({
   title: string;
   value: string;
   detail: string;
+  formula: string;
   prominent?: boolean;
 }) {
   return (
@@ -384,6 +395,7 @@ function MetricCard({
       </CardHeader>
       <CardContent>
         <p className="text-sm text-[var(--xt-steel)]">{detail}</p>
+        <p className="mt-1 text-xs text-[var(--xt-steel)]">Función: {formula}</p>
       </CardContent>
     </Card>
   );
