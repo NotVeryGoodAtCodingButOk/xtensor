@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Activity, AlertTriangle, BarChart3, Coins, Package, Truck, Users } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, Coins, Package, RefreshCcw, Truck, Users } from "lucide-react";
 
 export const metadata: Metadata = { title: "Estadísticas XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
@@ -26,6 +26,13 @@ const rangeOptions: Array<{ preset: StatisticsRangePreset; label: string }> = [
   { preset: "last-90-days", label: "90 días" },
   { preset: "all-time", label: "Histórico" },
 ];
+
+// Previos surfaced on the statistics page: láser, torno armado, torno ensamble y cojines.
+const TRACKED_PREVIO_NAMES = new Set(["Laser", "Torno A.", "Torno E.", "Cojines"]);
+
+function isTrackedPrevio(name: string) {
+  return TRACKED_PREVIO_NAMES.has(name.trim());
+}
 
 export default async function StatisticsPage({
   searchParams,
@@ -174,6 +181,116 @@ export default async function StatisticsPage({
                 formatPct(m.laborCostPctOfSale),
                 m.isProductionLate ? "No" : "Sí",
               ])}
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Garantías */}
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <RefreshCcw className="h-5 w-5" />
+              Garantías
+            </CardTitle>
+            <CardDescription>Máquinas devueltas a producción por garantía dentro del rango seleccionado.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="xt-eyebrow">Registro</p>
+                <p className="text-3xl font-bold">{dashboard.summary.warrantyCount}</p>
+              </div>
+              <Badge variant="muted">
+                {dashboard.summary.warrantyCount} garantía{dashboard.summary.warrantyCount === 1 ? "" : "s"}
+              </Badge>
+            </div>
+            <StatsTable
+              empty="No hay garantías en este rango."
+              headers={["SERIAL", "Cliente", "Equipo", "Mensaje", "Fecha"]}
+              rows={dashboard.warrantyEvents.map((event) => [
+                `#${event.serialNumber}`,
+                event.clientName,
+                event.equipmentName,
+                event.message,
+                formatDateTime(event.createdAt),
+              ])}
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Por equipo + Previos seguidos */}
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Por equipo</CardTitle>
+            <CardDescription>Promedio de producción total para máquinas completadas en el rango.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay máquinas completadas en este rango."
+              headers={["Grupo", "Máquinas", "Promedio", "P90"]}
+              rows={dashboard.breakdowns.byEquipment.map((row) => [
+                row.label,
+                String(row.count),
+                formatHours(row.averageHours),
+                formatHours(row.p90Hours),
+              ])}
+            />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Tiempo de previos seguidos
+            </CardTitle>
+            <CardDescription>Días desde que se pide hasta que se recibe — láser, torno armado, torno ensamble y cojines.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay previos seguidos recibidos en este rango."
+              headers={["Previo", "Recibidos", "Promedio", "Mediana", "P90", "Máximo"]}
+              rows={dashboard.breakdowns.byPrevio
+                .filter((previo) => isTrackedPrevio(previo.label))
+                .map((previo) => [
+                  previo.label,
+                  String(previo.count),
+                  formatLeadTime(previo.averageHours),
+                  formatLeadTime(previo.medianHours),
+                  formatLeadTime(previo.p90Hours),
+                  formatLeadTime(previo.maxHours),
+                ])}
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Previos pendientes seguidos */}
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              Previos pendientes seguidos
+            </CardTitle>
+            <CardDescription>Pedidos que aún no se reciben — láser, torno armado, torno ensamble y cojines, por antigüedad.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay previos seguidos pendientes de recibir."
+              headers={["SERIAL", "Previo", "Antigüedad", "Cliente"]}
+              rows={dashboard.pendingPrevios
+                .filter((previo) => isTrackedPrevio(previo.previoName))
+                .map((previo) => [
+                  `#${previo.serialNumber}`,
+                  previo.previoName,
+                  formatLeadTime(previo.agingHours),
+                  previo.clientName,
+                ])}
             />
           </CardContent>
         </Card>
@@ -349,6 +466,18 @@ function formatCop(value: number | null | undefined) {
     currency: "COP",
     maximumFractionDigits: 0,
   }).format(value);
+}
+
+function formatLeadTime(value: number | null | undefined) {
+  if (value === null || value === undefined || !Number.isFinite(value)) {
+    return "Sin datos";
+  }
+  if (value < 24) {
+    return formatHours(value);
+  }
+
+  const days = value / 24;
+  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(days)} d`;
 }
 
 function formatDateTime(value: string) {
