@@ -34,7 +34,26 @@ export function ClientsManager({ clients }: { clients: ClientWithUrl[] }) {
           editingId === client.id ? (
             <TableRow key={client.id} className="bg-[var(--xt-yellow-soft)]">
               <TableCell colSpan={2}>
-                <form action={updateClientAction} className="flex items-center gap-2">
+                <form
+                  action={updateClientAction}
+                  className="flex items-center gap-2"
+                  onSubmit={(event) => {
+                    const formData = new FormData(event.currentTarget);
+                    const nextName = String(formData.get("name") ?? "").trim();
+                    const mergeTarget = clients.find(
+                      (candidate) => candidate.id !== client.id && candidate.name.trim() === nextName,
+                    );
+
+                    if (
+                      mergeTarget &&
+                      !confirm(
+                        `¿Fusionar "${client.name}" con "${mergeTarget.name}"? Sus máquinas y enlaces quedarán en un solo cliente.`,
+                      )
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                >
                   <input type="hidden" name="clientId" value={client.id} />
                   <Input name="name" defaultValue={client.name} className="h-8 flex-1 text-sm" autoFocus required />
                   <ActionTooltip text="Guarda los cambios del cliente.">

@@ -26,6 +26,24 @@ export type Database = {
         };
         Relationships: [];
       };
+      client_link_aliases: {
+        Row: {
+          token: string;
+          client_id: string;
+          created_at: string;
+        };
+        Insert: {
+          token: string;
+          client_id: string;
+          created_at?: string;
+        };
+        Update: {
+          token?: string;
+          client_id?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
       colors: {
         Row: {
           id: string;
@@ -482,6 +500,18 @@ export type Database = {
       is_admin: {
         Args: Record<string, never>;
         Returns: boolean;
+      };
+      merge_clients: {
+        Args: {
+          source_client_id: string;
+          target_client_id: string;
+        };
+        Returns: {
+          id: string;
+          name: string;
+          magic_link_token: string;
+          created_at: string;
+        };
       };
       reorder_in_production_machines: {
         Args: {

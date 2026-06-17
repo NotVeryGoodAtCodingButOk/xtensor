@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { getServerEnv } from "@/lib/env";
+import type { Database } from "@/types/database";
+
+type ClientRow = Database["public"]["Tables"]["clients"]["Row"];
+type SupabaseAdminClient = ReturnType<typeof createSupabaseAdminClient>;
 
 export function createClientToken() {
   return randomBytes(24).toString("base64url");
@@ -27,19 +31,48 @@ export async function regenerateClientToken(clientId: string) {
   return data;
 }
 
-export async function getClientByToken(token: string) {
+export async function getClientByToken(token: string): Promise<ClientRow | null> {
+  const cleanToken = token.trim();
+  if (!cleanToken) {
+    return null;
+  }
+
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("clients")
     .select("*")
-    .eq("magic_link_token", token)
-    .single();
+    .eq("magic_link_token", cleanToken)
+    .maybeSingle();
 
   if (error) {
     return null;
   }
 
-  return data;
+  if (data) {
+    return data;
+  }
+
+  const { data: alias, error: aliasError } = await supabase
+    .from("client_link_aliases")
+    .select("client_id")
+    .eq("token", cleanToken)
+    .maybeSingle();
+
+  if (aliasError || !alias) {
+    return null;
+  }
+
+  const { data: mergedClient, error: mergedClientError } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("id", alias.client_id)
+    .maybeSingle();
+
+  if (mergedClientError) {
+    return null;
+  }
+
+  return mergedClient;
 }
 
 export async function ensureClientByName(name: string) {
@@ -68,8 +101,30 @@ export async function ensureClientByName(name: string) {
 }
 
 export async function updateClient(id: string, name: string) {
+  const cleanName = name.trim();
+  if (!cleanName) {
+    throw new Error("El cliente es requerido.");
+  }
+
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("clients").update({ name }).eq("id", id).select("*").single();
+  const { data: mergeTarget, error: mergeTargetError } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("name", cleanName)
+    .neq("id", id)
+    .order("created_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (mergeTargetError) {
+    throw new Error(`No se pudo buscar un cliente existente: ${mergeTargetError.message}`);
+  }
+
+  if (mergeTarget) {
+    return mergeClients(id, mergeTarget.id, supabase);
+  }
+
+  const { data, error } = await supabase.from("clients").update({ name: cleanName }).eq("id", id).select("*").single();
   if (error) throw new Error(`No se pudo actualizar el cliente: ${error.message}`);
   return data;
 }
@@ -80,24 +135,27 @@ export async function deleteClient(id: string) {
   if (error) throw new Error(`No se pudo eliminar el cliente: ${error.message}`);
 }
 
-export async function mergeClients(sourceClientId: string, targetClientId: string) {
+export async function mergeClients(
+  sourceClientId: string,
+  targetClientId: string,
+  supabase: SupabaseAdminClient = createSupabaseAdminClient(),
+) {
   if (sourceClientId === targetClientId) {
     throw new Error("Los clientes deben ser diferentes.");
   }
 
-  const supabase = createSupabaseAdminClient();
-  const { error: moveError } = await supabase
-    .from("machines")
-    .update({ client_id: targetClientId })
-    .eq("client_id", sourceClientId);
+  const { data, error } = await supabase.rpc("merge_clients", {
+    source_client_id: sourceClientId,
+    target_client_id: targetClientId,
+  });
 
-  if (moveError) {
-    throw new Error(`No se pudieron mover las máquinas: ${moveError.message}`);
+  if (error) {
+    throw new Error(`No se pudieron fusionar los clientes: ${error.message}`);
   }
 
-  const { error: deleteError } = await supabase.from("clients").delete().eq("id", sourceClientId);
-
-  if (deleteError) {
-    throw new Error(`No se pudo eliminar el cliente duplicado: ${deleteError.message}`);
+  if (!data) {
+    throw new Error("No se pudo fusionar los clientes.");
   }
+
+  return data;
 }

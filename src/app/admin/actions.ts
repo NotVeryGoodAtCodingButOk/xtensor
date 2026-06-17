@@ -264,6 +264,8 @@ export async function updateClientAction(formData: FormData) {
   const id = String(formData.get("clientId") ?? "");
   const name = String(formData.get("name") ?? "").trim();
   if (id && name) await updateClient(id, name);
+  revalidateFactoryData();
+  revalidatePath("/admin/clientes");
   redirect("/admin/clientes");
 }
 
