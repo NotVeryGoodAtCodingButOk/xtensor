@@ -19,7 +19,7 @@ vi.mock("@/lib/supabase/admin", () => ({
   createSupabaseAdminClient: () => mocks.supabase,
 }));
 
-import { getClientByToken, updateClient } from "@/services/clients";
+import { getClientByToken, updateClient, updateMachineClientName } from "@/services/clients";
 
 function createQuery(result: unknown) {
   const query = {} as QueryMock;
@@ -105,5 +105,25 @@ describe("client services", () => {
     expect(currentTokenQuery.eq).toHaveBeenCalledWith("magic_link_token", "source-token");
     expect(aliasQuery.eq).toHaveBeenCalledWith("token", "source-token");
     expect(targetQuery.eq).toHaveBeenCalledWith("id", "target-client");
+  });
+
+  it("updates the shared client for a machine through the merge-aware client path", async () => {
+    const machineQuery = createQuery({ data: { client_id: "source-client" }, error: null });
+    const lookupQuery = createQuery({ data: targetClient, error: null });
+    mocks.supabase = createSupabaseClient(
+      { machines: [machineQuery], clients: [lookupQuery] },
+      { data: targetClient, error: null },
+    );
+
+    await expect(updateMachineClientName("machine-1", " Acme ")).resolves.toEqual(targetClient);
+
+    expect(machineQuery.select).toHaveBeenCalledWith("client_id");
+    expect(machineQuery.eq).toHaveBeenCalledWith("id", "machine-1");
+    expect(lookupQuery.eq).toHaveBeenCalledWith("name", "Acme");
+    expect(lookupQuery.neq).toHaveBeenCalledWith("id", "source-client");
+    expect(mocks.supabase.rpc).toHaveBeenCalledWith("merge_clients", {
+      source_client_id: "source-client",
+      target_client_id: "target-client",
+    });
   });
 });

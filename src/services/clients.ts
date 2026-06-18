@@ -100,13 +100,16 @@ export async function ensureClientByName(name: string) {
   return data;
 }
 
-export async function updateClient(id: string, name: string) {
+export async function updateClient(
+  id: string,
+  name: string,
+  supabase: SupabaseAdminClient = createSupabaseAdminClient(),
+) {
   const cleanName = name.trim();
   if (!cleanName) {
     throw new Error("El cliente es requerido.");
   }
 
-  const supabase = createSupabaseAdminClient();
   const { data: mergeTarget, error: mergeTargetError } = await supabase
     .from("clients")
     .select("*")
@@ -127,6 +130,33 @@ export async function updateClient(id: string, name: string) {
   const { data, error } = await supabase.from("clients").update({ name: cleanName }).eq("id", id).select("*").single();
   if (error) throw new Error(`No se pudo actualizar el cliente: ${error.message}`);
   return data;
+}
+
+export async function updateMachineClientName(
+  machineId: string,
+  name: string,
+  supabase: SupabaseAdminClient = createSupabaseAdminClient(),
+) {
+  const cleanName = name.trim();
+  if (!cleanName) {
+    throw new Error("El cliente es requerido.");
+  }
+
+  const { data: machine, error } = await supabase
+    .from("machines")
+    .select("client_id")
+    .eq("id", machineId)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`No se pudo cargar el cliente de la máquina: ${error.message}`);
+  }
+
+  if (!machine) {
+    throw new Error("No se encontró la máquina.");
+  }
+
+  return updateClient(machine.client_id, cleanName, supabase);
 }
 
 export async function deleteClient(id: string) {

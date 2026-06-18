@@ -22,7 +22,7 @@ import {
   deleteHoliday,
   listCatalog,
 } from "@/services/catalog";
-import { ensureClientByName, regenerateClientToken, updateClient, deleteClient } from "@/services/clients";
+import { ensureClientByName, regenerateClientToken, updateClient, updateMachineClientName, deleteClient } from "@/services/clients";
 import {
   bulkMarkFinished,
   bulkMarkShipped,
@@ -130,7 +130,12 @@ export async function createMachineAction(formData: FormData) {
 export async function updateMachineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
+  const clientName = String(formData.get("clientName") ?? "").trim();
   const equipmentId = String(formData.get("equipmentId") ?? "").trim() || null;
+  if (machineId && clientName) {
+    await updateMachineClientName(machineId, clientName);
+  }
+
   await updateMachine(machineId, {
     serial_number: Number(formData.get("serialNumber")),
     equipment_id: equipmentId,
