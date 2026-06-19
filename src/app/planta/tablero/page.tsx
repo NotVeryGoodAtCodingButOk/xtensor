@@ -8,7 +8,7 @@ import { isFactoryUnlocked } from "@/lib/factory-session";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { cn, formatPercent } from "@/lib/utils";
 import { listHolidays } from "@/services/catalog";
-import { listCalculatedMachines } from "@/services/machines";
+import { FACTORY_BOARD_STATUSES, listCalculatedMachines } from "@/services/machines";
 import { formatDateEsNoYear } from "@/services/schedule";
 import { getSettings, mapSettings } from "@/services/settings";
 import { CellTooltip } from "@/components/ui/tooltip";
@@ -35,7 +35,7 @@ export default async function FactoryBoardPage() {
   const machines = await listCalculatedMachines({
     settings: mapSettings(settingsRow),
     holidays,
-    status: "in_production",
+    status: FACTORY_BOARD_STATUSES,
   });
   const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
 

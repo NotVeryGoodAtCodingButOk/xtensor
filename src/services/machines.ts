@@ -14,6 +14,11 @@ type MachineInsert = Database["public"]["Tables"]["machines"]["Insert"];
 type MachineUpdate = Database["public"]["Tables"]["machines"]["Update"];
 type MachineWarrantyEventInsert = Database["public"]["Tables"]["machine_warranty_events"]["Insert"];
 type MachineQueueRow = Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "order_position" | "status" | "created_at">;
+type ListMachineStatus = Extract<
+  Database["public"]["Tables"]["machines"]["Row"]["status"],
+  "in_production" | "finished" | "shipped"
+>;
+type MachineStatusFilter = ListMachineStatus | readonly ListMachineStatus[];
 
 type MachineRow = Database["public"]["Tables"]["machines"]["Row"] & {
   clients: Database["public"]["Tables"]["clients"]["Row"] | null;
@@ -43,24 +48,34 @@ const MACHINE_SELECT = `
   machine_warranty_events(id)
 `;
 
+export const FACTORY_BOARD_STATUSES = ["in_production", "finished"] as const satisfies readonly ListMachineStatus[];
+
 export async function listMachines(
-  status?: "in_production" | "finished" | "shipped",
+  status?: MachineStatusFilter,
   options?: { shippedRetentionDays?: number; now?: Date },
 ) {
   const supabase = createSupabaseAdminClient();
+  const statusFilter = normalizeMachineStatusFilter(status);
+  const shippedOnly = statusFilter.length === 1 && statusFilter[0] === "shipped";
   let query = supabase.from("machines").select(MACHINE_SELECT);
 
-  if (status === "shipped") {
+  if (statusFilter.includes("shipped") && !shippedOnly) {
+    throw new Error("Las máquinas despachadas deben consultarse en una lista separada.");
+  }
+
+  if (shippedOnly) {
     query = query.order("shipped_at", { ascending: false }).order("order_position", { ascending: true });
   } else {
     query = query.order("order_position", { ascending: true });
   }
 
-  if (status) {
-    query = query.eq("status", status);
+  if (statusFilter.length === 1) {
+    query = query.eq("status", statusFilter[0]);
+  } else if (statusFilter.length > 1) {
+    query = query.in("status", statusFilter);
   }
 
-  if (status === "shipped") {
+  if (shippedOnly) {
     const shippedRetentionDays = options?.shippedRetentionDays ?? 60;
     const shippedSince = new Date(options?.now ?? new Date());
     shippedSince.setDate(shippedSince.getDate() - Math.max(0, shippedRetentionDays));
@@ -99,13 +114,21 @@ export async function listCalculatedMachines(input: {
   settings: ProductionSettings;
   holidays: Holiday[];
   startDate?: Date;
-  status?: "in_production" | "finished" | "shipped";
+  status?: MachineStatusFilter;
   shippedRetentionDays?: number;
 }) {
   const machines = await listMachines(input.status, {
     shippedRetentionDays: input.shippedRetentionDays,
   });
   return calculateMachines(machines, input.settings, input.holidays, input.startDate);
+}
+
+export function normalizeMachineStatusFilter(status?: MachineStatusFilter) {
+  if (!status) {
+    return [];
+  }
+
+  return typeof status === "string" ? [status] : [...new Set(status)];
 }
 
 export function calculateMachines(

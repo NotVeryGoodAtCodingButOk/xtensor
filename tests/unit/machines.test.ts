@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { buildMovedQueueOrder } from "@/services/machines";
+import { buildMovedQueueOrder, FACTORY_BOARD_STATUSES, normalizeMachineStatusFilter } from "@/services/machines";
+
+describe("factory board visibility", () => {
+  it("keeps finished machines visible until they are shipped", () => {
+    expect(FACTORY_BOARD_STATUSES).toEqual(["in_production", "finished"]);
+    expect(FACTORY_BOARD_STATUSES).not.toContain("shipped");
+  });
+
+  it("normalizes multi-status filters without duplicates", () => {
+    expect(normalizeMachineStatusFilter(["in_production", "finished", "finished"])).toEqual([
+      "in_production",
+      "finished",
+    ]);
+  });
+});
 
 describe("production queue ordering", () => {
   it("renumbers the full queue when a machine moves to a later position", () => {
