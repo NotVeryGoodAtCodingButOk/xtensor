@@ -165,17 +165,22 @@ function InlineColorEdit({ machineId, colorId, colorName, colors }: { machineId:
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
-function PrevioChip({ machineId, previo }: { machineId: string; previo: MachinePrevioView }) {
+const FIXED_PREVIO_COLUMNS = ["Laser", "Tubos", "Inox", "Torno A", "Torno E", "Pintura", "Tornillos", "Rodamientos"] as const;
+
+function matchesPrevioColumn(previoName: string, column: string): boolean {
+  return previoName.trim().toLowerCase() === column.toLowerCase();
+}
+
+function PrevioColumnChip({ machineId, previo }: { machineId: string; previo: MachinePrevioView }) {
   const orderedRef = useRef<HTMLInputElement>(null);
   const receivedRef = useRef<HTMLInputElement>(null);
-
   const bothDone = previo.ordered && previo.received;
   const neitherDone = !previo.ordered && !previo.received;
 
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 border px-1.5 py-1 text-[10px] leading-none",
+        "inline-flex items-center gap-1 border px-1.5 py-1 text-[10px] leading-none",
         bothDone
           ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/10 text-[var(--line-bio-green)]"
           : neitherDone
@@ -183,9 +188,6 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
             : "border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] text-[var(--xt-black)]",
       )}
     >
-      <span className="font-medium">{previo.name}</span>
-
-      {/* Pedido toggle */}
       <form action={toggleMachinePrevioAction} className="inline">
         <input type="hidden" name="machineId" value={machineId} />
         <input type="hidden" name="previoCatalogId" value={previo.previoCatalogId} />
@@ -204,8 +206,6 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
           <span>Ped</span>
         </label>
       </form>
-
-      {/* Recibido toggle */}
       <form action={toggleMachinePrevioAction} className="inline">
         <input type="hidden" name="machineId" value={machineId} />
         <input type="hidden" name="previoCatalogId" value={previo.previoCatalogId} />
@@ -224,23 +224,6 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
           <span>Rec</span>
         </label>
       </form>
-    </div>
-  );
-}
-
-function PreviosCell({ machine }: { machine: MachinePrevioListRow }) {
-  if (machine.previos.length === 0) {
-    return <span className="text-[var(--xt-aluminum)]">Sin previos</span>;
-  }
-  return (
-    <div className="flex flex-wrap gap-1">
-      {machine.previos.map((previo) => (
-        <PrevioChip
-          key={`${previo.previoCatalogId}-${previo.ordered}-${previo.received}`}
-          machineId={machine.machineId}
-          previo={previo}
-        />
-      ))}
     </div>
   );
 }
@@ -373,7 +356,7 @@ export function PreviosManager({
           )}
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1100px] text-xs">
+          <Table className="min-w-[1600px] text-xs">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10 px-3">
@@ -391,14 +374,16 @@ export function PreviosManager({
                 <TableHead>Máquina</TableHead>
                 <TableHead>Color</TableHead>
                 <TableHead>Prometido</TableHead>
-                <TableHead>Previos</TableHead>
+                {FIXED_PREVIO_COLUMNS.map((col) => (
+                  <TableHead key={col} className="whitespace-nowrap text-center">{col}</TableHead>
+                ))}
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredPending.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="py-6 text-center text-[var(--xt-steel)]">
+                  <TableCell colSpan={7 + FIXED_PREVIO_COLUMNS.length + 2} className="py-6 text-center text-[var(--xt-steel)]">
                     No hay máquinas en previos.
                   </TableCell>
                 </TableRow>
@@ -443,9 +428,18 @@ export function PreviosManager({
                       <InlineColorEdit machineId={machine.machineId} colorId={machine.colorId} colorName={machine.colorName} colors={colors} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
-                    <TableCell>
-                      <PreviosCell machine={machine} />
-                    </TableCell>
+                    {FIXED_PREVIO_COLUMNS.map((col) => {
+                      const previo = machine.previos.find((p) => matchesPrevioColumn(p.name, col));
+                      return (
+                        <TableCell key={col} className="text-center">
+                          {previo ? (
+                            <PrevioColumnChip machineId={machine.machineId} previo={previo} />
+                          ) : (
+                            <span className="text-[var(--xt-aluminum)]">—</span>
+                          )}
+                        </TableCell>
+                      );
+                    })}
                     <TableCell>
                       <form action={sendToProductionAction}>
                         <input type="hidden" name="machineIds" value={machine.machineId} />
@@ -478,7 +472,7 @@ export function PreviosManager({
             </p>
           </div>
           <div className="overflow-x-auto">
-            <Table className="min-w-[1000px] text-xs">
+            <Table className="min-w-[1560px] text-xs">
               <TableHeader>
                 <TableRow>
                   <TableHead>SERIAL</TableHead>
@@ -487,7 +481,9 @@ export function PreviosManager({
                   <TableHead>Máquina</TableHead>
                   <TableHead>Color</TableHead>
                   <TableHead>Prometido</TableHead>
-                  <TableHead>Previos</TableHead>
+                  {FIXED_PREVIO_COLUMNS.map((col) => (
+                    <TableHead key={col} className="whitespace-nowrap text-center">{col}</TableHead>
+                  ))}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -520,9 +516,18 @@ export function PreviosManager({
                       <InlineColorEdit machineId={machine.machineId} colorId={machine.colorId} colorName={machine.colorName} colors={colors} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
-                    <TableCell>
-                      <PreviosCell machine={machine} />
-                    </TableCell>
+                    {FIXED_PREVIO_COLUMNS.map((col) => {
+                      const previo = machine.previos.find((p) => matchesPrevioColumn(p.name, col));
+                      return (
+                        <TableCell key={col} className="text-center">
+                          {previo ? (
+                            <PrevioColumnChip machineId={machine.machineId} previo={previo} />
+                          ) : (
+                            <span className="text-[var(--xt-aluminum)]">—</span>
+                          )}
+                        </TableCell>
+                      );
+                    })}
                   </TableRow>
                 ))}
               </TableBody>
