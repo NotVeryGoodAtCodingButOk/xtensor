@@ -6,6 +6,7 @@ import { bulkDespacharTerminadosAction, reprocesarMaquinaAction } from "@/app/ad
 import { Button } from "@/components/ui/button";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ActionTooltip } from "@/components/ui/tooltip";
+import { formatCurrencyCop } from "@/lib/utils";
 import type { MachineView } from "@/types/domain";
 
 const C = "px-3 py-2 whitespace-nowrap";
@@ -73,7 +74,7 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
       )}
 
       <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-        <Table className="min-w-[900px] text-xs">
+        <Table className="min-w-[1000px] text-xs">
           <TableHeader>
             <TableRow>
               <TableHead className="w-8 px-3 py-2">
@@ -89,6 +90,7 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
               <TableHead className={C}>Cliente</TableHead>
               <TableHead className={C}>Código</TableHead>
               <TableHead className={C}>Máquina</TableHead>
+              <TableHead className={`${C} text-right`}>Precio</TableHead>
               <TableHead className={C}>Color</TableHead>
               <TableHead className={C}>Ciudad</TableHead>
               <TableHead className={C}>Terminada</TableHead>
@@ -114,6 +116,9 @@ export function TerminadosTable({ machines }: { machines: MachineView[] }) {
                 </TableCell>
                 <TableCell className={`${C} max-w-[180px]`}>
                   <span className="line-clamp-1">{machine.equipmentName}</span>
+                </TableCell>
+                <TableCell className={`${C} text-right tabular-nums`}>
+                  {formatCurrencyCop(machine.salePriceCop)}
                 </TableCell>
                 <TableCell className={C}>{machine.colorName ?? "—"}</TableCell>
                 <TableCell className={C}>{machine.city ?? "—"}</TableCell>
