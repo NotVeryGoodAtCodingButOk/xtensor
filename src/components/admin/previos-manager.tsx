@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { ActionTooltip, CellTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
-import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
+import type { MachinePrevioListRow, MachinePrevioView, PrevioCatalogView } from "@/types/domain";
 
 function InlineSerialEdit({ machineId, serialNumber }: { machineId: string; serialNumber: number }) {
   const [editing, setEditing] = useState(false);
@@ -165,10 +165,50 @@ function InlineColorEdit({ machineId, colorId, colorName, colors }: { machineId:
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
-const FIXED_PREVIO_COLUMNS = ["Laser", "Tubos", "Inox", "Torno A", "Torno E", "Pintura", "Tornillos", "Rodamientos"] as const;
+// Normalize a previo name so display/order/exclusion lists are robust to the
+// abbreviated, punctuated, or accented variants stored in `previo_catalog`
+// (e.g. "Inox.", "Pintu.", "Plástico"). Columns are matched to cells by
+// previoCatalogId, never by name, so renames can't silently drop a column.
+function normalizePrevioName(name: string): string {
+  return name
+    .trim()
+    .toLowerCase()
+    .replace(/\./g, "")
+    .normalize("NFD")
+    .replace(/[̀-ͯ]/g, "");
+}
 
-function matchesPrevioColumn(previoName: string, column: string): boolean {
-  return previoName.trim().toLowerCase() === column.toLowerCase();
+// Previo types intentionally hidden from the board (data is kept, just not shown).
+const EXCLUDED_PREVIOS = new Set(["zinc", "rodam", "rodamientos", "tornillos", "plastico"]);
+
+// Clean header labels for the abbreviated catalog names; falls back to the
+// catalog name for anything not listed here.
+const PREVIO_LABELS: Record<string, string> = {
+  inox: "Inox",
+  "torno a": "Torno A",
+  "torno e": "Torno E",
+  pintu: "Pintura",
+};
+
+// Fixed column order (production sequence); unknown previos are appended after.
+const PREVIO_COLUMN_ORDER = ["laser", "tubos", "inox", "placas", "torno a", "torno e", "pintu", "carenaje", "cojines"];
+
+type PrevioColumn = { id: string; label: string };
+
+function buildPrevioColumns(catalog: PrevioCatalogView[]): PrevioColumn[] {
+  return catalog
+    .filter((item) => !EXCLUDED_PREVIOS.has(normalizePrevioName(item.name)))
+    .map((item) => {
+      const key = normalizePrevioName(item.name);
+      return { id: item.id, label: PREVIO_LABELS[key] ?? item.name, order: PREVIO_COLUMN_ORDER.indexOf(key) };
+    })
+    .sort((a, b) => {
+      const ao = a.order === -1 ? Number.MAX_SAFE_INTEGER : a.order;
+      const bo = b.order === -1 ? Number.MAX_SAFE_INTEGER : b.order;
+      if (ao !== bo) return ao - bo;
+      return a.label.localeCompare(b.label, "es");
+    })
+    .map(({ id, label }) => ({ id, label }));
 }
 
 function PrevioColumnChip({ machineId, previo }: { machineId: string; previo: MachinePrevioView }) {
@@ -233,12 +273,15 @@ export function PreviosManager({
   productionMachines,
   seededMessage,
   colors = [],
+  previoCatalog = [],
 }: {
   pendingMachines: MachinePrevioListRow[];
   productionMachines: MachinePrevioListRow[];
   seededMessage?: string | null;
   colors?: { id: string; name: string }[];
+  previoCatalog?: PrevioCatalogView[];
 }) {
+  const previoColumns = useMemo(() => buildPrevioColumns(previoCatalog), [previoCatalog]);
   const [clientFilter, setClientFilter] = useState("");
   const [search, setSearch] = useState("");
   const [promisedDate, setPromisedDate] = useState("");
@@ -356,7 +399,7 @@ export function PreviosManager({
           )}
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1600px] text-xs">
+          <Table className="min-w-[1700px] text-xs">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10 px-3">
@@ -374,8 +417,8 @@ export function PreviosManager({
                 <TableHead>Máquina</TableHead>
                 <TableHead>Color</TableHead>
                 <TableHead>Prometido</TableHead>
-                {FIXED_PREVIO_COLUMNS.map((col) => (
-                  <TableHead key={col} className="whitespace-nowrap text-center">{col}</TableHead>
+                {previoColumns.map((col) => (
+                  <TableHead key={col.id} className="whitespace-nowrap text-center">{col.label}</TableHead>
                 ))}
                 <TableHead className="w-10" />
               </TableRow>
@@ -383,7 +426,7 @@ export function PreviosManager({
             <TableBody>
               {filteredPending.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7 + FIXED_PREVIO_COLUMNS.length + 2} className="py-6 text-center text-[var(--xt-steel)]">
+                  <TableCell colSpan={7 + previoColumns.length + 1} className="py-6 text-center text-[var(--xt-steel)]">
                     No hay máquinas en previos.
                   </TableCell>
                 </TableRow>
@@ -428,10 +471,10 @@ export function PreviosManager({
                       <InlineColorEdit machineId={machine.machineId} colorId={machine.colorId} colorName={machine.colorName} colors={colors} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
-                    {FIXED_PREVIO_COLUMNS.map((col) => {
-                      const previo = machine.previos.find((p) => matchesPrevioColumn(p.name, col));
+                    {previoColumns.map((col) => {
+                      const previo = machine.previos.find((p) => p.previoCatalogId === col.id);
                       return (
-                        <TableCell key={col} className="text-center">
+                        <TableCell key={col.id} className="text-center">
                           {previo ? (
                             <PrevioColumnChip machineId={machine.machineId} previo={previo} />
                           ) : (
@@ -472,7 +515,7 @@ export function PreviosManager({
             </p>
           </div>
           <div className="overflow-x-auto">
-            <Table className="min-w-[1560px] text-xs">
+            <Table className="min-w-[1640px] text-xs">
               <TableHeader>
                 <TableRow>
                   <TableHead>SERIAL</TableHead>
@@ -481,8 +524,8 @@ export function PreviosManager({
                   <TableHead>Máquina</TableHead>
                   <TableHead>Color</TableHead>
                   <TableHead>Prometido</TableHead>
-                  {FIXED_PREVIO_COLUMNS.map((col) => (
-                    <TableHead key={col} className="whitespace-nowrap text-center">{col}</TableHead>
+                  {previoColumns.map((col) => (
+                    <TableHead key={col.id} className="whitespace-nowrap text-center">{col.label}</TableHead>
                   ))}
                 </TableRow>
               </TableHeader>
@@ -516,10 +559,10 @@ export function PreviosManager({
                       <InlineColorEdit machineId={machine.machineId} colorId={machine.colorId} colorName={machine.colorName} colors={colors} />
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
-                    {FIXED_PREVIO_COLUMNS.map((col) => {
-                      const previo = machine.previos.find((p) => matchesPrevioColumn(p.name, col));
+                    {previoColumns.map((col) => {
+                      const previo = machine.previos.find((p) => p.previoCatalogId === col.id);
                       return (
-                        <TableCell key={col} className="text-center">
+                        <TableCell key={col.id} className="text-center">
                           {previo ? (
                             <PrevioColumnChip machineId={machine.machineId} previo={previo} />
                           ) : (

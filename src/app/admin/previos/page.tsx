@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { ActionTooltip } from "@/components/ui/tooltip";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listColors } from "@/services/catalog";
-import { listMachinePrevioRows } from "@/services/previos";
+import { listMachinePrevioRows, listPrevioCatalog } from "@/services/previos";
 
 export default async function PreviosPage({
   searchParams,
@@ -27,9 +27,10 @@ export default async function PreviosPage({
     );
   }
 
-  const [allMachines, colors, params] = await Promise.all([
+  const [allMachines, colors, previoCatalog, params] = await Promise.all([
     listMachinePrevioRows(),
     listColors(),
+    listPrevioCatalog(),
     searchParams ?? Promise.resolve({ seed: undefined, machines: undefined, previos: undefined, imported: undefined }),
   ]);
 
@@ -79,6 +80,7 @@ export default async function PreviosPage({
         productionMachines={productionMachines}
         seededMessage={seededMessage}
         colors={colors}
+        previoCatalog={previoCatalog}
       />
     </AdminShell>
   );
