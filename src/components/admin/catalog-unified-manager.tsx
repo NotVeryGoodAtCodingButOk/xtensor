@@ -10,6 +10,7 @@ import {
   toggleEquipmentPrevioAction,
   updateCatalogItemAction,
 } from "@/app/admin/actions";
+import { CatalogBulkImport } from "@/components/admin/catalog-bulk-import";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -234,6 +235,7 @@ export function CatalogUnifiedManager({
                 Descargar
               </a>
             </Button>
+            <CatalogBulkImport />
             <Button
               size="sm"
               onClick={() => {

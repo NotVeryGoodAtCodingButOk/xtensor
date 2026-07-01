@@ -40,7 +40,14 @@ import {
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
-import { parseQuoteWorkbook } from "@/services/excel";
+import { parseQuoteWorkbook, parseCatalogWorkbook } from "@/services/excel";
+import {
+  applyCatalogImport,
+  classifyCatalogImport,
+  type CatalogImportNewRow,
+  type CatalogImportResult,
+  type CatalogImportSummary,
+} from "@/services/catalog-import";
 import { buildQuotePreview, type QuotePreview, type QuotePreviewLine } from "@/services/quote-preview";
 import { AUTO_SERIAL_MAX, listActiveSerialNumbers, normalizeSerialNumber } from "@/services/serials";
 import {
@@ -629,6 +636,58 @@ export async function importQuoteAction(input: {
 
   revalidateFactoryData();
   return { created };
+}
+
+export type { CatalogImportSummary, CatalogImportNewRow, CatalogImportResult };
+
+/** Returned by the catalog import actions on any handled failure. */
+export type CatalogImportError = { error: string };
+
+/**
+ * Read the uploaded catalog Excel and return a preview of what WOULD change.
+ * Read-only: this never writes to the database.
+ */
+export async function previewCatalogImportAction(
+  formData: FormData,
+): Promise<CatalogImportSummary | CatalogImportError> {
+  if (!(await getAdminOrAuthError())) {
+    return { error: "Tu sesión expiró. Vuelve a iniciar sesión para continuar." };
+  }
+
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Selecciona un archivo de Excel (.xlsx)." };
+  }
+
+  try {
+    const parsed = await parseCatalogWorkbook(await file.arrayBuffer());
+    return await classifyCatalogImport(parsed);
+  } catch (caught) {
+    return { error: caught instanceof Error ? caught.message : "No se pudo leer el archivo." };
+  }
+}
+
+/**
+ * Create the confirmed new equipment. Add-only: never modifies existing data.
+ */
+export async function applyCatalogImportAction(input: {
+  rows: CatalogImportNewRow[];
+}): Promise<(CatalogImportResult & { ok: true }) | CatalogImportError> {
+  if (!(await getAdminOrAuthError())) {
+    return { error: "Tu sesión expiró. Vuelve a iniciar sesión para continuar." };
+  }
+
+  if (!input.rows || input.rows.length === 0) {
+    return { error: "No hay equipos nuevos para crear." };
+  }
+
+  try {
+    const result = await applyCatalogImport(input.rows);
+    revalidatePath("/admin/catalogo");
+    return { ok: true, ...result };
+  } catch (caught) {
+    return { error: caught instanceof Error ? caught.message : "No se pudo completar la importación." };
+  }
 }
 
 export async function updateMachineClientAction(formData: FormData) {

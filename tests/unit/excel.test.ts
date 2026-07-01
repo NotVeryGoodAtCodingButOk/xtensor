@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 
-import { parseQuoteWorkbook } from "@/services/excel";
+import { parseQuoteWorkbook, parseCatalogWorkbook } from "@/services/excel";
 
 /** Builds a workbook mirroring the XTENSOR cotización layout. */
 async function buildQuoteFixture(options: { includeReference?: boolean } = {}): Promise<ArrayBuffer> {
@@ -144,5 +144,79 @@ describe("parseQuoteWorkbook", () => {
 
     expect(quote.lines.map((line) => line.clave)).toEqual(["XM120", "XM105"]);
     expect(quote.lines[1].unidades).toBe(2);
+  });
+});
+
+/** Builds a workbook mirroring the exported "Catálogo" layout. */
+async function buildCatalogFixture(): Promise<ArrayBuffer> {
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet("Catálogo");
+  ["Código", "Equipo", "Línea", "Precio COP", "Estado", "Previos"].forEach((value, index) => {
+    sheet.getCell(1, index + 1).value = value;
+  });
+
+  const rows: Array<Array<string | number>> = [
+    ["XM120", "Flexo Extensor", "musculacion", 4748100, "Activo", "Motor | Tornillos ; Motor"],
+    ["XM999", "Equipo Nuevo", "", 0, "Inactivo", ""],
+    ["", "Sin código", "otros", 1000, "Activo", "Cable"],
+  ];
+  rows.forEach((row, rowOffset) => {
+    row.forEach((value, index) => {
+      sheet.getCell(2 + rowOffset, index + 1).value = value;
+    });
+  });
+
+  return workbook.xlsx.writeBuffer() as Promise<ArrayBuffer>;
+}
+
+describe("parseCatalogWorkbook", () => {
+  it("parses rows, Estado, price and deduped previos from the exported layout", async () => {
+    const rows = await parseCatalogWorkbook(await buildCatalogFixture());
+
+    expect(rows).toHaveLength(3);
+    expect(rows[0]).toMatchObject({
+      code: "XM120",
+      name: "Flexo Extensor",
+      line: "musculacion",
+      priceCop: 4748100,
+      isActive: true,
+    });
+    // Split on "|" and ";", trimmed and deduped (case-insensitive).
+    expect(rows[0].previos).toEqual(["Motor", "Tornillos"]);
+
+    // Estado "Inactivo" → false; empty Línea → null; price 0 → null.
+    expect(rows[1]).toMatchObject({ code: "XM999", line: null, priceCop: null, isActive: false });
+
+    // A missing code is kept as a row (classify flags it invalid, not the parser).
+    expect(rows[2].code).toBe("");
+    expect(rows[2].name).toBe("Sin código");
+  });
+
+  it("accepts reordered columns and defaults empty Estado to active", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Catálogo");
+    // Columns in a different order than the export.
+    ["Previos", "Estado", "Equipo", "Código"].forEach((value, index) => {
+      sheet.getCell(1, index + 1).value = value;
+    });
+    sheet.getCell(2, 1).value = "Cadena";
+    sheet.getCell(2, 3).value = "Equipo X";
+    sheet.getCell(2, 4).value = "XB001";
+
+    const rows = await parseCatalogWorkbook((await workbook.xlsx.writeBuffer()) as ArrayBuffer);
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({ code: "XB001", name: "Equipo X", isActive: true });
+    expect(rows[0].previos).toEqual(["Cadena"]);
+  });
+
+  it("throws when there is no Código header", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Catálogo");
+    ["Equipo", "Precio COP"].forEach((value, index) => {
+      sheet.getCell(1, index + 1).value = value;
+    });
+
+    await expect(parseCatalogWorkbook((await workbook.xlsx.writeBuffer()) as ArrayBuffer)).rejects.toThrow(/Código/);
   });
 });

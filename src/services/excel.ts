@@ -3,6 +3,7 @@ import ExcelJS from "exceljs";
 
 import type { CalculatedMachineView } from "@/types/domain";
 import { formatDateEs } from "@/services/schedule";
+import { normalizePrevioName } from "@/services/previos";
 
 /**
  * Parsing and generation for the XTENSOR cotización workbook format.
@@ -34,6 +35,23 @@ export type ParsedQuote = {
   email: string | null;
   phone: string | null;
   lines: ParsedQuoteLine[];
+};
+
+/**
+ * One data row parsed from the exported "Catálogo" workbook (see
+ * {@link buildCatalogWorkbook}). Mirrors the export columns: Código, Equipo,
+ * Línea, Precio COP, Estado, Previos.
+ */
+export type ParsedCatalogRow = {
+  /** 1-based source row, used as a stable key in the UI. */
+  rowIndex: number;
+  code: string;
+  name: string;
+  line: string | null;
+  priceCop: number | null;
+  isActive: boolean;
+  /** Deduped previo names referenced in the "Previos" cell. */
+  previos: string[];
 };
 
 const HEADER_LABELS: Record<string, keyof Pick<ParsedQuote, "reference" | "fecha" | "clientName" | "email" | "phone">> = {
@@ -221,6 +239,127 @@ export async function parseQuoteWorkbook(
   }
 
   return quote;
+}
+
+type CatalogColumns = {
+  code: number | null;
+  name: number | null;
+  line: number | null;
+  price: number | null;
+  status: number | null;
+  previos: number | null;
+};
+
+/** Resolve catalog column indexes from a header row, robust to reordering. */
+function resolveCatalogColumns(row: ExcelJS.Row): CatalogColumns {
+  const columns: CatalogColumns = {
+    code: null,
+    name: null,
+    line: null,
+    price: null,
+    status: null,
+    previos: null,
+  };
+
+  row.eachCell((cell, colNumber) => {
+    // normalizeLabel already lowercases and strips accents, so "Código" →
+    // "codigo", "Línea" → "linea", "Precio COP" → "precio cop".
+    const label = normalizeLabel(cellString(cell.value));
+    if (label === "codigo" || label === "code") columns.code = colNumber;
+    else if (label === "equipo" || label === "nombre") columns.name = colNumber;
+    else if (label === "linea") columns.line = colNumber;
+    else if (label === "precio" || label === "precio cop") columns.price = colNumber;
+    else if (label === "estado") columns.status = colNumber;
+    else if (label === "previos") columns.previos = colNumber;
+  });
+
+  return columns;
+}
+
+/** Estado cell → active flag. Empty defaults to active. */
+function parseCatalogActive(value: string): boolean {
+  const norm = normalizeLabel(value);
+  if (!norm) return true;
+  if (norm === "inactivo" || norm === "false" || norm === "no" || norm === "0") return false;
+  return true;
+}
+
+/** Split the "Previos" cell on `|`, `;` or newlines; trim, drop empties, dedupe. */
+function parseCatalogPrevios(value: string): string[] {
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const part of value.split(/[|;\r\n]+/)) {
+    const name = normalizePrevioName(part);
+    if (!name) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(name);
+  }
+  return result;
+}
+
+/**
+ * Parse the exported "Catálogo" workbook back into rows. Used by the bulk
+ * equipment importer — the classify/apply steps decide which rows are new.
+ */
+export async function parseCatalogWorkbook(
+  buffer: ArrayBuffer | Uint8Array | Buffer,
+): Promise<ParsedCatalogRow[]> {
+  const workbook = new ExcelJS.Workbook();
+  await workbook.xlsx.load(toNodeBuffer(buffer) as unknown as Parameters<typeof workbook.xlsx.load>[0]);
+  const sheet = workbook.worksheets[0];
+  if (!sheet) {
+    throw new Error("El archivo no contiene hojas.");
+  }
+
+  let headerRow = 0;
+  let resolvedColumns: CatalogColumns | null = null;
+
+  sheet.eachRow((row, rowNumber) => {
+    if (headerRow) return;
+    const columns = resolveCatalogColumns(row);
+    if (columns.code != null) {
+      headerRow = rowNumber;
+      resolvedColumns = columns;
+    }
+  });
+
+  if (!headerRow || !resolvedColumns) {
+    throw new Error(
+      'No se encontró la columna "Código". Usa el formato del catálogo descargado (columnas: Código, Equipo, Línea, Precio COP, Estado, Previos).',
+    );
+  }
+
+  const columns: CatalogColumns = resolvedColumns;
+  const rows: ParsedCatalogRow[] = [];
+
+  for (let rowNumber = headerRow + 1; rowNumber <= sheet.rowCount; rowNumber += 1) {
+    const row = sheet.getRow(rowNumber);
+    if (rowContainsTotalMarker(row)) continue;
+
+    const code = columns.code != null ? cellString(row.getCell(columns.code).value) : "";
+    const name = columns.name != null ? cellString(row.getCell(columns.name).value) : "";
+    const line = columns.line != null ? cellString(row.getCell(columns.line).value) : "";
+    const priceCell = columns.price != null ? row.getCell(columns.price).value : null;
+    const statusText = columns.status != null ? cellString(row.getCell(columns.status).value) : "";
+    const previosText = columns.previos != null ? cellString(row.getCell(columns.previos).value) : "";
+
+    // Skip fully-empty rows.
+    if (!code && !name && !line && !statusText && !previosText && !cellString(priceCell)) continue;
+
+    rows.push({
+      rowIndex: rowNumber,
+      code,
+      name,
+      line: line || null,
+      priceCop: cellOptionalNumber(priceCell),
+      isActive: parseCatalogActive(statusText),
+      previos: parseCatalogPrevios(previosText),
+    });
+  }
+
+  return rows;
 }
 
 /** Builds a whole-schedule workbook (one row per machine, in queue order). */
