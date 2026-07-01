@@ -37,7 +37,7 @@ export default async function FactoryBoardPage() {
     holidays,
     status: FACTORY_BOARD_STATUSES,
   });
-  const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
+  const orderedMachines = orderBoardMachines(machines);
 
   const lateCount = orderedMachines.filter((m) => getRowStatus(m) === "late").length;
 
@@ -201,6 +201,40 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
       </p>
     </div>
   );
+}
+
+function doneTimestampKey(machine: CalculatedMachineView): string | null {
+  return machine.completedAt ?? machine.lastCompletedStageAt;
+}
+
+function orderBoardMachines(machines: CalculatedMachineView[]): CalculatedMachineView[] {
+  const done: CalculatedMachineView[] = [];
+  const notDone: CalculatedMachineView[] = [];
+  for (const machine of machines) {
+    if (getRowStatus(machine) === "done") {
+      done.push(machine);
+    } else {
+      notDone.push(machine);
+    }
+  }
+
+  // Finished machines float to the top, ordered by when they were completed:
+  // earliest-finished first, so a newly finished machine lands right after the
+  // previously-finished ones. Null timestamps sort last, then by orderPosition.
+  const doneAsc = done.sort((a, b) => {
+    const aKey = doneTimestampKey(a);
+    const bKey = doneTimestampKey(b);
+    if (aKey !== bKey) {
+      if (aKey === null) return 1;
+      if (bKey === null) return -1;
+      return aKey < bKey ? -1 : 1;
+    }
+    return a.orderPosition - b.orderPosition;
+  });
+
+  const notDoneByPosition = notDone.sort((a, b) => a.orderPosition - b.orderPosition);
+
+  return [...doneAsc, ...notDoneByPosition];
 }
 
 function getRowStatus(machine: CalculatedMachineView): RowStatus {
