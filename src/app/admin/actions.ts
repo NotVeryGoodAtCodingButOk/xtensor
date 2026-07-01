@@ -721,6 +721,16 @@ export async function sendToProductionAction(formData: FormData) {
   redirect(`/admin/previos?toast=sent-production&count=${machineIds.length || 1}`);
 }
 
+export async function deleteMachinesFromPreviosAction(formData: FormData) {
+  await requireAdmin();
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  for (const id of machineIds) {
+    await deleteMachine(id);
+  }
+  revalidateFactoryData();
+  redirect(`/admin/previos?toast=deleted&count=${machineIds.length || 1}`);
+}
+
 export async function bulkMarkFinishedAction(formData: FormData) {
   await requireAdmin();
   const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);

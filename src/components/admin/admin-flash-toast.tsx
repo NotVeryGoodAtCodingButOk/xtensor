@@ -31,6 +31,10 @@ function buildAdminToast(toastCode: string | null, count: number) {
         message: "Máquina enviada a reproceso",
         description: "La máquina volvió a producción.",
       };
+    case "deleted":
+      return {
+        message: plural ? `${total} máquinas eliminadas` : "Máquina eliminada",
+      };
     default:
       return null;
   }

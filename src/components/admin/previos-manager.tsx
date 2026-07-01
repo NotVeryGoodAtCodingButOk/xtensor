@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { ArrowRight } from "lucide-react";
-import { sendToProductionAction, toggleMachinePrevioAction, updateMachineSerialAction, updateMachineClientAction, updateMachineColorAction } from "@/app/admin/actions";
+import { ArrowRight, Trash2 } from "lucide-react";
+import { deleteMachinesFromPreviosAction, sendToProductionAction, toggleMachinePrevioAction, updateMachineSerialAction, updateMachineClientAction, updateMachineColorAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -385,17 +385,40 @@ export function PreviosManager({
             </p>
           </div>
           {selected.size > 0 && (
-            <form action={sendToProductionAction}>
-              {Array.from(selected).map((id) => (
-                <input key={id} type="hidden" name="machineIds" value={id} />
-              ))}
-              <ActionTooltip text="Mueve las máquinas seleccionadas desde previos a producción.">
-                <Button type="submit" size="sm">
-                  <ArrowRight className="h-4 w-4" />
-                  Enviar a producción ({selected.size})
-                </Button>
-              </ActionTooltip>
-            </form>
+            <div className="flex items-center gap-2">
+              <form action={sendToProductionAction}>
+                {Array.from(selected).map((id) => (
+                  <input key={id} type="hidden" name="machineIds" value={id} />
+                ))}
+                <ActionTooltip text="Mueve las máquinas seleccionadas desde previos a producción.">
+                  <Button type="submit" size="sm">
+                    <ArrowRight className="h-4 w-4" />
+                    Enviar a producción ({selected.size})
+                  </Button>
+                </ActionTooltip>
+              </form>
+              <form
+                action={deleteMachinesFromPreviosAction}
+                onSubmit={(event) => {
+                  if (
+                    !confirm(
+                      `¿Eliminar definitivamente ${selected.size} máquina${selected.size === 1 ? "" : "s"}? Esta acción no se puede deshacer.`,
+                    )
+                  )
+                    event.preventDefault();
+                }}
+              >
+                {Array.from(selected).map((id) => (
+                  <input key={id} type="hidden" name="machineIds" value={id} />
+                ))}
+                <ActionTooltip text="Elimina definitivamente las máquinas seleccionadas.">
+                  <Button type="submit" size="sm" variant="danger">
+                    <Trash2 className="h-4 w-4" />
+                    Eliminar ({selected.size})
+                  </Button>
+                </ActionTooltip>
+              </form>
+            </div>
           )}
         </div>
         <div className="overflow-x-auto">
@@ -484,18 +507,42 @@ export function PreviosManager({
                       );
                     })}
                     <TableCell>
-                      <form action={sendToProductionAction}>
-                        <input type="hidden" name="machineIds" value={machine.machineId} />
-                        <ActionTooltip text="Envía esta máquina a producción." align="right">
-                          <button
-                            type="submit"
-                            title="Enviar a producción"
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
-                          >
-                            <ArrowRight className="h-3 w-3" />
-                          </button>
-                        </ActionTooltip>
-                      </form>
+                      <div className="flex items-center gap-1">
+                        <form action={sendToProductionAction}>
+                          <input type="hidden" name="machineIds" value={machine.machineId} />
+                          <ActionTooltip text="Envía esta máquina a producción." align="right">
+                            <button
+                              type="submit"
+                              title="Enviar a producción"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-steel)] bg-[var(--xt-graphite)] text-[var(--xt-white)] hover:bg-[var(--xt-black)]"
+                            >
+                              <ArrowRight className="h-3 w-3" />
+                            </button>
+                          </ActionTooltip>
+                        </form>
+                        <form
+                          action={deleteMachinesFromPreviosAction}
+                          onSubmit={(event) => {
+                            if (
+                              !confirm(
+                                `¿Eliminar definitivamente SERIAL ${machine.serialNumber}? Esta acción no se puede deshacer.`,
+                              )
+                            )
+                              event.preventDefault();
+                          }}
+                        >
+                          <input type="hidden" name="machineIds" value={machine.machineId} />
+                          <ActionTooltip text="Elimina esta máquina definitivamente." align="right">
+                            <button
+                              type="submit"
+                              title="Eliminar máquina"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--line-pro-red)] bg-[var(--xt-white)] text-[var(--line-pro-red)] hover:bg-[var(--line-pro-red)] hover:text-[var(--xt-white)]"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </button>
+                          </ActionTooltip>
+                        </form>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
