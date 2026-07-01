@@ -284,6 +284,58 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
   return Buffer.from(buffer);
 }
 
+type CatalogWorkbookItem = {
+  code: string;
+  name: string;
+  line: string | null;
+  default_price_cop: number | null;
+  is_active: boolean;
+  previos: { name: string }[];
+};
+
+/** Builds a catalog workbook (one row per equipment, with its previos). */
+export async function buildCatalogWorkbook(items: CatalogWorkbookItem[]): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "XTENSOR";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet("Catálogo");
+
+  const columns: Array<{ header: string; key: string; width: number }> = [
+    { header: "Código", key: "code", width: 14 },
+    { header: "Equipo", key: "name", width: 34 },
+    { header: "Línea", key: "line", width: 18 },
+    { header: "Precio COP", key: "price", width: 16 },
+    { header: "Estado", key: "status", width: 12 },
+    { header: "Previos", key: "previos", width: 48 },
+  ];
+  sheet.columns = columns.map(({ key, width }) => ({ key, width }));
+
+  const headerRow = sheet.addRow(Object.fromEntries(columns.map((c) => [c.key, c.header])));
+  headerRow.font = { bold: true, color: { argb: "FF111111" } };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2C200" } };
+    cell.alignment = { vertical: "middle" };
+  });
+
+  for (const item of items) {
+    const price = item.default_price_cop ?? "";
+    const row = sheet.addRow({
+      code: item.code,
+      name: item.name,
+      line: item.line ?? "",
+      price,
+      status: item.is_active ? "Activo" : "Inactivo",
+      previos: item.previos.map((p) => p.name).join(" | "),
+    });
+    if (price !== "") {
+      row.getCell("price").numFmt = "#,##0";
+    }
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
 export async function buildShippedWorkbook(machines: CalculatedMachineView[]): Promise<Buffer> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = "XTENSOR";
