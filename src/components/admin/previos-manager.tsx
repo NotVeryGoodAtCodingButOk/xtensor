@@ -179,7 +179,8 @@ function normalizePrevioName(name: string): string {
 }
 
 // Previo types intentionally hidden from the board (data is kept, just not shown).
-const EXCLUDED_PREVIOS = new Set<string>([]);
+// Zinc se conserva por pedido de Gina; el resto de materiales se ocultan.
+const EXCLUDED_PREVIOS = new Set<string>(["rodam", "rodamientos", "tornillos", "plastico"]);
 
 // Clean header labels for the abbreviated catalog names; falls back to the
 // catalog name for anything not listed here.
