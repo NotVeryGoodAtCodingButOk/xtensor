@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useMemo, useRef, useEffect } from "react";
-import { ChevronDown, CheckCircle, Palette, Search, X } from "lucide-react";
-import { bulkMarkFinishedAction } from "@/app/admin/actions";
+import { ChevronDown, CheckCircle, Palette, PauseCircle, Search, X } from "lucide-react";
+import { bulkMarkFinishedAction, bulkSendToHoldAction } from "@/app/admin/actions";
 import { ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
 import { Button } from "@/components/ui/button";
@@ -270,23 +270,38 @@ export function ProductionTablePanel({ machines, colors = [] }: { machines: Calc
       )}
 
       {selectedIds.size > 0 && (
-        <form action={bulkMarkFinishedAction} className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">
-          {Array.from(selectedIds).map((id) => (
-            <input key={id} type="hidden" name="machineIds" value={id} />
-          ))}
+        <div className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">
           <span className="text-xs font-medium">{selectedIds.size} seleccionada{selectedIds.size === 1 ? "" : "s"}</span>
-          <ActionTooltip text="Mueve las máquinas seleccionadas a terminados.">
-            <Button type="submit" size="sm" variant="outline" className="ml-auto gap-1.5">
-              <CheckCircle className="h-3.5 w-3.5" />
-              Mover a terminados
-            </Button>
-          </ActionTooltip>
-          <ActionTooltip text="Limpia la selección actual de máquinas.">
-            <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </ActionTooltip>
-        </form>
+          <div className="ml-auto flex items-center gap-2">
+            <form action={bulkSendToHoldAction}>
+              {Array.from(selectedIds).map((id) => (
+                <input key={id} type="hidden" name="machineIds" value={id} />
+              ))}
+              <ActionTooltip text="Envía las máquinas seleccionadas a Propias en Espera (conservan avances y previos).">
+                <Button type="submit" size="sm" variant="outline" className="gap-1.5">
+                  <PauseCircle className="h-3.5 w-3.5" />
+                  Propias en Espera
+                </Button>
+              </ActionTooltip>
+            </form>
+            <form action={bulkMarkFinishedAction}>
+              {Array.from(selectedIds).map((id) => (
+                <input key={id} type="hidden" name="machineIds" value={id} />
+              ))}
+              <ActionTooltip text="Mueve las máquinas seleccionadas a terminados.">
+                <Button type="submit" size="sm" variant="outline" className="gap-1.5">
+                  <CheckCircle className="h-3.5 w-3.5" />
+                  Mover a terminados
+                </Button>
+              </ActionTooltip>
+            </form>
+            <ActionTooltip text="Limpia la selección actual de máquinas.">
+              <Button type="button" size="sm" variant="ghost" onClick={() => setSelectedIds(new Set())}>
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </ActionTooltip>
+          </div>
+        </div>
       )}
 
       <ProductionTable

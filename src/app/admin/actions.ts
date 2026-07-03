@@ -26,6 +26,7 @@ import { ensureClientByName, regenerateClientToken, updateClient, updateMachineC
 import {
   bulkMarkFinished,
   bulkMarkShipped,
+  bulkSendToHold,
   bulkSendToProduction,
   createMachine,
   deleteMachine,
@@ -34,6 +35,8 @@ import {
   markMachineShipped,
   reorderMachines,
   sendFinishedToProduction,
+  sendHoldMachineToProduction,
+  sendMachineToHold,
   sendMachineToPrevios,
   sendMachineToProduction,
   sendMachineToWarranty,
@@ -234,6 +237,40 @@ export async function sendMachineToProductionAction(formData: FormData) {
   revalidatePath("/admin/previos");
   revalidatePath(`/admin/maquinas/${machineId}`);
   redirect(`/admin/maquinas/${machineId}?toast=sent-production&count=1`);
+}
+
+export async function sendMachineToHoldAction(formData: FormData) {
+  await requireAdmin();
+  const machineId = String(formData.get("machineId") ?? "");
+  if (machineId) {
+    await sendMachineToHold(machineId);
+  }
+  revalidateFactoryData();
+  revalidatePath("/admin");
+  revalidatePath("/admin/propias-espera");
+  redirect("/admin/propias-espera?toast=sent-hold&count=1");
+}
+
+export async function bulkSendToHoldAction(formData: FormData) {
+  await requireAdmin();
+  const machineIds = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (machineIds.length > 0) await bulkSendToHold(machineIds);
+  revalidateFactoryData();
+  revalidatePath("/admin");
+  revalidatePath("/admin/propias-espera");
+  redirect(`/admin/propias-espera?toast=sent-hold&count=${machineIds.length || 1}`);
+}
+
+export async function reactivateHoldMachineAction(formData: FormData) {
+  await requireAdmin();
+  const machineId = String(formData.get("machineId") ?? "");
+  if (machineId) {
+    await sendHoldMachineToProduction(machineId);
+  }
+  revalidateFactoryData();
+  revalidatePath("/admin");
+  revalidatePath("/admin/propias-espera");
+  redirect("/admin?toast=sent-production&count=1");
 }
 
 export async function reorderMachinesAction(formData: FormData) {
@@ -470,6 +507,7 @@ export async function toggleMachinePrevioAction(formData: FormData) {
     await toggleMachinePrevio({ machineId, previoCatalogId, field, checked, actorProfileId });
   }
   revalidatePath("/admin/previos");
+  revalidatePath("/admin/propias-espera");
 }
 
 export async function bootstrapPreviosAction() {
@@ -700,6 +738,7 @@ export async function updateMachineClientAction(formData: FormData) {
   }
   revalidateFactoryData();
   revalidatePath("/admin/previos");
+  revalidatePath("/admin/propias-espera");
 }
 
 export async function updateMachineSerialAction(formData: FormData) {

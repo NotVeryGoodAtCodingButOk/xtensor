@@ -3,10 +3,11 @@
 import Link from "next/link";
 import type { KeyboardEvent, ReactNode } from "react";
 import { useEffect, useRef, useState } from "react";
-import { Check, Pencil, Trash2 } from "lucide-react";
+import { Check, PauseCircle, Pencil, Trash2 } from "lucide-react";
 import {
   updateMachineInlineAction,
   markFinishedAction,
+  sendMachineToHoldAction,
   warrantyMachineAction,
 } from "@/app/admin/actions";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -640,18 +641,32 @@ export function ProductionTable({
                         )}
                       </>
                     ) : (
-                      <form action={markFinishedAction}>
-                        <input type="hidden" name="machineId" value={machine.id} />
-                        <ActionTooltip text="Marca esta máquina como terminada." align="right">
-                          <button
-                            type="submit"
-                            title="Marcar como terminado"
-                            className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--line-bio-green)] bg-[var(--xt-white)] text-[var(--line-bio-green)] hover:bg-green-50"
-                          >
-                            <Check className="h-3 w-3" />
-                          </button>
-                        </ActionTooltip>
-                      </form>
+                      <>
+                        <form action={sendMachineToHoldAction}>
+                          <input type="hidden" name="machineId" value={machine.id} />
+                          <ActionTooltip text="Envía esta máquina a Propias en Espera (conserva avances y previos)." align="right">
+                            <button
+                              type="submit"
+                              title="Enviar a Propias en Espera"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-white)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"
+                            >
+                              <PauseCircle className="h-3 w-3" />
+                            </button>
+                          </ActionTooltip>
+                        </form>
+                        <form action={markFinishedAction}>
+                          <input type="hidden" name="machineId" value={machine.id} />
+                          <ActionTooltip text="Marca esta máquina como terminada." align="right">
+                            <button
+                              type="submit"
+                              title="Marcar como terminado"
+                              className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--line-bio-green)] bg-[var(--xt-white)] text-[var(--line-bio-green)] hover:bg-green-50"
+                            >
+                              <Check className="h-3 w-3" />
+                            </button>
+                          </ActionTooltip>
+                        </form>
+                      </>
                     )}
                   </div>
                 </TableCell>

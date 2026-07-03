@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BarChart3, Calculator, CheckCircle2, ClipboardList, Factory, ListChecks, Settings, UserRound, Users } from "lucide-react";
+import { BarChart3, Calculator, CheckCircle2, ClipboardList, Factory, ListChecks, PauseCircle, Settings, UserRound, Users } from "lucide-react";
 import { AdminFlashToast } from "@/components/admin/admin-flash-toast";
 import { BrandLogo } from "@/components/brand";
 
 const navItems = [
   { href: "/admin/previos", label: "Previos", icon: ListChecks },
   { href: "/admin", label: "Producción", icon: ClipboardList, exact: true },
+  { href: "/admin/propias-espera", label: "Propias en Espera", icon: PauseCircle },
   { href: "/admin/terminados", label: "Terminados", icon: CheckCircle2 },
   { href: "/admin/despachados", label: "Despachados", icon: CheckCircle2 },
   { href: "/admin/clientes", label: "Clientes", icon: UserRound },

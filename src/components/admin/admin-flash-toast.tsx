@@ -16,6 +16,13 @@ function buildAdminToast(toastCode: string | null, count: number) {
       return {
         message: plural ? `${total} máquinas enviadas a previos` : "Máquina enviada a previos",
       };
+    case "sent-hold":
+      return {
+        message: plural
+          ? `${total} máquinas enviadas a Propias en Espera`
+          : "Máquina enviada a Propias en Espera",
+        description: "Quedaron aparcadas con sus avances y previos intactos.",
+      };
     case "shipped":
       return {
         message: plural ? `${total} máquinas despachadas` : "Máquina despachada",

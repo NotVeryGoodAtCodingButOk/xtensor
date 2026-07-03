@@ -16,7 +16,7 @@ type MachineWarrantyEventInsert = Database["public"]["Tables"]["machine_warranty
 type MachineQueueRow = Pick<Database["public"]["Tables"]["machines"]["Row"], "id" | "order_position" | "status" | "created_at">;
 type ListMachineStatus = Extract<
   Database["public"]["Tables"]["machines"]["Row"]["status"],
-  "in_production" | "finished" | "shipped"
+  "in_production" | "finished" | "shipped" | "on_hold"
 >;
 type MachineStatusFilter = ListMachineStatus | readonly ListMachineStatus[];
 
@@ -393,6 +393,55 @@ export async function sendMachineToProduction(id: string) {
   });
   await normalizeProductionQueue();
   return machine;
+}
+
+// Park a machine (typically a XTENSOR "propia") as on_hold: it leaves the
+// production queue and board but keeps all its stage progress and previos, so
+// it can be reactivated later. Only in-production machines can be parked.
+export async function sendMachineToHold(id: string) {
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("machines")
+    .update({ status: "on_hold" })
+    .eq("id", id)
+    .eq("status", "in_production");
+  if (error) throw new Error(`No se pudo enviar a Propias en Espera: ${error.message}`);
+  await normalizeProductionQueue(supabase);
+}
+
+export async function bulkSendToHold(ids: string[]) {
+  if (ids.length === 0) return;
+  const supabase = createSupabaseAdminClient();
+  const { error } = await supabase
+    .from("machines")
+    .update({ status: "on_hold" })
+    .in("id", ids)
+    .eq("status", "in_production");
+  if (error) throw new Error(`No se pudo enviar a Propias en Espera: ${error.message}`);
+  await normalizeProductionQueue(supabase);
+}
+
+// Reactivate a parked machine: it re-enters the current production queue at the
+// end (a large target position is clamped to the tail by reorderProductionQueue)
+// with its stage progress and previos intact. The original production start is
+// preserved since it was stamped the first time the machine entered production.
+export async function sendHoldMachineToProduction(id: string) {
+  const supabase = createSupabaseAdminClient();
+  await ensureMachineStages(supabase, [id]);
+  const { error: startError } = await supabase
+    .from("machines")
+    .update({ production_started_at: new Date().toISOString() })
+    .eq("id", id)
+    .is("production_started_at", null);
+  if (startError) {
+    throw new Error(`No se pudo registrar el inicio en producción: ${startError.message}`);
+  }
+
+  return updateMachine(id, {
+    status: "in_production",
+    shipped_at: null,
+    order_position: 999_999,
+  });
 }
 
 export async function sendMachineToWarranty(id: string, message: string) {

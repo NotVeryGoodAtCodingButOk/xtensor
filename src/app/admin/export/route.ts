@@ -13,7 +13,10 @@ export async function GET() {
 
   const settings = mapSettings(await getSettings());
   const holidays = await listHolidays();
-  const machines = await listCalculatedMachines({ settings, holidays });
+  // Parked "propias en espera" machines are set aside, not part of the plan.
+  const machines = (await listCalculatedMachines({ settings, holidays })).filter(
+    (machine) => machine.status !== "on_hold",
+  );
 
   const buffer = await buildScheduleWorkbook(machines);
   const filename = `plan-produccion-${new Date().toISOString().slice(0, 10)}.xlsx`;
