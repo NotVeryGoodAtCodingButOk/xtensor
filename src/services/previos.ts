@@ -333,7 +333,9 @@ export async function toggleMachinePrevio(input: {
   previoCatalogId: string;
   field: "ordered" | "received";
   checked: boolean;
-  actorProfileId: string;
+  // Nullable: factory-floor toggles (Almacén) don't have an admin profile to
+  // attribute the change to, so they record the event with a null actor.
+  actorProfileId: string | null;
 }) {
   const supabase = createSupabaseAdminClient();
   // Ensure a machine_previos row exists for this (machine, previo) pair before

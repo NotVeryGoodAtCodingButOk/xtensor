@@ -3,7 +3,7 @@ import { lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { Button } from "@/components/ui/button";
 
-export function PlantaNav({ active }: { active?: "operarios" | "tablero" }) {
+export function PlantaNav({ active }: { active?: "operarios" | "tablero" | "almacen" }) {
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white";
 
   return (
@@ -25,6 +25,14 @@ export function PlantaNav({ active }: { active?: "operarios" | "tablero" }) {
           className={`xt-planta-nav-button ${navButtonClass}`}
         >
           <Link href="/planta/tablero">Cartelera</Link>
+        </Button>
+        <Button
+          asChild
+          variant={active === "almacen" ? "secondary" : "ghost"}
+          size="sm"
+          className={`xt-planta-nav-button ${navButtonClass}`}
+        >
+          <Link href="/planta/almacen">Almacén</Link>
         </Button>
         <form action={lockFactoryAction}>
           <Button

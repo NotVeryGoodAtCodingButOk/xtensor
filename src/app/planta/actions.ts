@@ -13,6 +13,7 @@ import {
 } from "@/lib/factory-session";
 import { listWorkers } from "@/services/catalog";
 import { getMachine } from "@/services/machines";
+import { toggleMachinePrevio } from "@/services/previos";
 import { undoStageLog, updateStageProgress } from "@/services/stages";
 import { verifyFactoryPassword } from "@/services/settings";
 
@@ -94,6 +95,34 @@ export async function logStageAction(input: {
   revalidatePath(`/planta/maquinas/${input.machineId}`);
 
   return { ok: true, logged: Boolean(result.log?.id), finished };
+}
+
+/**
+ * Marks a previo as received (or un-received) from the factory-floor Almacén
+ * view. Only the "received" field is editable here — Gina still manages
+ * "ordered" from /admin/previos. No worker attribution: the event is recorded
+ * with a null actor (the previos tables reference admin profiles, not workers).
+ */
+export async function toggleMachinePrevioFactoryAction(formData: FormData) {
+  if (!(await isFactoryUnlocked())) {
+    redirect("/planta");
+  }
+
+  const machineId = String(formData.get("machineId") ?? "").trim();
+  const previoCatalogId = String(formData.get("previoCatalogId") ?? "").trim();
+  const checked = String(formData.get("checked") ?? "") === "true";
+
+  if (machineId && previoCatalogId) {
+    await toggleMachinePrevio({
+      machineId,
+      previoCatalogId,
+      field: "received",
+      checked,
+      actorProfileId: null,
+    });
+  }
+
+  revalidatePath("/planta/almacen");
 }
 
 export async function undoStageAction(formData: FormData) {
