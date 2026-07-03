@@ -179,7 +179,7 @@ function normalizePrevioName(name: string): string {
 }
 
 // Previo types intentionally hidden from the board (data is kept, just not shown).
-const EXCLUDED_PREVIOS = new Set(["zinc", "rodam", "rodamientos", "tornillos", "plastico"]);
+const EXCLUDED_PREVIOS = new Set<string>([]);
 
 // Clean header labels for the abbreviated catalog names; falls back to the
 // catalog name for anything not listed here.
@@ -188,10 +188,30 @@ const PREVIO_LABELS: Record<string, string> = {
   "torno a": "Torno A",
   "torno e": "Torno E",
   pintu: "Pintura",
+  plastico: "Plástico",
+  rodam: "Rodam.",
+  rodamientos: "Rodamientos",
+  tornillos: "Tornillos",
+  zinc: "Zinc",
 };
 
 // Fixed column order (production sequence); unknown previos are appended after.
-const PREVIO_COLUMN_ORDER = ["laser", "tubos", "inox", "placas", "torno a", "torno e", "pintu", "carenaje", "cojines"];
+const PREVIO_COLUMN_ORDER = [
+  "laser",
+  "tubos",
+  "inox",
+  "placas",
+  "torno a",
+  "torno e",
+  "pintu",
+  "carenaje",
+  "cojines",
+  "plastico",
+  "rodam",
+  "rodamientos",
+  "tornillos",
+  "zinc",
+];
 
 type PrevioColumn = { id: string; label: string };
 
@@ -422,7 +442,7 @@ export function PreviosManager({
           )}
         </div>
         <div className="overflow-x-auto">
-          <Table className="min-w-[1700px] text-xs">
+          <Table className="min-w-[2100px] text-xs">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10 px-3">
@@ -562,7 +582,7 @@ export function PreviosManager({
             </p>
           </div>
           <div className="overflow-x-auto">
-            <Table className="min-w-[1640px] text-xs">
+            <Table className="min-w-[2040px] text-xs">
               <TableHeader>
                 <TableRow>
                   <TableHead>SERIAL</TableHead>
