@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
-import { PlayCircle, Search } from "lucide-react";
+import { ExternalLink, PlayCircle, Search } from "lucide-react";
 import { reactivateHoldMachineAction, toggleMachinePrevioAction, updateMachineClientAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -39,23 +39,24 @@ function StagePin({ name, completion }: { name: string; completion: number }) {
   const done = completion === 100;
   const started = completion > 0 && completion < 100;
   return (
-    <div className="flex flex-col items-center gap-1">
-      <span className="text-[10px] font-semibold uppercase tracking-wide text-[var(--xt-steel)]">
+    <span
+      className={cn(
+        "inline-flex h-6 items-center gap-1 rounded-[2px] border px-1.5 text-[10px] font-semibold uppercase leading-none",
+        done
+          ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/10 text-[var(--line-bio-green)]"
+          : started
+            ? "border-[var(--xt-yellow-deep)] bg-[var(--xt-yellow-soft)] text-[var(--xt-black)]"
+            : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-aluminum)]",
+      )}
+      title={`${name}: ${completion}%`}
+    >
+      <span className="text-[var(--xt-steel)]">
         {STAGE_SHORT[name] ?? name.slice(0, 3)}
       </span>
-      <span
-        className={cn(
-          "inline-flex h-7 w-7 items-center justify-center rounded-[2px] border text-xs font-bold tabular-nums",
-          done
-            ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/10 text-[var(--line-bio-green)]"
-            : started
-              ? "border-[var(--xt-yellow-deep)] bg-[var(--xt-yellow)] text-[var(--xt-black)]"
-              : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-aluminum)]",
-        )}
-      >
+      <span className="min-w-3 text-center font-bold tabular-nums">
         {done ? "✓" : started ? completion : "·"}
       </span>
-    </div>
+    </span>
   );
 }
 
@@ -68,7 +69,7 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
   return (
     <div
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-[2px] border px-2 py-1 text-[11px] leading-none",
+        "inline-flex min-h-6 items-center gap-1.5 rounded-[2px] border px-1.5 py-0.5 text-[11px] leading-none",
         bothDone
           ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/10 text-[var(--line-bio-green)]"
           : neitherDone
@@ -76,7 +77,9 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
             : "border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] text-[var(--xt-black)]",
       )}
     >
-      <span className="font-semibold">{previo.name}</span>
+      <span className="max-w-36 truncate font-semibold" title={previo.name}>
+        {previo.name}
+      </span>
       <form action={toggleMachinePrevioAction} className="inline">
         <input type="hidden" name="machineId" value={machineId} />
         <input type="hidden" name="previoCatalogId" value={previo.previoCatalogId} />
@@ -87,6 +90,7 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
             type="checkbox"
             defaultChecked={previo.ordered}
             className="h-2.5 w-2.5 accent-[var(--xt-yellow-deep)]"
+            aria-label={`Pedido: ${previo.name}`}
             onChange={(e) => {
               if (orderedRef.current) orderedRef.current.value = String(e.currentTarget.checked);
               e.currentTarget.form?.requestSubmit();
@@ -105,6 +109,7 @@ function PrevioChip({ machineId, previo }: { machineId: string; previo: MachineP
             type="checkbox"
             defaultChecked={previo.received}
             className="h-2.5 w-2.5 accent-[var(--xt-yellow-deep)]"
+            aria-label={`Recibido: ${previo.name}`}
             onChange={(e) => {
               if (receivedRef.current) receivedRef.current.value = String(e.currentTarget.checked);
               e.currentTarget.form?.requestSubmit();
@@ -134,11 +139,11 @@ function InlineClientEdit({ machineId, clientName }: { machineId: string; client
 
   if (!editing) {
     return (
-      <ActionTooltip text="Edita el cliente. Asígnalo al vender la máquina.">
+      <ActionTooltip text="Edita el cliente. Asígnalo al vender la máquina." className="min-w-0 max-w-full">
         <button
           type="button"
           onClick={() => setEditing(true)}
-          className="cursor-text text-left font-medium underline-offset-2 hover:underline"
+          className="inline-block max-w-full cursor-text truncate text-left font-medium underline-offset-2 hover:underline"
           title={clientName}
         >
           {clientName}
@@ -158,84 +163,97 @@ function InlineClientEdit({ machineId, clientName }: { machineId: string; client
         onChange={(e) => setValue(e.target.value)}
         onBlur={() => { formRef.current?.requestSubmit(); setEditing(false); }}
         onKeyDown={handleKeyDown}
-        className="w-40 rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-1 py-0.5 text-sm outline-none"
+        className="h-7 w-44 max-w-full rounded-[2px] border border-[var(--xt-yellow)] bg-[var(--xt-yellow-soft)] px-1.5 py-0.5 text-sm outline-none"
       />
     </form>
   );
 }
 
 function MachineCard({ machine }: { machine: OnHoldMachineCard }) {
+  const completedPrevios = machine.previos.filter((previo) => previo.ordered && previo.received).length;
+
   return (
-    <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-      {/* Header */}
-      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[var(--xt-aluminum)] px-4 py-3">
-        <div className="flex items-start gap-3">
-          <span className="text-3xl font-bold tabular-nums leading-none text-[var(--xt-black)]">
-            {machine.serialNumber}
-          </span>
-          <div className="min-w-0">
-            <div className="flex items-center gap-2">
-              <CellTooltip text={machine.equipmentName}>
-                <span className="line-clamp-1 font-semibold">{machine.equipmentName}</span>
-              </CellTooltip>
-              <Link
-                href={`/admin/maquinas/${machine.id}`}
-                className="shrink-0 text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
-                title="Ver máquina"
-              >
-                ↗
-              </Link>
-            </div>
-            <p className="text-xs text-[var(--xt-steel)]">
-              {machine.equipmentCode ? <span className="font-mono">{machine.equipmentCode}</span> : "Sin código"}
-              {machine.colorName ? ` · ${machine.colorName}` : ""}
-              {` · Prometido ${formatDateEs(machine.promisedDate)}`}
-            </p>
-            <div className="mt-1 text-sm">
-              <span className="text-xs text-[var(--xt-steel)]">Cliente: </span>
-              <InlineClientEdit machineId={machine.id} clientName={machine.clientName} />
+    <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] px-3 py-2 shadow-[var(--shadow-sm)]">
+      <div className="grid gap-3 lg:grid-cols-[minmax(260px,0.95fr)_minmax(360px,1.35fr)_auto] lg:items-start xl:grid-cols-[minmax(340px,1fr)_minmax(520px,1.5fr)_auto]">
+        <div className="min-w-0">
+          <div className="flex min-w-0 items-start gap-2.5">
+            <span className="shrink-0 text-2xl font-bold tabular-nums leading-none text-[var(--xt-black)]">
+              {machine.serialNumber}
+            </span>
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-1.5">
+                <CellTooltip text={machine.equipmentName}>
+                  <span className="line-clamp-1 text-sm font-semibold leading-tight">{machine.equipmentName}</span>
+                </CellTooltip>
+                <Link
+                  href={`/admin/maquinas/${machine.id}`}
+                  className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
+                  title="Ver máquina"
+                  aria-label={`Ver SERIAL ${machine.serialNumber}`}
+                >
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </Link>
+              </div>
+              <p className="mt-0.5 truncate text-xs text-[var(--xt-steel)]">
+                {machine.equipmentCode ? <span className="font-mono">{machine.equipmentCode}</span> : "Sin código"}
+                {machine.colorName ? ` · ${machine.colorName}` : ""}
+                {` · Prometido ${formatDateEs(machine.promisedDate)}`}
+              </p>
+              <div className="mt-1 flex min-w-0 items-baseline gap-1 text-sm">
+                <span className="shrink-0 text-xs text-[var(--xt-steel)]">Cliente:</span>
+                <InlineClientEdit machineId={machine.id} clientName={machine.clientName} />
+              </div>
             </div>
           </div>
         </div>
-        <form action={reactivateHoldMachineAction}>
+
+        <div className="min-w-0 space-y-1.5">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="text-xs font-semibold uppercase tracking-wide text-[var(--xt-steel)]">Avance</span>
+            <div className="h-1.5 w-32 overflow-hidden rounded-full bg-[var(--xt-cement)]">
+              <div
+                className="h-full bg-[var(--xt-black)]"
+                style={{ width: `${Math.max(0, Math.min(1, machine.progressPct)) * 100}%` }}
+              />
+            </div>
+            <span className="text-sm font-bold tabular-nums">{formatPercent(machine.progressPct)}</span>
+            <div className="flex min-w-0 flex-wrap gap-1">
+              {machine.stages.map((stage) => (
+                <StagePin key={stage.id} name={stage.name} completion={stage.completion} />
+              ))}
+            </div>
+          </div>
+
+          <div className="flex min-w-0 items-start gap-2">
+            <span className="mt-1 shrink-0 text-xs font-semibold uppercase tracking-wide text-[var(--xt-steel)]">
+              Previos
+              {machine.previos.length > 0 ? (
+                <span className="ml-1 font-bold tracking-normal text-[var(--xt-black)]">
+                  {completedPrevios}/{machine.previos.length}
+                </span>
+              ) : null}
+            </span>
+            {machine.previos.length === 0 ? (
+              <p className="mt-1 text-xs text-[var(--xt-aluminum)]">Sin previos registrados.</p>
+            ) : (
+              <div className="flex max-h-16 min-w-0 flex-1 flex-wrap gap-1 overflow-y-auto pr-1">
+                {machine.previos.map((previo) => (
+                  <PrevioChip key={previo.previoCatalogId} machineId={machine.id} previo={previo} />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <form action={reactivateHoldMachineAction} className="lg:justify-self-end">
           <input type="hidden" name="machineId" value={machine.id} />
           <ActionTooltip text="Devuelve la máquina a la cola de producción con sus avances y previos.">
-            <Button type="submit" size="sm">
+            <Button type="submit" size="sm" className="w-full lg:w-auto">
               <PlayCircle className="h-4 w-4" />
               Reactivar
             </Button>
           </ActionTooltip>
         </form>
-      </div>
-
-      {/* Avance */}
-      <div className="border-b border-[var(--xt-cement)] px-4 py-3">
-        <div className="mb-2 flex items-center gap-3">
-          <span className="text-xs font-semibold uppercase tracking-wide text-[var(--xt-steel)]">Avance</span>
-          <div className="h-1.5 w-40 overflow-hidden rounded-full bg-[var(--xt-cement)]">
-            <div className="h-full bg-[var(--xt-black)]" style={{ width: `${Math.max(0, Math.min(1, machine.progressPct)) * 100}%` }} />
-          </div>
-          <span className="text-sm font-bold tabular-nums">{formatPercent(machine.progressPct)}</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {machine.stages.map((stage) => (
-            <StagePin key={stage.id} name={stage.name} completion={stage.completion} />
-          ))}
-        </div>
-      </div>
-
-      {/* Previos */}
-      <div className="px-4 py-3">
-        <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[var(--xt-steel)]">Previos</p>
-        {machine.previos.length === 0 ? (
-          <p className="text-xs text-[var(--xt-aluminum)]">Sin previos registrados.</p>
-        ) : (
-          <div className="flex flex-wrap gap-2">
-            {machine.previos.map((previo) => (
-              <PrevioChip key={previo.previoCatalogId} machineId={machine.id} previo={previo} />
-            ))}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -269,7 +287,7 @@ export function PropiasEnEsperaManager({ machines }: { machines: OnHoldMachineCa
   }
 
   return (
-    <div className="grid gap-4">
+    <div className="grid gap-2.5">
       <div className="relative w-72">
         <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--xt-aluminum)]" />
         <Input
