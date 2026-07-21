@@ -141,9 +141,19 @@ export async function updateMachineAction(formData: FormData) {
   await requireAdmin();
   const machineId = String(formData.get("machineId") ?? "");
   const clientName = String(formData.get("clientName") ?? "").trim();
+  const clientMode = String(formData.get("clientMode") ?? "reassign");
   const equipmentId = String(formData.get("equipmentId") ?? "").trim() || null;
   if (machineId && clientName) {
-    await updateMachineClientName(machineId, clientName);
+    if (clientMode === "rename") {
+      // Rename the client record itself — affects every machine of this client.
+      await updateMachineClientName(machineId, clientName);
+    } else {
+      // Reassign only this machine to the (existing or new) client, leaving the
+      // other machines of the current client untouched. Used for stock machines
+      // parked under a placeholder client and sold to a real one.
+      const client = await ensureClientByName(clientName);
+      await updateMachine(machineId, { client_id: client.id });
+    }
   }
 
   await updateMachine(machineId, {

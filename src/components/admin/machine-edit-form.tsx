@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { updateMachineAction } from "@/app/admin/actions";
 import { CatalogCombobox } from "@/components/admin/catalog-combobox";
 import { Button } from "@/components/ui/button";
@@ -52,13 +53,19 @@ export function MachineEditForm({
   colors: ColorOption[];
   clients: ClientOption[];
 }) {
+  const [clientName, setClientName] = useState(machine.clientName);
+  const [clientMode, setClientMode] = useState<"reassign" | "rename">("reassign");
+  const nameChanged = clientName.trim() !== machine.clientName.trim();
+
   return (
     <form
       action={updateMachineAction}
       className="grid gap-4 md:grid-cols-2"
       onSubmit={(event) => {
-        const formData = new FormData(event.currentTarget);
-        const nextName = String(formData.get("clientName") ?? "").trim();
+        if (clientMode !== "rename" || !nameChanged) {
+          return;
+        }
+        const nextName = clientName.trim();
         const mergeTarget = clients.find(
           (candidate) => candidate.id !== machine.clientId && candidate.name.trim() === nextName,
         );
@@ -74,12 +81,54 @@ export function MachineEditForm({
       }}
     >
       <input type="hidden" name="machineId" value={machine.id} />
+      <input type="hidden" name="clientMode" value={clientMode} />
       <Field label="SERIAL">
         <Input name="serialNumber" type="number" min="1" defaultValue={machine.serialNumber} required />
       </Field>
-      <Field label="Cliente">
-        <Input name="clientName" defaultValue={machine.clientName} required />
-      </Field>
+      <div className="grid gap-2 text-sm font-medium">
+        <label className="grid gap-2">
+          Cliente
+          <Input
+            name="clientName"
+            value={clientName}
+            onChange={(event) => setClientName(event.target.value)}
+            required
+          />
+        </label>
+        {nameChanged ? (
+          <fieldset className="grid gap-1.5 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-3 py-2 text-xs font-normal">
+            <legend className="px-1 text-[11px] font-semibold uppercase tracking-wide text-[var(--xt-steel)]">
+              Aplicar cambio de cliente a
+            </legend>
+            <label className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="clientModeChoice"
+                className="mt-0.5"
+                checked={clientMode === "reassign"}
+                onChange={() => setClientMode("reassign")}
+              />
+              <span>
+                <span className="font-medium">Solo esta máquina</span> — la reasigna a «{clientName.trim() || "…"}»
+                sin tocar las demás máquinas de «{machine.clientName}».
+              </span>
+            </label>
+            <label className="flex items-start gap-2">
+              <input
+                type="radio"
+                name="clientModeChoice"
+                className="mt-0.5"
+                checked={clientMode === "rename"}
+                onChange={() => setClientMode("rename")}
+              />
+              <span>
+                <span className="font-medium">Todas las máquinas de «{machine.clientName}»</span> — renombra el
+                cliente completo (afecta todas sus máquinas y enlaces).
+              </span>
+            </label>
+          </fieldset>
+        ) : null}
+      </div>
       <label className="grid gap-2 text-sm font-medium">
         Equipo
         <CatalogCombobox
