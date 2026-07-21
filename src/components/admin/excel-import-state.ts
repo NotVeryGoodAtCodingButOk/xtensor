@@ -153,7 +153,6 @@ export type ImportFileEntry = {
   fileName: string;
   preview: QuotePreview;
   clientName: string;
-  promisedDate: string;
   lineState: Record<number, LineState>;
 };
 
@@ -203,8 +202,6 @@ export function validateEntries(entries: ImportFileEntry[]): Record<string, Entr
 
     if (!entry.clientName.trim()) {
       reason = "Falta el nombre del cliente.";
-    } else if (!entry.promisedDate) {
-      reason = "Falta la fecha prometida.";
     } else if (countEntryMachines(entry) === 0) {
       reason = "No hay líneas seleccionadas para importar.";
     } else {

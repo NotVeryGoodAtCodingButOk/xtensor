@@ -21,6 +21,7 @@ import {
   createHoliday,
   deleteHoliday,
   listCatalog,
+  listHolidays,
 } from "@/services/catalog";
 import { ensureClientByName, regenerateClientToken, updateClient, updateMachineClientName, deleteClient } from "@/services/clients";
 import {
@@ -33,6 +34,7 @@ import {
   getMaxOrderPosition,
   markMachineFinished,
   markMachineShipped,
+  listCalculatedMachines,
   reorderMachines,
   sendFinishedToProduction,
   sendHoldMachineToProduction,
@@ -43,6 +45,8 @@ import {
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
+import { estimateTotalHours } from "@/services/calculations";
+import { estimateDeliveryDate } from "@/services/schedule";
 import { parseQuoteWorkbook, parseCatalogWorkbook } from "@/services/excel";
 import {
   applyCatalogImport,
@@ -67,7 +71,7 @@ import {
   syncMachinePreviosFromEquipment,
   toggleMachinePrevio,
 } from "@/services/previos";
-import { updateFactoryPassword, updateSettings } from "@/services/settings";
+import { getSettings, mapSettings, updateFactoryPassword, updateSettings } from "@/services/settings";
 
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -598,13 +602,11 @@ export type ImportQuoteLineInput = {
 export async function importQuoteAction(input: {
   serialMode: "auto";
   clientName: string;
-  promisedDate: string;
   lines: ImportQuoteLineInput[];
 }): Promise<{ created: number } | SessionExpired> {
   if (!(await getAdminOrAuthError())) return { sessionExpired: true };
   const clientName = input.clientName.trim();
   if (!clientName) throw new Error("El cliente es requerido.");
-  if (!input.promisedDate) throw new Error("La fecha prometida es requerida.");
 
   const importable = input.lines.filter((line) => line.resolution !== "skip");
   if (importable.length === 0) {
@@ -642,6 +644,15 @@ export async function importQuoteAction(input: {
   let position = await getMaxOrderPosition();
   let created = 0;
 
+  // Fecha prometida is the internal estimated completion date per machine, taken
+  // as a snapshot at import time by appending the new machines to the end of the
+  // current in-production queue (in import order).
+  const settings = mapSettings(await getSettings());
+  const holidays = await listHolidays();
+  const currentQueue = await listCalculatedMachines({ settings, holidays, status: "in_production" });
+  const scheduleStart = new Date();
+  let accumulatedHours = currentQueue.reduce((sum, machine) => sum + machine.remainingHours, 0);
+
   for (const line of importable) {
     let equipmentId: string | null = null;
     let lineOverride: string | null = line.line == null ? null : normalizeMachineLine(line.line);
@@ -662,10 +673,13 @@ export async function importQuoteAction(input: {
     }
 
     const units = Math.max(1, Math.round(line.unidades) || 1);
+    const salePriceCop = Number.isFinite(line.pUnitCop) ? line.pUnitCop : 0;
     for (let i = 0; i < units; i += 1) {
       position += 1;
       const serialNumber = normalizeSerialNumber(line.serialNumbers[i]);
       if (!serialNumber) throw new Error(`La SERIAL de "${line.producto}" es inválida.`);
+      accumulatedHours += estimateTotalHours(salePriceCop, settings);
+      const promisedDate = estimateDeliveryDate(accumulatedHours, scheduleStart, settings, holidays);
       await createMachine({
         serial_number: serialNumber,
         client_id: client.id,
@@ -673,8 +687,8 @@ export async function importQuoteAction(input: {
         custom_equipment_name: null,
         line_override: lineOverride,
         color_id: line.colorId ?? null,
-        sale_price_cop: Number.isFinite(line.pUnitCop) ? line.pUnitCop : 0,
-        promised_date: input.promisedDate,
+        sale_price_cop: salePriceCop,
+        promised_date: promisedDate,
         order_position: position,
         status: "pending",
       });

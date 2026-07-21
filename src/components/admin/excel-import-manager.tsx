@@ -70,11 +70,6 @@ export function ExcelImportManager({
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [entries, setEntries] = useState<ImportFileEntry[]>([]);
-  const defaultPromisedDate = useMemo(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 28);
-    return d.toISOString().slice(0, 10);
-  }, []);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [parsing, startParse] = useTransition();
@@ -123,7 +118,6 @@ export function ExcelImportManager({
               fileName,
               preview,
               clientName: preview.clientName ?? "",
-              promisedDate: defaultPromisedDate,
               lineState: initialLineState(preview, seedUsed),
             });
           }
@@ -139,7 +133,7 @@ export function ExcelImportManager({
     setEntries((prev) => prev.filter((entry) => entry.id !== entryId));
   }
 
-  function updateEntryField(entryId: string, field: "clientName" | "promisedDate", value: string) {
+  function updateEntryField(entryId: string, field: "clientName", value: string) {
     setEntries((prev) => prev.map((entry) => (entry.id === entryId ? { ...entry, [field]: value } : entry)));
   }
 
@@ -249,7 +243,6 @@ export function ExcelImportManager({
           const result = await importQuoteAction({
             serialMode: "auto",
             clientName: entry.clientName.trim(),
-            promisedDate: entry.promisedDate,
             lines: buildImportLines(entry.preview, entry.lineState),
           });
           if ("sessionExpired" in result) {
@@ -391,17 +384,15 @@ export function ExcelImportManager({
                     onChange={(e) => updateEntryField(entry.id, "clientName", e.target.value)}
                   />
                 </label>
-                <label className="grid gap-2 text-sm font-medium">
+                <div className="grid gap-2 text-sm font-medium">
                   Fecha prometida
-                  <Input
-                    value={entry.promisedDate}
-                    onChange={(e) => updateEntryField(entry.id, "promisedDate", e.target.value)}
-                    type="date"
-                  />
+                  <div className="rounded-[2px] border border-[var(--xt-cement)] bg-[var(--xt-yellow-soft)] px-3 py-2 text-sm font-normal text-[var(--xt-black)]">
+                    Se calcula por máquina según su lugar en la cola.
+                  </div>
                   <span className="text-xs font-normal text-[var(--xt-steel)]">
                     Estimación fin de cola actual: {formatDateEs(queueEndDate)}
                   </span>
-                </label>
+                </div>
               </div>
 
               {validation && !validation.valid ? (

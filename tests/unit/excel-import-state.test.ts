@@ -84,7 +84,7 @@ describe("excel import preview state", () => {
     const preview = autoPreview();
     const first = initialLineState(preview);
     const seedUsed = collectSerialsFromEntries([
-      { id: "a", fileName: "a.xlsx", preview, clientName: "A", promisedDate: "2026-07-01", lineState: first },
+      { id: "a", fileName: "a.xlsx", preview, clientName: "A", lineState: first },
     ]);
     const second = initialLineState(preview, seedUsed);
 
@@ -103,7 +103,6 @@ describe("excel import preview state", () => {
       fileName: `${id}.xlsx`,
       preview,
       clientName: "Cliente",
-      promisedDate: "2026-07-01",
       lineState: initialLineState(preview),
       ...overrides,
     };
