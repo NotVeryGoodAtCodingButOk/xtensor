@@ -3,15 +3,15 @@ import Link from "next/link";
 import { Activity, AlertTriangle, BarChart3, Coins, Package, RefreshCcw, Truck, Users } from "lucide-react";
 
 export const metadata: Metadata = { title: "Estadísticas XTENSOR" };
+import { StatisticsTabs } from "@/components/admin/statistics-tabs";
+import { formatCop, formatDateTime, formatHours, formatLeadTime, formatPct, MetricCard, StatsTable } from "@/components/admin/stats-ui";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { hasSupabaseConfig } from "@/lib/env";
-import { cn } from "@/lib/utils";
 import { listHolidays } from "@/services/catalog";
 import { getSettings, mapSettings } from "@/services/settings";
 import {
@@ -63,6 +63,7 @@ export default async function StatisticsPage({
   return (
     <AdminShell>
       <RealtimeRefresh channelName="admin-statistics" tables={["machines", "machine_stages", "stage_logs", "machine_warranty_events"]} />
+      <StatisticsTabs active="resumen" />
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="xt-eyebrow">Administración</p>
@@ -364,82 +365,6 @@ export default async function StatisticsPage({
   );
 }
 
-function MetricCard({
-  icon: Icon,
-  eyebrow,
-  title,
-  value,
-  detail,
-  formula,
-  prominent = false,
-}: {
-  icon: typeof Activity;
-  eyebrow: string;
-  title: string;
-  value: string;
-  detail: string;
-  formula: string;
-  prominent?: boolean;
-}) {
-  return (
-    <Card className={cn(prominent && "border-[var(--xt-black)] bg-[var(--xt-yellow-soft)]")}>
-      <CardHeader className="gap-3">
-        <div className="flex items-center justify-between gap-3">
-          <p className="xt-eyebrow">{eyebrow}</p>
-          <Icon className="h-5 w-5 text-[var(--xt-steel)]" />
-        </div>
-        <div>
-          <CardTitle className={prominent ? "text-4xl" : "text-3xl"}>{value}</CardTitle>
-          <p className="mt-1 font-semibold">{title}</p>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-[var(--xt-steel)]">{detail}</p>
-        <p className="mt-1 text-xs text-[var(--xt-steel)]">Función: {formula}</p>
-      </CardContent>
-    </Card>
-  );
-}
-
-function StatsTable({
-  headers,
-  rows,
-  empty,
-}: {
-  headers: string[];
-  rows: string[][];
-  empty: string;
-}) {
-  if (rows.length === 0) {
-    return <p className="border border-dashed border-[var(--xt-cement)] p-4 text-sm text-[var(--xt-steel)]">{empty}</p>;
-  }
-
-  return (
-    <div className="overflow-x-auto border border-[var(--xt-cement)]">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            {headers.map((header) => (
-              <TableHead key={header}>{header}</TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row, rowIndex) => (
-            <TableRow key={`${row[0]}-${rowIndex}`}>
-              {row.map((cell, cellIndex) => (
-                <TableCell key={`${cell}-${cellIndex}`} className={cellIndex > 0 ? "whitespace-nowrap" : undefined}>
-                  {cell}
-                </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
-  );
-}
-
 function QualityRow({ label, value }: { label: string; value: number }) {
   return (
     <div className="flex items-center justify-between gap-4 border-b border-[var(--xt-cement)] pb-2 last:border-b-0 last:pb-0">
@@ -447,55 +372,4 @@ function QualityRow({ label, value }: { label: string; value: number }) {
       <Badge variant={value > 0 ? "warning" : "success"}>{value}</Badge>
     </div>
   );
-}
-
-function formatHours(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "Sin datos";
-  }
-  if (value < 1) {
-    return `${Math.round(value * 60)} min`;
-  }
-
-  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value)} h`;
-}
-
-function formatPct(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "Sin datos";
-  }
-
-  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value)} %`;
-}
-
-function formatCop(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value) || value === 0) {
-    return "Sin datos";
-  }
-
-  return new Intl.NumberFormat("es-CO", {
-    style: "currency",
-    currency: "COP",
-    maximumFractionDigits: 0,
-  }).format(value);
-}
-
-function formatLeadTime(value: number | null | undefined) {
-  if (value === null || value === undefined || !Number.isFinite(value)) {
-    return "Sin datos";
-  }
-  if (value < 24) {
-    return formatHours(value);
-  }
-
-  const days = value / 24;
-  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(days)} d`;
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("es-CO", {
-    dateStyle: "medium",
-    timeStyle: "short",
-    timeZone: "America/Bogota",
-  }).format(new Date(value));
 }
