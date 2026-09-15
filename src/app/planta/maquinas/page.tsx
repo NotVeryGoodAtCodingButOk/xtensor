@@ -6,6 +6,7 @@ import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
 import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { MachineMultiSelect } from "@/components/factory/machine-multi-select";
+import { OtherActivityPanel } from "@/components/factory/other-activity-panel";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,7 @@ export default async function FactoryMachinesPage({
             <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
               <Link href="/planta/tablero">Cartelera</Link>
             </Button>
+            <OtherActivityPanel hasOpenSession={Boolean(openSession)} navButtonClass={navButtonClass} />
             <form action={changeWorkerAction}>
               <Button type="submit" variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
                 Cambiar operario

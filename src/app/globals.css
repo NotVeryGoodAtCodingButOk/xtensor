@@ -1045,6 +1045,98 @@ select {
   opacity: 0.5;
 }
 
+.xt-other-activity-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(10, 10, 10, 0.6);
+}
+
+.xt-other-activity-panel {
+  width: 100%;
+  max-width: 28rem;
+  border: 1px solid var(--xt-black);
+  background: var(--xt-white);
+  padding: 1.5rem;
+  color: var(--xt-black);
+  box-shadow: var(--shadow-stamp);
+}
+
+.xt-other-activity-title {
+  margin: 0.25rem 0 0.75rem;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.xt-other-activity-textarea {
+  width: 100%;
+  min-height: 6rem;
+  border: 1px solid var(--xt-black);
+  padding: 0.75rem;
+  color: var(--xt-black);
+  font-family: inherit;
+  font-size: 1rem;
+  resize: vertical;
+}
+
+.xt-other-activity-counter {
+  margin: 0.375rem 0 0;
+  text-align: right;
+  color: var(--xt-steel);
+  font-size: 0.75rem;
+}
+
+.xt-other-activity-hint,
+.xt-other-activity-error {
+  margin: 0.5rem 0 0;
+  color: var(--line-pro-red);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.xt-other-activity-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+
+.xt-other-activity-cancel,
+.xt-other-activity-submit {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  min-height: 2.75rem;
+  border: 1px solid var(--xt-black);
+  padding: 0.5rem 1.25rem;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.xt-other-activity-cancel {
+  background: var(--xt-white);
+  color: var(--xt-black);
+}
+
+.xt-other-activity-submit {
+  background: var(--xt-yellow);
+  color: var(--xt-black);
+}
+
+.xt-other-activity-submit:disabled {
+  opacity: 0.5;
+}
+
 .xt-active-bar {
   position: sticky;
   top: 0;
