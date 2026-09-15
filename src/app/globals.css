@@ -746,7 +746,12 @@ select {
   width: 100%;
   cursor: pointer;
   text-align: left;
+  transition: background-color 0.15s;
   -webkit-tap-highlight-color: transparent;
+}
+
+.xt-machine-card-selectable:hover {
+  background: var(--xt-yellow-soft);
 }
 
 .xt-machine-card-selected {
