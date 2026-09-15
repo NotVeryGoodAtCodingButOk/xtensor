@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import type { OpenSessionSummary } from "@/services/work-sessions";
 
 type WorkerCard = {
   id: string;
@@ -11,8 +12,15 @@ type WorkerCard = {
   display_color: string | null;
 };
 
-export function WorkerPicker({ workers }: { workers: WorkerCard[] }) {
+export function WorkerPicker({
+  workers,
+  openSessions = [],
+}: {
+  workers: WorkerCard[];
+  openSessions?: OpenSessionSummary[];
+}) {
   const router = useRouter();
+  const openSessionByWorker = new Map(openSessions.map((session) => [session.workerId, session]));
 
   useEffect(() => {
     for (const worker of workers) {
@@ -22,27 +30,34 @@ export function WorkerPicker({ workers }: { workers: WorkerCard[] }) {
 
   return (
     <div className="xt-worker-grid grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3">
-      {workers.map((worker) => (
-        <Link
-          key={worker.id}
-          href={`/planta/maquinas?workerId=${worker.id}`}
-          onClick={() => {
-            void fetch("/planta/api/worker", {
-              method: "POST",
-              headers: { "content-type": "application/json" },
-              body: JSON.stringify({ workerId: worker.id }),
-              keepalive: true,
-            });
-          }}
-          className="xt-worker-card flex min-h-[180px] w-full flex-col justify-end border border-[var(--xt-black)] p-5 text-left text-white shadow-[var(--shadow-stamp)] transition-transform duration-200 ease-[var(--ease-snap)] active:translate-y-px active:shadow-none md:min-h-[180px] md:p-6 xl:min-h-[200px]"
-          style={{ background: worker.display_color ?? "var(--xt-black)" }}
-        >
-          <span className="xt-worker-name [font-family:var(--font-barlow-condensed)] text-2xl font-bold leading-tight break-words lg:text-3xl">
-            {worker.full_name}
-          </span>
-          <span className="xt-worker-role mt-2 text-lg leading-snug opacity-90">{worker.role}</span>
-        </Link>
-      ))}
+      {workers.map((worker) => {
+        const openSession = openSessionByWorker.get(worker.id);
+
+        return (
+          <Link
+            key={worker.id}
+            href={`/planta/maquinas?workerId=${worker.id}`}
+            onClick={() => {
+              void fetch("/planta/api/worker", {
+                method: "POST",
+                headers: { "content-type": "application/json" },
+                body: JSON.stringify({ workerId: worker.id }),
+                keepalive: true,
+              });
+            }}
+            className="xt-worker-card flex min-h-[180px] w-full flex-col justify-end border border-[var(--xt-black)] p-5 text-left text-white shadow-[var(--shadow-stamp)] transition-transform duration-200 ease-[var(--ease-snap)] active:translate-y-px active:shadow-none md:min-h-[180px] md:p-6 xl:min-h-[200px]"
+            style={{ background: worker.display_color ?? "var(--xt-black)" }}
+          >
+            {openSession ? (
+              <span className="xt-worker-card-badge">En curso: {openSession.stageName ?? "Otra actividad"}</span>
+            ) : null}
+            <span className="xt-worker-name [font-family:var(--font-barlow-condensed)] text-2xl font-bold leading-tight break-words lg:text-3xl">
+              {worker.full_name}
+            </span>
+            <span className="xt-worker-role mt-2 text-lg leading-snug opacity-90">{worker.role}</span>
+          </Link>
+        );
+      })}
     </div>
   );
 }

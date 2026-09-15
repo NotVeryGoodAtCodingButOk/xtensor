@@ -5,6 +5,7 @@ import { WorkerPicker } from "@/components/factory/worker-picker";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
 import { listWorkers } from "@/services/catalog";
+import { listOpenSessions } from "@/services/work-sessions";
 
 export default async function FactoryWorkersPage() {
   if (!hasFactoryConfig()) {
@@ -19,7 +20,7 @@ export default async function FactoryWorkersPage() {
     redirect("/planta");
   }
 
-  const workers = await listWorkers(true);
+  const [workers, openSessions] = await Promise.all([listWorkers(true), listOpenSessions()]);
 
   return (
     <main className="xt-planta xt-planta-page min-h-screen bg-[var(--xt-paper)]">
@@ -28,7 +29,7 @@ export default async function FactoryWorkersPage() {
         <div className="xt-hazard h-2" />
       </header>
       <section className="xt-planta-section p-6">
-        <WorkerPicker workers={workers} />
+        <WorkerPicker workers={workers} openSessions={openSessions} />
       </section>
     </main>
   );

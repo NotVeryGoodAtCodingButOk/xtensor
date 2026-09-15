@@ -500,6 +500,7 @@ select {
 }
 
 .xt-worker-card {
+  position: relative;
   display: flex;
   min-height: 11.25rem;
   flex-direction: column;
@@ -509,6 +510,25 @@ select {
   color: var(--xt-white);
   text-align: left;
   box-shadow: var(--shadow-stamp);
+}
+
+.xt-worker-card-badge {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.75rem;
+  right: 0.75rem;
+  overflow: hidden;
+  border: 1px solid var(--xt-yellow);
+  background: var(--xt-black);
+  padding: 0.25rem 0.5rem;
+  color: var(--xt-yellow);
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .xt-planta .xt-worker-card {
