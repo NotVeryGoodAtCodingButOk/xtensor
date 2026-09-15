@@ -20,6 +20,11 @@ const settings: ProductionSettings = {
   activeWorkersCount: 9,
   clientBufferDays: 3,
   shippedRetentionDays: 60,
+  shiftStart: "08:00",
+  shiftEndMonThu: "17:00",
+  shiftEndFri: "14:30",
+  shiftEndSat: null,
+  shiftBreaks: [],
 };
 
 const noHolidays: Holiday[] = [];

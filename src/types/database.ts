@@ -378,6 +378,11 @@ export type Database = {
           active_workers_count: number;
           client_buffer_days: number;
           shipped_retention_days: number;
+          shift_start: string;
+          shift_end_mon_thu: string;
+          shift_end_fri: string;
+          shift_end_sat: string | null;
+          shift_breaks: Json;
           updated_at: string;
         };
         Insert: {
@@ -392,6 +397,11 @@ export type Database = {
           active_workers_count?: number;
           client_buffer_days?: number;
           shipped_retention_days?: number;
+          shift_start?: string;
+          shift_end_mon_thu?: string;
+          shift_end_fri?: string;
+          shift_end_sat?: string | null;
+          shift_breaks?: Json;
           updated_at?: string;
         };
         Update: {
@@ -406,6 +416,11 @@ export type Database = {
           active_workers_count?: number;
           client_buffer_days?: number;
           shipped_retention_days?: number;
+          shift_start?: string;
+          shift_end_mon_thu?: string;
+          shift_end_fri?: string;
+          shift_end_sat?: string | null;
+          shift_breaks?: Json;
           updated_at?: string;
         };
         Relationships: [];
@@ -464,6 +479,60 @@ export type Database = {
           name?: string;
           completion_percentage?: number;
           display_order?: number;
+        };
+        Relationships: [];
+      };
+      work_sessions: {
+        Row: {
+          id: string;
+          worker_id: string;
+          kind: "stage" | "other";
+          stage_id: number | null;
+          note: string | null;
+          is_reprocess: boolean;
+          started_at: string;
+          ended_at: string | null;
+          end_reason: "completed" | "paused" | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          worker_id: string;
+          kind: "stage" | "other";
+          stage_id?: number | null;
+          note?: string | null;
+          is_reprocess?: boolean;
+          started_at?: string;
+          ended_at?: string | null;
+          end_reason?: "completed" | "paused" | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          worker_id?: string;
+          kind?: "stage" | "other";
+          stage_id?: number | null;
+          note?: string | null;
+          is_reprocess?: boolean;
+          started_at?: string;
+          ended_at?: string | null;
+          end_reason?: "completed" | "paused" | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      work_session_machines: {
+        Row: {
+          session_id: string;
+          machine_id: string;
+        };
+        Insert: {
+          session_id: string;
+          machine_id: string;
+        };
+        Update: {
+          session_id?: string;
+          machine_id?: string;
         };
         Relationships: [];
       };

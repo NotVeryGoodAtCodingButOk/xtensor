@@ -10,6 +10,11 @@ export type StageProgress = {
   completion: number;
 };
 
+export type ShiftBreak = {
+  start: string; // "HH:mm"
+  minutes: number;
+};
+
 export type ProductionSettings = {
   hourlyCostPerWorkerCop: number;
   laborFactor: number;
@@ -20,6 +25,12 @@ export type ProductionSettings = {
   activeWorkersCount: number;
   clientBufferDays: number;
   shippedRetentionDays: number;
+  // Factory shift window (labor-time capture) — see src/services/labor-time.ts.
+  shiftStart: string; // "HH:mm"
+  shiftEndMonThu: string; // "HH:mm"
+  shiftEndFri: string; // "HH:mm"
+  shiftEndSat: string | null; // "HH:mm", null = no Saturday shift
+  shiftBreaks: ShiftBreak[];
 };
 
 export type QueueMachineInput = {
@@ -59,6 +70,14 @@ export const DEFAULT_SETTINGS: ProductionSettings = {
   activeWorkersCount: 9,
   clientBufferDays: 3,
   shippedRetentionDays: 60,
+  shiftStart: "08:00",
+  shiftEndMonThu: "17:00",
+  shiftEndFri: "14:30",
+  shiftEndSat: null,
+  shiftBreaks: [
+    { start: "09:00", minutes: 15 },
+    { start: "12:00", minutes: 30 },
+  ],
 };
 
 export function estimateTotalHours(salePriceCop: number, settings: ProductionSettings) {

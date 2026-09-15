@@ -2,6 +2,7 @@ import { compare, hash } from "bcrypt-ts";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import type { Database } from "@/types/database";
 import type { ProductionSettings } from "@/services/calculations";
+import { normalizeShiftTime, sanitizeShiftBreaks } from "@/services/labor-time";
 
 type SettingsRow = Database["public"]["Tables"]["settings"]["Row"];
 type SettingsUpdate = Database["public"]["Tables"]["settings"]["Update"];
@@ -17,6 +18,12 @@ export function mapSettings(row: SettingsRow): ProductionSettings {
     activeWorkersCount: Number(row.active_workers_count),
     clientBufferDays: Number(row.client_buffer_days),
     shippedRetentionDays: Number(row.shipped_retention_days ?? 60),
+    // Postgres `time` columns come back from PostgREST as "HH:mm:ss".
+    shiftStart: normalizeShiftTime(row.shift_start) ?? "08:00",
+    shiftEndMonThu: normalizeShiftTime(row.shift_end_mon_thu) ?? "17:00",
+    shiftEndFri: normalizeShiftTime(row.shift_end_fri) ?? "14:30",
+    shiftEndSat: normalizeShiftTime(row.shift_end_sat),
+    shiftBreaks: sanitizeShiftBreaks(row.shift_breaks),
   };
 }
 
