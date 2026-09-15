@@ -72,6 +72,7 @@ import {
   toggleMachinePrevio,
 } from "@/services/previos";
 import { getSettings, mapSettings, updateFactoryPassword, updateSettings } from "@/services/settings";
+import { normalizeShiftTime, sanitizeShiftBreaks } from "@/services/labor-time";
 
 export async function signInAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
@@ -532,6 +533,33 @@ export async function bootstrapPreviosAction() {
 
 export async function updateSettingsAction(formData: FormData) {
   await requireAdmin();
+
+  const shiftStart = normalizeShiftTime(String(formData.get("shift_start") ?? ""));
+  if (!shiftStart) {
+    throw new Error("La hora de inicio de planta es inválida.");
+  }
+  const shiftEndMonThu = normalizeShiftTime(String(formData.get("shift_end_mon_thu") ?? ""));
+  if (!shiftEndMonThu) {
+    throw new Error("La hora de cierre lunes a jueves es inválida.");
+  }
+  const shiftEndFri = normalizeShiftTime(String(formData.get("shift_end_fri") ?? ""));
+  if (!shiftEndFri) {
+    throw new Error("La hora de cierre del viernes es inválida.");
+  }
+  const shiftEndSatRaw = String(formData.get("shift_end_sat") ?? "").trim();
+  const shiftEndSat = shiftEndSatRaw ? normalizeShiftTime(shiftEndSatRaw) : null;
+  if (shiftEndSatRaw && !shiftEndSat) {
+    throw new Error("La hora de cierre del sábado es inválida.");
+  }
+
+  let shiftBreaksRaw: unknown = [];
+  try {
+    shiftBreaksRaw = JSON.parse(String(formData.get("shift_breaks") ?? "[]"));
+  } catch {
+    throw new Error("El formato de las pausas es inválido.");
+  }
+  const shiftBreaks = sanitizeShiftBreaks(shiftBreaksRaw);
+
   await updateSettings({
     hourly_cost_per_worker_cop: Number(formData.get("hourly_cost_per_worker_cop")),
     labor_factor: Number(formData.get("labor_factor")),
@@ -542,6 +570,11 @@ export async function updateSettingsAction(formData: FormData) {
     daily_hours_sun: Number(formData.get("daily_hours_sun") ?? 0),
     client_buffer_days: Number(formData.get("client_buffer_days")),
     shipped_retention_days: Number(formData.get("shipped_retention_days")),
+    shift_start: shiftStart,
+    shift_end_mon_thu: shiftEndMonThu,
+    shift_end_fri: shiftEndFri,
+    shift_end_sat: shiftEndSat,
+    shift_breaks: shiftBreaks,
   });
   revalidateFactoryData();
   redirect("/admin/configuracion?settings=ok");
