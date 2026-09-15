@@ -223,10 +223,12 @@ export async function finishSession(input: {
     throw new Error(`No se pudo cerrar la sesión: ${updateError.message}`);
   }
 
-  const finishedMachineIds: string[] = [];
+  // Machines whose LAST pending stage was closed by this Terminar (status flipped to finished).
+  let finishedMachineIds: string[] = [];
 
   if (input.reason === "completed" && session.kind === "stage" && session.stage_id !== null) {
     const machineIds = session.work_session_machines.map((entry) => entry.machine_id);
+    const changedMachineIds: string[] = [];
 
     for (const machineId of machineIds) {
       const result = await updateStageProgress({
@@ -235,9 +237,22 @@ export async function finishSession(input: {
         completion: 100,
         workerId: input.workerId,
       });
-      if (result.stage && (result.stage as { completion: number }).completion === 100) {
-        finishedMachineIds.push(machineId);
+      if (result.log) {
+        changedMachineIds.push(machineId);
       }
+    }
+
+    if (changedMachineIds.length > 0) {
+      const { data: finishedRows, error: finishedError } = await supabase
+        .from("machines")
+        .select("id")
+        .in("id", changedMachineIds)
+        .eq("status", "finished");
+
+      if (finishedError) {
+        throw new Error(`No se pudo verificar las máquinas terminadas: ${finishedError.message}`);
+      }
+      finishedMachineIds = (finishedRows ?? []).map((row) => row.id);
     }
   }
 
