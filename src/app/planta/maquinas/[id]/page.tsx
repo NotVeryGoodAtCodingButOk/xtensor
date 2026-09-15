@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { TaskGrid } from "@/components/factory/task-grid";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
@@ -9,6 +10,7 @@ import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
 import { getMachine } from "@/services/machines";
+import { getOpenSession } from "@/services/work-sessions";
 
 export default async function FactoryMachineDetailPage({
   params,
@@ -40,7 +42,7 @@ export default async function FactoryMachineDetailPage({
     redirect("/planta/operarios");
   }
 
-  const machine = await getMachine(id);
+  const [machine, openSession] = await Promise.all([getMachine(id), getOpenSession(resolvedWorkerId)]);
   const worker = shared.workers.find((item) => item.id === resolvedWorkerId);
   if (!worker) {
     redirect("/planta/operarios?error=operario");
@@ -52,7 +54,10 @@ export default async function FactoryMachineDetailPage({
 
   return (
     <main className="xt-planta xt-planta-page xt-machine-detail min-h-screen bg-[var(--xt-paper)] pb-28">
-      <RealtimeRefresh channelName={`factory-detail-${machine.id}`} tables={["machine_stages", "colors"]} />
+      <RealtimeRefresh
+        channelName={`factory-detail-${machine.id}`}
+        tables={["machine_stages", "colors", "work_sessions"]}
+      />
       <header className="xt-machine-detail-header mb-3 border-b border-[var(--xt-black)]">
         <div
           className="xt-planta-worker-bar px-5 py-3 text-[var(--xt-white)]"
@@ -95,14 +100,22 @@ export default async function FactoryMachineDetailPage({
         </div>
       </header>
 
+      {openSession ? <ActiveSessionBar session={openSession} /> : null}
+
       <TaskGrid
-        machineId={machine.id}
+        machines={[
+          {
+            id: machine.id,
+            serialNumber: machine.serialNumber,
+            stages: machine.stages.map((stage) => ({
+              id: stage.id,
+              name: stage.name,
+              completion: stage.completion,
+            })),
+          },
+        ]}
+        openSession={openSession}
         continueHref={`/planta/maquinas/${machine.id}${workerQuery}`}
-        stages={machine.stages.map((stage) => ({
-          id: stage.id,
-          name: stage.name,
-          completion: stage.completion,
-        }))}
       />
     </main>
   );
