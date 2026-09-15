@@ -52,6 +52,12 @@ async function main() {
     activeWorkersCount: Number(settingsRow.active_workers_count),
     clientBufferDays: Number(settingsRow.client_buffer_days),
     shippedRetentionDays: Number(settingsRow.shipped_retention_days ?? 60),
+    // Shift fields only feed labor-time; the delivery-date queue ignores them.
+    shiftStart: "08:00",
+    shiftEndMonThu: "17:00",
+    shiftEndFri: "14:30",
+    shiftEndSat: null,
+    shiftBreaks: [],
   };
 
   const { data: holidayRows, error: holidaysError } = await supabase
