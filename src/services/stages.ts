@@ -1,6 +1,10 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { classifyStageRevert } from "@/services/stage-revert";
+
+export { classifyStageRevert };
 
 const VALID_COMPLETIONS = new Set([0, 100]);
+const REPROCESS_GRACE_MINUTES = 5;
 
 export async function updateStageProgress(input: {
   machineId: string;
@@ -25,20 +29,110 @@ export async function updateStageProgress(input: {
   }
 
   if (current.completion === input.completion) {
-    return { stage: current, log: null };
+    return { stage: current, log: null, revert: null };
   }
 
   const isReprocess = current.completion >= 100 && input.completion < 100;
 
+  if (isReprocess) {
+    const { data: lastLog, error: lastLogError } = await supabase
+      .from("stage_logs")
+      .select("*")
+      .eq("machine_id", input.machineId)
+      .eq("stage_id", input.stageId)
+      .eq("new_completion", 100)
+      .eq("is_undone", false)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (lastLogError) {
+      throw new Error(`No se pudo verificar el historial de la etapa: ${lastLogError.message}`);
+    }
+
+    const revert = classifyStageRevert(lastLog?.created_at ?? null, new Date(), REPROCESS_GRACE_MINUTES);
+
+    if (revert === "undo" && lastLog) {
+      const { error: undoLogError } = await supabase
+        .from("stage_logs")
+        .update({ is_undone: true })
+        .eq("id", lastLog.id);
+
+      if (undoLogError) {
+        throw new Error(`No se pudo deshacer la acción: ${undoLogError.message}`);
+      }
+
+      const { data: stage, error: updateError } = await supabase
+        .from("machine_stages")
+        .update({
+          completion: lastLog.previous_completion,
+          last_worker_id: input.workerId,
+          last_updated_at: new Date().toISOString(),
+        })
+        .eq("id", current.id)
+        .select("*")
+        .single();
+
+      if (updateError) {
+        throw new Error(`No se pudo actualizar la etapa: ${updateError.message}`);
+      }
+
+      await syncMachineCompletion(supabase, input.machineId);
+
+      return { stage, log: null, revert: "undo" as const };
+    }
+
+    const { stage, log } = await insertStageLogAndUpdateStage(supabase, {
+      machineId: input.machineId,
+      stageId: input.stageId,
+      workerId: input.workerId,
+      currentId: current.id,
+      previousCompletion: current.completion,
+      newCompletion: input.completion,
+      isReprocess: true,
+    });
+
+    await syncMachineCompletion(supabase, input.machineId);
+
+    return { stage, log, revert: "reprocess" as const };
+  }
+
+  const { stage, log } = await insertStageLogAndUpdateStage(supabase, {
+    machineId: input.machineId,
+    stageId: input.stageId,
+    workerId: input.workerId,
+    currentId: current.id,
+    previousCompletion: current.completion,
+    newCompletion: input.completion,
+    isReprocess: false,
+  });
+
+  await syncMachineCompletion(supabase, input.machineId);
+
+  return { stage, log, revert: null };
+}
+
+async function insertStageLogAndUpdateStage(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  input: {
+    machineId: string;
+    stageId: number;
+    workerId: string;
+    currentId: string;
+    previousCompletion: number;
+    newCompletion: number;
+    isReprocess: boolean;
+  },
+) {
   const { data: log, error: logError } = await supabase
     .from("stage_logs")
     .insert({
       machine_id: input.machineId,
       stage_id: input.stageId,
       worker_id: input.workerId,
-      previous_completion: current.completion,
-      new_completion: input.completion,
-      is_reprocess: isReprocess,
+      previous_completion: input.previousCompletion,
+      new_completion: input.newCompletion,
+      is_reprocess: input.isReprocess,
     })
     .select("*")
     .single();
@@ -50,19 +144,17 @@ export async function updateStageProgress(input: {
   const { data: stage, error: updateError } = await supabase
     .from("machine_stages")
     .update({
-      completion: input.completion,
+      completion: input.newCompletion,
       last_worker_id: input.workerId,
       last_updated_at: new Date().toISOString(),
     })
-    .eq("id", current.id)
+    .eq("id", input.currentId)
     .select("*")
     .single();
 
   if (updateError) {
     throw new Error(`No se pudo actualizar la etapa: ${updateError.message}`);
   }
-
-  await syncMachineCompletion(supabase, input.machineId);
 
   return { stage, log };
 }

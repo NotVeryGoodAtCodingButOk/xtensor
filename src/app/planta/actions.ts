@@ -58,6 +58,7 @@ export type LogStageResult = {
   ok: boolean;
   logged: boolean;
   finished: boolean;
+  revert: "undo" | "reprocess" | null;
 };
 
 /**
@@ -72,7 +73,7 @@ export async function logStageAction(input: {
   const workerId = await getActiveWorkerId();
 
   if (!(await isFactoryUnlocked()) || !workerId) {
-    return { ok: false, logged: false, finished: false };
+    return { ok: false, logged: false, finished: false, revert: null };
   }
 
   const completion = input.completion === 100 ? 100 : 0;
@@ -94,7 +95,7 @@ export async function logStageAction(input: {
   // against the real stage state once the mutation lands.
   revalidatePath(`/planta/maquinas/${input.machineId}`);
 
-  return { ok: true, logged: Boolean(result.log?.id), finished };
+  return { ok: true, logged: Boolean(result.log?.id), finished, revert: result.revert };
 }
 
 /**
