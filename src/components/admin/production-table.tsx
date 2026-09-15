@@ -10,12 +10,14 @@ import {
   sendMachineToHoldAction,
   warrantyMachineAction,
 } from "@/app/admin/actions";
+import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ActionTooltip, CellTooltip } from "@/components/ui/tooltip";
 import { Input } from "@/components/ui/input";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
 import { cn, formatCurrencyCop } from "@/lib/utils";
+import { isBehindReestimate } from "@/services/calculations";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
@@ -412,7 +414,7 @@ export function ProductionTable({
 
   return (
     <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-      <Table className="min-w-[1200px] text-xs">
+      <Table className="min-w-[1280px] text-xs">
         <TableHeader>
           <TableRow>
             {selectable && <TableHead className="w-8 px-2" />}
@@ -432,6 +434,7 @@ export function ProductionTable({
             {sh("accumulatedHours", "Acum", `${C} text-right`, "Horas acumuladas en cola")}
             {sh("assignedTo", "Quién")}
             {sh("promisedDate", "Prom.", C, "Fecha prometida")}
+            {!shipped && sh("reestimatedDate", "Reest.", C, "Fecha reestimada al reordenar la cola")}
             {shipped && sh("shippedAt", "Despach.", C, "Fecha de despacho")}
             {sh("firstTaskAt", "Inicio", C, "Inicio: primera tarea de un operario")}
             {!shipped && sh("estimatedDate", "Act.", C, "Fecha actualizada")}
@@ -444,8 +447,9 @@ export function ProductionTable({
         </TableHeader>
         <TableBody>
           {machines.map((machine) => {
-            const isLate   = machine.estimatedDate > machine.promisedDate;
+            const isLate   = isBehindReestimate(machine);
             const isRework = !shipped && (machine.isReproceso || machine.isWarranty);
+            const hasOpenReprocess = !shipped && machine.openReprocessStages.length > 0;
             const rowColor = colorRows ? getMachineRowColor(machine.colorName) : null;
             return (
               <TableRow
@@ -522,6 +526,19 @@ export function ProductionTable({
                   <CellTooltip text={machine.equipmentName}>
                     <span className="line-clamp-1">{machine.equipmentName}</span>
                   </CellTooltip>
+                  {hasOpenReprocess && (
+                    <CellTooltip
+                      text={`Reproceso: ${machine.openReprocessStages.join(", ")}`}
+                      className="mt-0.5 block max-w-full"
+                    >
+                      <Badge
+                        variant="danger"
+                        className="block max-w-full truncate rounded-[2px] px-1.5 py-0 text-[9px] normal-case tracking-normal"
+                      >
+                        Reproceso: {machine.openReprocessStages.join(", ")}
+                      </Badge>
+                    </CellTooltip>
+                  )}
                 </TableCell>
 
                 <TableCell className={`${C} whitespace-nowrap`}>
@@ -586,6 +603,11 @@ export function ProductionTable({
                     title="Doble clic para editar la fecha prometida"
                   />
                 </TableCell>
+                {!shipped && (
+                  <TableCell className={`${C} whitespace-nowrap text-[var(--xt-steel)]`}>
+                    {machine.reestimatedDate ? formatDateEs(machine.reestimatedDate) : "—"}
+                  </TableCell>
+                )}
                 {shipped && (
                   <TableCell className={`${C} whitespace-nowrap`}>
                     {machine.shippedAt ? formatDateEs(machine.shippedAt) : "—"}

@@ -7,6 +7,7 @@ import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
 import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { cn, formatPercent } from "@/lib/utils";
+import { isBehindReestimate } from "@/services/calculations";
 import { listHolidays } from "@/services/catalog";
 import { FACTORY_BOARD_STATUSES, listCalculatedMachines } from "@/services/machines";
 import { formatDateEsNoYear } from "@/services/schedule";
@@ -80,14 +81,15 @@ export default async function FactoryBoardPage() {
       </header>
 
       {/* Column labels */}
-      <div className="xt-board-columns sticky top-0 z-10 grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 bg-[var(--xt-black)] px-6 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-extrabold uppercase tracking-widest text-white">
+      <div className="xt-board-columns sticky top-0 z-10 grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 bg-[var(--xt-black)] px-6 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-extrabold uppercase tracking-widest text-white">
         <span className="text-center">SERIAL</span>
         <span>Máquina</span>
         <span>Cliente</span>
         <span>Color</span>
         <span>Avance</span>
         <span>Siguiente tarea</span>
-        <span className="text-right">Prometido</span>
+        <span className="text-right">Prometida</span>
+        <span className="text-right">Reestimada</span>
         <span className="text-right">Actualizada</span>
       </div>
 
@@ -122,7 +124,7 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
     <div
       style={rowStyle}
       className={cn(
-        "xt-board-row grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
+        "xt-board-row grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
         `xt-board-row-${status}`,
         status === "late" ? "xt-flash-late border-[var(--line-pro-red)]" : "border-white/10",
       )}
@@ -139,6 +141,13 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
             {machine.equipmentName}
           </h2>
         </CellTooltip>
+        {machine.openReprocessStages.length > 0 && (
+          <CellTooltip text={`Reproceso: ${machine.openReprocessStages.join(", ")}`} variant="light" className="mt-0.5 block max-w-full">
+            <span className="xt-board-reprocess block max-w-full truncate rounded-[2px] bg-[var(--line-pro-red)] px-1.5 py-0 text-[10px] font-bold uppercase leading-[1.4] tracking-wide text-white">
+              Reproceso: {machine.openReprocessStages.join(", ")}
+            </span>
+          </CellTooltip>
+        )}
       </div>
 
       {/* Client name */}
@@ -188,6 +197,11 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
       {/* Promised date */}
       <p className="xt-board-date text-right text-xl font-bold tabular-nums leading-none">
         {formatDateEsNoYear(machine.promisedDate)}
+      </p>
+
+      {/* Reestimated date (baseline snapshotted on queue entry/reorder) */}
+      <p className="xt-board-date xt-board-reestimated text-right text-xl font-bold tabular-nums leading-none">
+        {machine.reestimatedDate ? formatDateEsNoYear(machine.reestimatedDate) : "—"}
       </p>
 
       {/* Estimated date */}
@@ -241,7 +255,7 @@ function getRowStatus(machine: CalculatedMachineView): RowStatus {
   if (machine.progressPct >= 1) {
     return "done";
   }
-  if (machine.estimatedDate > machine.promisedDate) {
+  if (isBehindReestimate(machine)) {
     return "late";
   }
   return "active";
