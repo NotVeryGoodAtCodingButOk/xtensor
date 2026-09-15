@@ -46,7 +46,7 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
     <div className="xt-active-bar">
       <div className="xt-active-bar-row">
         <p className="xt-active-bar-text">
-          <span className="xt-eyebrow xt-eyebrow-light">En curso</span> {label}
+          <span className="xt-eyebrow xt-eyebrow-light">En curso</span> · {label}
         </p>
         <div className="xt-active-bar-actions">
           {session.kind === "stage" ? (
