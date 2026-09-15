@@ -4,17 +4,20 @@ import { ChevronRight } from "lucide-react";
 import { changeWorkerAction, lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
+import { ActiveSessionBar } from "@/components/factory/active-session-bar";
+import { MachineMultiSelect } from "@/components/factory/machine-multi-select";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
+import { getOpenSession } from "@/services/work-sessions";
 
 export default async function FactoryMachinesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ workerId?: string }>;
+  searchParams: Promise<{ workerId?: string; modo?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -28,7 +31,7 @@ export default async function FactoryMachinesPage({
     redirect("/planta");
   }
 
-  const [{ workerId: workerIdFromQuery }, cookieWorkerId, shared] = await Promise.all([
+  const [{ workerId: workerIdFromQuery, modo }, cookieWorkerId, shared] = await Promise.all([
     searchParams,
     getActiveWorkerId(),
     getFactorySharedData(),
@@ -43,16 +46,22 @@ export default async function FactoryMachinesPage({
     redirect("/planta/operarios?error=operario");
   }
 
+  const openSession = await getOpenSession(workerId);
   const machines = shared.machines;
   const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
   const workerColor = worker?.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
   const workerQuery = cookieWorkerId ? "" : `?workerId=${workerId}`;
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
+  const isMultiMode = modo === "varias";
+  const modeQuerySuffix = cookieWorkerId ? "" : `workerId=${workerId}`;
+  const unaHref = modeQuerySuffix ? `/planta/maquinas?${modeQuerySuffix}` : "/planta/maquinas";
+  const variasHref = `/planta/maquinas?${[modeQuerySuffix, "modo=varias"].filter(Boolean).join("&")}`;
+  const groupHrefBase = `/planta/maquinas/grupo${workerQuery}`;
 
   return (
     <main className="xt-planta xt-planta-page min-h-screen bg-[var(--xt-paper)]">
-      <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages", "colors"]} />
+      <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages", "colors", "work_sessions"]} />
       <header className="xt-planta-worker-header sticky top-0 z-10 border-b border-[var(--xt-graphite)]">
         <div
           className="xt-planta-worker-bar flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[var(--xt-white)]"
@@ -92,6 +101,8 @@ export default async function FactoryMachinesPage({
         <div className="xt-hazard h-2" />
       </header>
 
+      {openSession ? <ActiveSessionBar session={openSession} /> : null}
+
       {orderedMachines.length === 0 ? (
         <section className="xt-planta-empty grid min-h-[calc(100vh-7rem)] place-items-center px-5 py-12 text-center">
           <div className="xt-planta-empty-inner max-w-xl">
@@ -105,38 +116,60 @@ export default async function FactoryMachinesPage({
           </div>
         </section>
       ) : (
-        <div className="xt-machine-grid">
-          {orderedMachines.map((machine) => {
-            return (
-              <Link
-                key={machine.id}
-                href={`/planta/maquinas/${machine.id}${workerQuery}`}
-                className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
-              >
-                <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">
-                  <div className="xt-machine-card-heading flex items-start justify-between gap-3">
-                    <div className="xt-machine-card-fields grid gap-1 min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentCode ?? "Personalizado"}</p>
-                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentName}</p>
-                      <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.clientName}</p>
-                      <p className="flex min-w-0 items-baseline gap-1.5 text-sm font-bold text-[var(--xt-black)]">
-                        <span className="xt-eyebrow shrink-0 text-[0.625rem] leading-none">Cotización</span>
-                        <span className="truncate">{machine.serialNumber}</span>
-                      </p>
-                    </div>
-                    <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
-                  </div>
-                </div>
+        <>
+          <div className="xt-mode-toggle" role="group" aria-label="Modo de selección de máquinas">
+            <Link
+              href={unaHref}
+              aria-pressed={!isMultiMode}
+              className={`xt-mode-toggle-option ${!isMultiMode ? "xt-mode-toggle-option-active" : ""}`}
+            >
+              Una
+            </Link>
+            <Link
+              href={variasHref}
+              aria-pressed={isMultiMode}
+              className={`xt-mode-toggle-option ${isMultiMode ? "xt-mode-toggle-option-active" : ""}`}
+            >
+              Varias
+            </Link>
+          </div>
 
-                <div className="xt-machine-stage-strip border-t border-[var(--xt-cement)] px-4 py-2">
-                  <StageStrip stages={machine.stages} />
-                </div>
-              </Link>
-            );
-          })}
-        </div>
+          {isMultiMode ? (
+            <MachineMultiSelect machines={orderedMachines} groupHrefBase={groupHrefBase} />
+          ) : (
+            <div className="xt-machine-grid">
+              {orderedMachines.map((machine) => {
+                return (
+                  <Link
+                    key={machine.id}
+                    href={`/planta/maquinas/${machine.id}${workerQuery}`}
+                    className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
+                  >
+                    <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">
+                      <div className="xt-machine-card-heading flex items-start justify-between gap-3">
+                        <div className="xt-machine-card-fields grid gap-1 min-w-0 flex-1">
+                          <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentCode ?? "Personalizado"}</p>
+                          <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentName}</p>
+                          <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.clientName}</p>
+                          <p className="flex min-w-0 items-baseline gap-1.5 text-sm font-bold text-[var(--xt-black)]">
+                            <span className="xt-eyebrow shrink-0 text-[0.625rem] leading-none">Cotización</span>
+                            <span className="truncate">{machine.serialNumber}</span>
+                          </p>
+                        </div>
+                        <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
+                      </div>
+                    </div>
+
+                    <div className="xt-machine-stage-strip border-t border-[var(--xt-cement)] px-4 py-2">
+                      <StageStrip stages={machine.stages} />
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </main>
   );
 }
-

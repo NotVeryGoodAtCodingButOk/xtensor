@@ -693,6 +693,96 @@ select {
   gap: 0.25rem;
 }
 
+.xt-mode-toggle {
+  display: inline-flex;
+  gap: 0.25rem;
+  margin: 1rem 1.25rem 0;
+  border: 1px solid var(--xt-black);
+  padding: 0.25rem;
+  background: var(--xt-white);
+}
+
+.xt-mode-toggle-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.5rem;
+  padding: 0.5rem 1.25rem;
+  color: var(--xt-black);
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.xt-mode-toggle-option-active {
+  background: var(--xt-yellow);
+}
+
+.xt-machine-card-selectable {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  cursor: pointer;
+  text-align: left;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.xt-machine-card-selected {
+  border-color: var(--xt-yellow-deep, #d4a017);
+  border-width: 3px;
+  box-shadow: inset 0 0 0 1px var(--xt-black);
+}
+
+.xt-machine-card-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  border: 1px solid var(--xt-black);
+  color: var(--xt-black);
+}
+
+.xt-machine-card-selected .xt-machine-card-check {
+  background: var(--xt-yellow);
+}
+
+.xt-multi-select-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  padding: 1rem 1.25rem calc(1rem + env(safe-area-inset-bottom, 0px));
+  background: var(--xt-black);
+}
+
+.xt-multi-select-continue {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 3.25rem;
+  width: 100%;
+  max-width: 28rem;
+  border: 1px solid var(--xt-yellow);
+  background: var(--xt-yellow);
+  color: var(--xt-black);
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.xt-multi-select-continue-disabled {
+  border-color: var(--xt-steel);
+  background: var(--xt-graphite);
+  color: var(--xt-steel);
+}
+
 .xt-machine-detail {
   padding-bottom: 7rem;
 }
