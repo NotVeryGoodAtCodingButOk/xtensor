@@ -384,6 +384,7 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
     { header: "Estado", key: "status", width: 14 },
     { header: "Progreso", key: "progress", width: 10 },
     { header: "Fecha prometida", key: "promised", width: 16 },
+    { header: "Fecha reestimada", key: "reestimated", width: 16 },
     { header: "Fecha actualizada", key: "estimated", width: 16 },
     { header: "Asignado", key: "assigned", width: 18 },
   ];
@@ -412,6 +413,7 @@ export async function buildScheduleWorkbook(machines: CalculatedMachineView[]): 
       status: machine.status === "shipped" ? "Despachada" : "En producción",
       progress: `${Math.round(machine.progressPct * 100)}%`,
       estimated: machine.estimatedDate ? formatDateEs(machine.estimatedDate) : "",
+      reestimated: machine.reestimatedDate ? formatDateEs(machine.reestimatedDate) : "",
       promised: machine.promisedDate ? formatDateEs(machine.promisedDate) : "",
       assigned: machine.assignedTo ?? "",
     });
