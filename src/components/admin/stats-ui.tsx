@@ -128,6 +128,15 @@ export function formatLeadTime(value: number | null | undefined) {
   return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(days)} d`;
 }
 
+/** Hours with a fixed single decimal — used by the Horas-hombre dashboard, where a value can legitimately be 0.0 h. */
+export function formatHoursDecimal(minutes: number | null | undefined) {
+  if (minutes === null || minutes === undefined || !Number.isFinite(minutes)) {
+    return "Sin datos";
+  }
+
+  return `${new Intl.NumberFormat("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(minutes / 60)} h`;
+}
+
 export function formatDateTime(value: string) {
   return new Intl.DateTimeFormat("es-CO", {
     dateStyle: "medium",
