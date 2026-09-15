@@ -24,6 +24,7 @@ export type MachineView = {
   salePriceCop: number;
   assignedTo: string | null;
   promisedDate: string;
+  reestimatedDate: string | null;
   orderPosition: number;
   status: MachineStatus;
   shippedAt: string | null;
@@ -33,6 +34,8 @@ export type MachineView = {
   isReproceso: boolean;
   isWarranty: boolean;
   stages: StageView[];
+  /** Stage names currently in an open reprocess: reverted from 100% and not yet finished again. */
+  openReprocessStages: string[];
 };
 
 export type CalculatedMachineView = MachineView & {

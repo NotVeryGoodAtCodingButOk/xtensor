@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { buildMovedQueueOrder, FACTORY_BOARD_STATUSES, normalizeMachineStatusFilter } from "@/services/machines";
+import {
+  buildMovedQueueOrder,
+  changedQueueIds,
+  FACTORY_BOARD_STATUSES,
+  normalizeMachineStatusFilter,
+} from "@/services/machines";
 
 describe("factory board visibility", () => {
   it("keeps finished machines visible until they are shipped", () => {
@@ -41,5 +46,26 @@ describe("production queue ordering", () => {
     const orderedIds = buildMovedQueueOrder(queue, "m1", 99);
 
     expect(orderedIds).toEqual(["m2", "m3", "m1"]);
+  });
+});
+
+describe("changedQueueIds", () => {
+  it("returns only ids whose index moved", () => {
+    const before = ["m1", "m2", "m3", "m4"];
+    const after = ["m1", "m3", "m4", "m2"];
+
+    expect(changedQueueIds(before, after)).toEqual(["m3", "m4", "m2"]);
+  });
+
+  it("returns an empty array when the order is unchanged", () => {
+    const ids = ["m1", "m2", "m3"];
+    expect(changedQueueIds(ids, [...ids])).toEqual([]);
+  });
+
+  it("counts ids new to the list as changed", () => {
+    const before = ["m1", "m2"];
+    const after = ["m1", "m3", "m2"];
+
+    expect(changedQueueIds(before, after)).toEqual(["m3", "m2"]);
   });
 });

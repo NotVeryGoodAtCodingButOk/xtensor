@@ -4,6 +4,7 @@ import {
   calculateProgressPct,
   calculateQueue,
   estimateTotalHours,
+  isBehindReestimate,
   type ProductionSettings,
 } from "@/services/calculations";
 
@@ -41,5 +42,17 @@ describe("production calculations", () => {
       expect(result?.remainingHumanDays ?? 0).toBeCloseTo(row.excelRemainingHumanDays, 6);
       expect(result?.accumulatedHours ?? 0).toBeCloseTo(row.excelAccumulatedHours, 6);
     }
+  });
+});
+
+describe("isBehindReestimate", () => {
+  it("flags late only when the live estimate slips past the reestimated baseline", () => {
+    expect(isBehindReestimate({ estimatedDate: "2026-05-10", reestimatedDate: "2026-05-05" })).toBe(true);
+    expect(isBehindReestimate({ estimatedDate: "2026-05-05", reestimatedDate: "2026-05-10" })).toBe(false);
+    expect(isBehindReestimate({ estimatedDate: "2026-05-05", reestimatedDate: "2026-05-05" })).toBe(false);
+  });
+
+  it("never flags late when there is no reestimated baseline yet", () => {
+    expect(isBehindReestimate({ estimatedDate: "2026-05-10", reestimatedDate: null })).toBe(false);
   });
 });

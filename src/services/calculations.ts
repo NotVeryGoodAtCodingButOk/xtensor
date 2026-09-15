@@ -128,6 +128,16 @@ export function calculateQueue(
     });
 }
 
+/**
+ * A machine is "behind" its reestimate when the live estimatedDate has
+ * slipped past the reestimated_date baseline (snapshotted when it entered
+ * the queue or the queue was last reordered). A null baseline never flags
+ * as late — it means no snapshot exists yet.
+ */
+export function isBehindReestimate(machine: { estimatedDate: string; reestimatedDate: string | null }): boolean {
+  return machine.estimatedDate > (machine.reestimatedDate ?? machine.estimatedDate);
+}
+
 function clampCompletion(value: number) {
   if (![0, 25, 50, 75, 100].includes(value)) {
     throw new Error(`Avance de etapa inválido: ${value}`);

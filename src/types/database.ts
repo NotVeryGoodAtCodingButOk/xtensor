@@ -246,6 +246,7 @@ export type Database = {
           sale_price_cop: number;
           assigned_to: string | null;
           promised_date: string;
+          reestimated_date: string | null;
           order_position: number;
           status: MachineStatus;
           shipped_at: string | null;
@@ -267,6 +268,7 @@ export type Database = {
           sale_price_cop: number;
           assigned_to?: string | null;
           promised_date: string;
+          reestimated_date?: string | null;
           order_position: number;
           status?: MachineStatus;
           shipped_at?: string | null;
@@ -288,6 +290,7 @@ export type Database = {
           sale_price_cop?: number;
           assigned_to?: string | null;
           promised_date?: string;
+          reestimated_date?: string | null;
           order_position?: number;
           status?: MachineStatus;
           shipped_at?: string | null;
