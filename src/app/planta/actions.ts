@@ -16,6 +16,7 @@ import { getMachine } from "@/services/machines";
 import { toggleMachinePrevio } from "@/services/previos";
 import { undoStageLog, updateStageProgress } from "@/services/stages";
 import { verifyFactoryPassword } from "@/services/settings";
+import { finishSession, startOtherSession, startStageSession } from "@/services/work-sessions";
 
 export async function unlockFactoryAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
@@ -124,6 +125,116 @@ export async function toggleMachinePrevioFactoryAction(formData: FormData) {
   }
 
   revalidatePath("/planta/almacen");
+}
+
+export type SessionActionResult = {
+  ok: boolean;
+  error?: string;
+  finishedMachineIds?: string[];
+};
+
+/** Resolves the acting worker the same way logStageAction does, without redirecting. */
+async function resolveSessionWorkerId(): Promise<string | null> {
+  if (!(await isFactoryUnlocked())) {
+    return null;
+  }
+  return getActiveWorkerId();
+}
+
+function sessionErrorMessage(error: unknown, fallback: string) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+/**
+ * Revalidates the machine-list route plus every detail/group route (using the
+ * dynamic-path pattern so a single call covers every machine, without needing
+ * to know which ones were affected).
+ */
+function revalidatePlantaRoutes() {
+  revalidatePath("/planta/maquinas");
+  revalidatePath("/planta/maquinas/[id]", "page");
+  revalidatePath("/planta/maquinas/grupo", "page");
+}
+
+/** Starts a timed stage session on one or several machines. */
+export async function startStageSessionAction(input: {
+  machineIds: string[];
+  stageId: number;
+}): Promise<SessionActionResult> {
+  const workerId = await resolveSessionWorkerId();
+  if (!workerId) {
+    return { ok: false, error: "Selecciona un operario para continuar." };
+  }
+
+  try {
+    await startStageSession({ workerId, machineIds: input.machineIds, stageId: input.stageId });
+  } catch (error) {
+    return { ok: false, error: sessionErrorMessage(error, "No se pudo iniciar la actividad.") };
+  }
+
+  revalidateFactoryData();
+  revalidatePlantaRoutes();
+
+  return { ok: true };
+}
+
+/** Starts a timed "Otra actividad" session (no machine) with a required note. */
+export async function startOtherSessionAction(input: { note: string }): Promise<SessionActionResult> {
+  const workerId = await resolveSessionWorkerId();
+  if (!workerId) {
+    return { ok: false, error: "Selecciona un operario para continuar." };
+  }
+
+  try {
+    await startOtherSession({ workerId, note: input.note });
+  } catch (error) {
+    return { ok: false, error: sessionErrorMessage(error, "No se pudo iniciar la actividad.") };
+  }
+
+  revalidateFactoryData();
+  revalidatePlantaRoutes();
+
+  return { ok: true };
+}
+
+/** Terminar: closes the session and marks the stage done (100%) on every machine of the session. */
+export async function finishSessionAction(input: { sessionId: string }): Promise<SessionActionResult> {
+  const workerId = await resolveSessionWorkerId();
+  if (!workerId) {
+    return { ok: false, error: "Selecciona un operario para continuar." };
+  }
+
+  let finishedMachineIds: string[] = [];
+  try {
+    const result = await finishSession({ workerId, sessionId: input.sessionId, reason: "completed" });
+    finishedMachineIds = result.finishedMachineIds;
+  } catch (error) {
+    return { ok: false, error: sessionErrorMessage(error, "No se pudo terminar la actividad.") };
+  }
+
+  revalidateFactoryData();
+  revalidatePlantaRoutes();
+
+  return { ok: true, finishedMachineIds };
+}
+
+/** Pausar (or "Terminar" on an "otra actividad" session): closes the session without marking anything. */
+export async function pauseSessionAction(input: { sessionId: string }): Promise<SessionActionResult> {
+  const workerId = await resolveSessionWorkerId();
+  if (!workerId) {
+    return { ok: false, error: "Selecciona un operario para continuar." };
+  }
+
+  try {
+    await finishSession({ workerId, sessionId: input.sessionId, reason: "paused" });
+  } catch (error) {
+    return { ok: false, error: sessionErrorMessage(error, "No se pudo pausar la actividad.") };
+  }
+
+  revalidateFactoryData();
+  revalidatePlantaRoutes();
+
+  return { ok: true };
 }
 
 export async function undoStageAction(formData: FormData) {
