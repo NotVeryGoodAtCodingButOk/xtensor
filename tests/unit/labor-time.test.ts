@@ -369,6 +369,50 @@ describe("summarizeLabor", () => {
 
     expect(summary.byActivityType).toHaveLength(1);
     expect(summary.byActivityType[0]).toMatchObject({ activityTypeId: UNCLASSIFIED_ACTIVITY_ID, minutes: 105 });
-    expect(summary.otherActivities[0].note).toBe("Reunión");
+    expect(summary.sessions[0].note).toBe("Reunión");
+  });
+
+  it("logs every session, newest first, adding up to the registered time", () => {
+    const summary = summarizeLabor({
+      sessions: [
+        otherSession({ id: "s-early", activityTypeIds: ["a1"] }),
+        {
+          id: "s-late",
+          workerId: "w1",
+          kind: "stage",
+          stageId: 4,
+          activityTypeIds: [],
+          note: null,
+          isReprocess: true,
+          startedAt: "2026-06-01T14:00:00-05:00",
+          endedAt: "2026-06-01T15:00:00-05:00",
+          endReason: "paused",
+          machineIds: ["m1"],
+        },
+      ],
+      workers,
+      machines,
+      stages,
+      activityTypes,
+      shift,
+      holidays: noHolidays,
+      range: { startIso: "2026-06-01T00:00:00-05:00", endIso: "2026-06-02T00:00:00-05:00" },
+      now: "2026-06-01T18:00:00-05:00",
+      hourlyCostFallback: 20_000,
+      estimateHours: () => 1,
+    });
+
+    expect(summary.sessions.map((session) => session.sessionId)).toEqual(["s-late", "s-early"]);
+    expect(summary.sessions[0]).toMatchObject({
+      kind: "stage",
+      stageName: "Pulir",
+      isReprocess: true,
+      endReason: "paused",
+      machineSerialNumbers: [1000],
+    });
+    expect(summary.sessions[1]).toMatchObject({ kind: "other", activityTypeNames: ["Aseo"], stageName: null });
+
+    const logged = summary.sessions.reduce((total, session) => total + session.minutes, 0);
+    expect(logged).toBe(summary.totals.registeredMinutes);
   });
 });

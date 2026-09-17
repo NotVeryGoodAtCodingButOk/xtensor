@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, BarChart3, Clock, Coins, PauseCircle, RefreshCcw, Users, Wrench } from "lucide-react";
+import { AlertTriangle, BarChart3, Clock, Coins, PauseCircle, PieChart, RefreshCcw, Users, Wrench } from "lucide-react";
 
 export const metadata: Metadata = { title: "Horas-hombre XTENSOR" };
 import { StatisticsTabs } from "@/components/admin/statistics-tabs";
 import { formatCop, formatDateTime, formatHoursDecimal, formatPct, MetricCard, StatsTable } from "@/components/admin/stats-ui";
+import { buildTimeSplit, TimeSplitBar } from "@/components/admin/time-split-bar";
 import { AdminShell } from "@/components/app-shell";
 import { ConfigWarning } from "@/components/config-warning";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
@@ -41,11 +42,23 @@ export default async function LaborStatisticsPage({
   const { summary, stages, settings } = dashboard;
   const hasRecords = summary.totals.registeredMinutes > 0;
 
+  const splitSegments = buildTimeSplit({
+    machineMinutes: summary.totals.machineMinutes,
+    reprocessMinutes: summary.totals.reprocessMinutes,
+    activities: summary.byActivityType,
+  });
+
   const workerRows = [...summary.byWorker]
     .filter((worker) => worker.availableMinutes > 0 || worker.registeredMinutes > 0)
     .sort((a, b) => b.registeredMinutes - a.registeredMinutes)
     .map((worker) => [
-      worker.fullName,
+      <Link
+        key="name"
+        href={`/admin/estadisticas/horas/operario/${worker.workerId}?rango=${range.preset}`}
+        className="font-semibold underline decoration-[var(--xt-yellow-deep)] decoration-2 underline-offset-4"
+      >
+        {worker.fullName}
+      </Link>,
       String(worker.daysWithRecords),
       formatHoursDecimal(worker.registeredMinutes),
       formatHoursDecimal(worker.machineMinutes),
@@ -58,7 +71,7 @@ export default async function LaborStatisticsPage({
 
   const machineRows = [...summary.byMachine]
     .filter((machine) => machine.totalMinutes > 0 || machine.otherMinutes > 0)
-    .sort((a, b) => b.totalMinutes - a.totalMinutes)
+    .sort((a, b) => b.laborCostCop + b.otherCostCop - (a.laborCostCop + a.otherCostCop))
     .map((machine) => [
       `#${machine.serialNumber}`,
       <span key="label" className="inline-flex items-center gap-2 whitespace-nowrap">
@@ -66,22 +79,14 @@ export default async function LaborStatisticsPage({
         {machine.isWarranty ? <Badge variant="warning">Garantía</Badge> : null}
       </span>,
       formatHoursDecimal(machine.totalMinutes),
-      ...stages.map((stage) => formatHoursDecimal(machine.minutesByStage[stage.id] ?? 0)),
       formatHoursDecimal(machine.reprocessMinutes),
       formatHoursDecimal(machine.otherMinutes),
-      formatCop(machine.laborCostCop + machine.otherCostCop),
+      costCell(machine.laborCostCop),
+      costCell(machine.otherCostCop),
+      <strong key="total">{costCell(machine.laborCostCop + machine.otherCostCop)}</strong>,
       machine.estimatedHours !== null ? formatHoursDecimal(machine.estimatedHours * 60) : "Sin datos",
       deviationCell(machine.deviationPct),
-    ]);
-
-  const workerMachineRows = [...summary.byWorkerMachine]
-    .sort((a, b) => a.fullName.localeCompare(b.fullName) || b.minutes - a.minutes)
-    .map((entry) => [
-      entry.fullName,
-      `#${entry.serialNumber}`,
-      entry.stageName,
-      formatHoursDecimal(entry.minutes),
-      entry.isReprocess ? <Badge variant="warning">Reproceso</Badge> : "—",
+      ...stages.map((stage) => formatHoursDecimal(machine.minutesByStage[stage.id] ?? 0)),
     ]);
 
   const activityTypeRows = [...summary.byActivityType].map((activity) => [
@@ -92,14 +97,14 @@ export default async function LaborStatisticsPage({
     formatCop(activity.laborCostCop),
   ]);
 
-  const otherActivityRows = [...summary.otherActivities]
-    .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
-    .map((activity) => [
-      activity.fullName,
-      activity.activityTypeNames.join(" + ") || activity.note || "Sin clasificar",
-      activity.machineSerialNumbers.map((serial) => `#${serial}`).join(", ") || "—",
-      formatDateTime(activity.startedAt),
-      formatHoursDecimal(activity.minutes),
+  const otherActivityRows = summary.sessions
+    .filter((session) => session.kind === "other")
+    .map((session) => [
+      session.fullName,
+      session.activityTypeNames.join(" + ") || session.note || "Sin clasificar",
+      session.machineSerialNumbers.map((serial) => `#${serial}`).join(", ") || "—",
+      formatDateTime(session.startedAt),
+      formatHoursDecimal(session.minutes),
     ]);
 
   const openSessionRows = summary.dataQuality.openSessionsStartedBeforeToday.map((session) => [
@@ -156,7 +161,7 @@ export default async function LaborStatisticsPage({
               <p className="font-semibold">Todavía no hay tiempo registrado en este rango.</p>
               <p className="text-sm text-[var(--xt-steel)]">
                 La captura de horas empieza cuando un operario usa Iniciar cronómetro y Terminar en la tablet de planta, en una
-                etapa o en una actividad &laquo;Otro&raquo;.
+                etapa de producción o en una actividad del catálogo.
               </p>
             </div>
           </CardContent>
@@ -193,10 +198,10 @@ export default async function LaborStatisticsPage({
           />
           <MetricCard
             icon={PauseCircle}
-            eyebrow="Otras actividades"
-            title='Horas "Otro"'
+            eyebrow="Fuera de etapas"
+            title="Horas en actividades"
             value={formatHoursDecimal(summary.totals.otherMinutes)}
-            detail="Actividades sin máquina asociada."
+            detail="Aseo, orden, mejoras, arreglos e instalaciones."
             formula="totals.otherMinutes"
           />
           <MetricCard
@@ -226,6 +231,24 @@ export default async function LaborStatisticsPage({
         </div>
       </section>
 
+      {/* En qué se va el tiempo */}
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <PieChart className="h-5 w-5" />
+              En qué se va el tiempo
+            </CardTitle>
+            <CardDescription>
+              Reparto de las horas registradas entre producción, reproceso y cada actividad del catálogo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TimeSplitBar segments={splitSegments} empty="No hay tiempo registrado en este rango." />
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Por operario */}
       <section className="mb-5">
         <Card>
@@ -234,7 +257,9 @@ export default async function LaborStatisticsPage({
               <Users className="h-5 w-5" />
               Por operario
             </CardTitle>
-            <CardDescription>Horas registradas por operario, desglosadas por tipo de actividad.</CardDescription>
+            <CardDescription>
+              Horas registradas por operario, desglosadas por tipo de actividad. Toca un nombre para ver su detalle.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <StatsTable
@@ -245,7 +270,7 @@ export default async function LaborStatisticsPage({
                 "Jornada (h)",
                 "Máquinas (h)",
                 "Reproceso (h)",
-                "Otro (h)",
+                "Actividades (h)",
                 "Sin registrar (h)",
                 "Utilización %",
                 "Costo",
@@ -264,7 +289,10 @@ export default async function LaborStatisticsPage({
               <Wrench className="h-5 w-5" />
               Por máquina
             </CardTitle>
-            <CardDescription>Horas-hombre por máquina y etapa, costo real y desviación contra la hora estimada.</CardDescription>
+            <CardDescription>
+              Ordenadas por costo. El costo de actividades (arreglos, instalaciones) va aparte del de producción: es plata
+              real, pero no estaba en las horas estimadas, así que no entra en la desviación.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <StatsTable
@@ -273,31 +301,16 @@ export default async function LaborStatisticsPage({
                 "Serial",
                 "Máquina",
                 "Horas-hombre",
-                ...stages.map((stage) => stage.name),
                 "Reproceso (h)",
                 "Actividades (h)",
-                "Costo real",
+                "Costo producción",
+                "Costo actividades",
+                "Costo total",
                 "Horas estimadas",
                 "Desviación %",
+                ...stages.map((stage) => stage.name),
               ]}
               rows={machineRows}
-            />
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Operario x máquina */}
-      <section className="mb-5">
-        <Card>
-          <CardHeader>
-            <CardTitle>Operario × máquina</CardTitle>
-            <CardDescription>Detalle de horas por operario, máquina y etapa.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <StatsTable
-              empty="No hay registros de operario y máquina en este rango."
-              headers={["Operario", "Serial", "Etapa", "Horas", "Reproceso"]}
-              rows={workerMachineRows}
             />
           </CardContent>
         </Card>
@@ -396,6 +409,11 @@ function QualityStat({ label, value, detail }: { label: string; value: number; d
       <p className="mt-1 text-xs text-[var(--xt-steel)]">{detail}</p>
     </div>
   );
+}
+
+/** Un costo en cero es "sin nada registrado", no "sin datos": se muestra como raya. */
+function costCell(value: number) {
+  return value > 0 ? formatCop(value) : "—";
 }
 
 function deviationCell(pct: number | null) {

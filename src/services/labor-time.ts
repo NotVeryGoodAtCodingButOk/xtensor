@@ -290,15 +290,26 @@ export type LaborByWorkerMachine = {
   isReprocess: boolean;
 };
 
-export type LaborOtherActivity = {
+/**
+ * One captured cronómetro, as the dashboards show it: the bitácora behind
+ * every aggregate. Σ minutes of a worker's sessions is their
+ * registeredMinutes, so the log always reconciles with the totals.
+ */
+export type LaborSessionDetail = {
   sessionId: string;
   workerId: string;
   fullName: string;
+  kind: "stage" | "other";
+  stageId: number | null;
+  stageName: string | null;
   activityTypeNames: string[];
   /** Only on sessions registered before the catálogo existed. */
   note: string;
   machineSerialNumbers: number[];
+  isReprocess: boolean;
   startedAt: string;
+  endedAt: string | null;
+  endReason: "completed" | "paused" | null;
   minutes: number;
 };
 
@@ -309,7 +320,7 @@ export type LaborSummary = {
   byWorkerMachine: LaborByWorkerMachine[];
   byActivityType: LaborByActivityType[];
   byWorkerActivityType: LaborByWorkerActivityType[];
-  otherActivities: LaborOtherActivity[];
+  sessions: LaborSessionDetail[];
   dataQuality: {
     openSessionsStartedBeforeToday: Array<{ sessionId: string; workerId: string; fullName: string; startedAt: string }>;
     doneMarksWithoutSession: { count: number; list: DoneMarkWithoutSession[] };
@@ -379,7 +390,7 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
   const byWorkerMachineMap = new Map<string, LaborByWorkerMachine>();
   const byActivityTypeMap = new Map<string, LaborByActivityType & { workerIds: Set<string> }>();
   const byWorkerActivityTypeMap = new Map<string, LaborByWorkerActivityType>();
-  const otherActivities: LaborOtherActivity[] = [];
+  const sessionDetails: LaborSessionDetail[] = [];
 
   for (const session of input.sessions) {
     const effectiveStart = maxIso(session.startedAt, input.range.startIso);
@@ -406,6 +417,28 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
 
     workerEntry.registeredMinutes += sessionMinutes;
     workerEntry.laborCostCop += sessionCost;
+
+    sessionDetails.push({
+      sessionId: session.id,
+      workerId: session.workerId,
+      fullName,
+      kind: session.kind,
+      stageId: session.stageId,
+      stageName: session.stageId === null ? null : (stageNameById.get(session.stageId) ?? `Etapa ${session.stageId}`),
+      activityTypeNames: session.activityTypeIds
+        .map((id) => activityNameById.get(id) ?? "Actividad eliminada")
+        .sort((a, b) => a.localeCompare(b)),
+      note: session.note ?? "",
+      machineSerialNumbers: session.machineIds
+        .map((machineId) => machineById.get(machineId)?.serialNumber)
+        .filter((serial): serial is number => typeof serial === "number")
+        .sort((a, b) => a - b),
+      isReprocess: session.isReprocess,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      endReason: session.endReason,
+      minutes: sessionMinutes,
+    });
 
     if (session.kind === "other") {
       workerEntry.otherMinutes += sessionMinutes;
@@ -471,21 +504,6 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
         }
       }
 
-      otherActivities.push({
-        sessionId: session.id,
-        workerId: session.workerId,
-        fullName,
-        activityTypeNames: session.activityTypeIds
-          .map((id) => activityNameById.get(id) ?? "Actividad eliminada")
-          .sort((a, b) => a.localeCompare(b)),
-        note: session.note ?? "",
-        machineSerialNumbers: session.machineIds
-          .map((machineId) => machineById.get(machineId)?.serialNumber)
-          .filter((serial): serial is number => typeof serial === "number")
-          .sort((a, b) => a - b),
-        startedAt: session.startedAt,
-        minutes: sessionMinutes,
-      });
       continue;
     }
 
@@ -590,7 +608,7 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
       .map(({ workerIds, ...entry }) => ({ ...entry, workerCount: workerIds.size }))
       .sort((a, b) => b.minutes - a.minutes),
     byWorkerActivityType: [...byWorkerActivityTypeMap.values()],
-    otherActivities,
+    sessions: [...sessionDetails].sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime()),
     dataQuality: {
       openSessionsStartedBeforeToday,
       doneMarksWithoutSession: {
