@@ -7,13 +7,14 @@ import { ConfigWarning } from "@/components/config-warning";
 import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { MachineMultiSelect } from "@/components/factory/machine-multi-select";
 import { OtherActivityPanel } from "@/components/factory/other-activity-panel";
+import { PausedActivitiesBar } from "@/components/factory/paused-activities-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
-import { getOpenSession } from "@/services/work-sessions";
+import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachinesPage({
   searchParams,
@@ -47,7 +48,10 @@ export default async function FactoryMachinesPage({
     redirect("/planta/operarios?error=operario");
   }
 
-  const openSession = await getOpenSession(workerId);
+  const [openSession, pausedActivities] = await Promise.all([
+    getOpenSession(workerId),
+    listPausedActivities(workerId),
+  ]);
   const machines = shared.machines;
   const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
   const workerColor = worker?.display_color ?? "var(--xt-black)";
@@ -104,6 +108,7 @@ export default async function FactoryMachinesPage({
       </header>
 
       {openSession ? <ActiveSessionBar session={openSession} /> : null}
+      <PausedActivitiesBar activities={pausedActivities} hasOpenSession={Boolean(openSession)} />
 
       {orderedMachines.length === 0 ? (
         <section className="xt-planta-empty grid min-h-[calc(100vh-7rem)] place-items-center px-5 py-12 text-center">

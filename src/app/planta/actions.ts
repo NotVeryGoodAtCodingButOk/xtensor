@@ -16,7 +16,13 @@ import { getMachine } from "@/services/machines";
 import { toggleMachinePrevio } from "@/services/previos";
 import { undoStageLog, updateStageProgress } from "@/services/stages";
 import { verifyFactoryPassword } from "@/services/settings";
-import { finishSession, startOtherSession, startStageSession } from "@/services/work-sessions";
+import {
+  finishPausedActivity,
+  finishSession,
+  resumeActivity,
+  startOtherSession,
+  startStageSession,
+} from "@/services/work-sessions";
 
 export async function unlockFactoryAction(formData: FormData) {
   const password = String(formData.get("password") ?? "");
@@ -218,7 +224,10 @@ export async function finishSessionAction(input: { sessionId: string }): Promise
   return { ok: true, finishedMachineIds };
 }
 
-/** Pausar (or "Terminar" on an "otra actividad" session): closes the session without marking anything. */
+/**
+ * Pausar: cierra el tramo en curso sin marcar nada. La actividad queda
+ * pausada y se puede reanudar con el tiempo acumulado.
+ */
 export async function pauseSessionAction(input: { sessionId: string }): Promise<SessionActionResult> {
   const workerId = await resolveSessionWorkerId();
   if (!workerId) {
@@ -235,6 +244,46 @@ export async function pauseSessionAction(input: { sessionId: string }): Promise<
   revalidatePlantaRoutes();
 
   return { ok: true };
+}
+
+/** Reanudar: abre un tramo nuevo sobre una actividad pausada. */
+export async function resumeActivityAction(input: { activityId: string }): Promise<SessionActionResult> {
+  const workerId = await resolveSessionWorkerId();
+  if (!workerId) {
+    return { ok: false, error: "Selecciona un operario para continuar." };
+  }
+
+  try {
+    await resumeActivity({ workerId, activityId: input.activityId });
+  } catch (error) {
+    return { ok: false, error: sessionErrorMessage(error, "No se pudo reanudar la actividad.") };
+  }
+
+  revalidateFactoryData();
+  revalidatePlantaRoutes();
+
+  return { ok: true };
+}
+
+/** Terminar sobre una actividad pausada: marca la etapa sin volver a arrancar el cronómetro. */
+export async function finishPausedActivityAction(input: { activityId: string }): Promise<SessionActionResult> {
+  const workerId = await resolveSessionWorkerId();
+  if (!workerId) {
+    return { ok: false, error: "Selecciona un operario para continuar." };
+  }
+
+  let finishedMachineIds: string[] = [];
+  try {
+    const result = await finishPausedActivity({ workerId, activityId: input.activityId });
+    finishedMachineIds = result.finishedMachineIds;
+  } catch (error) {
+    return { ok: false, error: sessionErrorMessage(error, "No se pudo terminar la actividad.") };
+  }
+
+  revalidateFactoryData();
+  revalidatePlantaRoutes();
+
+  return { ok: true, finishedMachineIds };
 }
 
 export async function undoStageAction(formData: FormData) {

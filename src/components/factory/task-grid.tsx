@@ -4,14 +4,16 @@ import type { MouseEvent } from "react";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  finishPausedActivityAction,
   finishSessionAction,
   logStageAction,
   pauseSessionAction,
+  resumeActivityAction,
   startStageSessionAction,
 } from "@/app/planta/actions";
 import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { QueryToast } from "@/components/ui/query-toast";
-import { deriveStageCardState, formatElapsedTime, sameMachineSet } from "@/lib/work-session-ui";
+import { deriveStageCardState, formatElapsedTime, sameMachineSet, totalElapsedMs } from "@/lib/work-session-ui";
 import type { OpenSessionView } from "@/services/work-sessions";
 
 export type TaskStage = {
@@ -24,6 +26,14 @@ export type TaskGridMachine = {
   id: string;
   serialNumber: number;
   stages: TaskStage[];
+};
+
+/** A paused activity of the active worker, narrowed to what a card needs. */
+export type TaskGridPausedActivity = {
+  activityId: string;
+  stageId: number;
+  machineIds: string[];
+  accumulatedMs: number;
 };
 
 type ToastState = { message: string; description?: string | null } | null;
@@ -39,10 +49,12 @@ type CompletionUpdate = { machineId: string; stageId: number; completion: number
 export function TaskGrid({
   machines,
   openSession,
+  pausedActivities = [],
   continueHref,
 }: {
   machines: TaskGridMachine[];
   openSession: OpenSessionView | null;
+  pausedActivities?: TaskGridPausedActivity[];
   continueHref: string;
 }) {
   const router = useRouter();
@@ -80,11 +92,16 @@ export function TaskGrid({
         openSession?.kind === "stage" &&
         openSession.stageId === stageDef.id &&
         sameMachineSet(openSession.machines.map((machine) => machine.id), machineIds);
+      const paused =
+        pausedActivities.find(
+          (activity) => activity.stageId === stageDef.id && sameMachineSet(activity.machineIds, machineIds),
+        ) ?? null;
 
-      return { stageId: stageDef.id, name: stageDef.name, state, isCurrentSession };
+      return { stageId: stageDef.id, name: stageDef.name, state, isCurrentSession, paused };
     })
     .sort((a, b) => {
       if (a.isCurrentSession !== b.isCurrentSession) return a.isCurrentSession ? -1 : 1;
+      if (Boolean(a.paused) !== Boolean(b.paused)) return a.paused ? -1 : 1;
       if (a.state.allDone !== b.state.allDone) return a.state.allDone ? 1 : -1;
       return a.stageId - b.stageId;
     });
@@ -119,12 +136,7 @@ export function TaskGrid({
         return;
       }
       setShowReturnBar(true);
-      const finishedCount = result.finishedMachineIds?.length ?? 0;
-      if (finishedCount === 1) {
-        notify("Máquina terminada", "Todas las etapas quedaron hechas.");
-      } else if (finishedCount > 1) {
-        notify(`${finishedCount} máquinas terminadas`, "Todas las etapas quedaron hechas.");
-      }
+      notifyFinishedMachines(result.finishedMachineIds?.length ?? 0);
       router.refresh();
     });
   }
@@ -142,6 +154,43 @@ export function TaskGrid({
       setShowReturnBar(true);
       router.refresh();
     });
+  }
+
+  function handleResume(stageId: number, activityId: string) {
+    setPendingStageId(stageId);
+    startTransition(async () => {
+      const result = await resumeActivityAction({ activityId });
+      setPendingStageId(null);
+      if (!result.ok) {
+        notify(result.error ?? "No se pudo reanudar la actividad.");
+        return;
+      }
+      setShowReturnBar(true);
+      router.refresh();
+    });
+  }
+
+  function handleFinishPaused(stageId: number, activityId: string) {
+    setPendingStageId(stageId);
+    startTransition(async () => {
+      const result = await finishPausedActivityAction({ activityId });
+      setPendingStageId(null);
+      if (!result.ok) {
+        notify(result.error ?? "No se pudo terminar la actividad.");
+        return;
+      }
+      setShowReturnBar(true);
+      notifyFinishedMachines(result.finishedMachineIds?.length ?? 0);
+      router.refresh();
+    });
+  }
+
+  function notifyFinishedMachines(count: number) {
+    if (count === 1) {
+      notify("Máquina terminada", "Todas las etapas quedaron hechas.");
+    } else if (count > 1) {
+      notify(`${count} máquinas terminadas`, "Todas las etapas quedaron hechas.");
+    }
   }
 
   function handleReprocess(stageId: number, machineId: string, event: MouseEvent) {
@@ -193,33 +242,66 @@ export function TaskGrid({
           const cardIsPending = pendingStageId === card.stageId;
           const hasOtherOpenSession = Boolean(openSession) && !card.isCurrentSession;
 
+          // A stage the worker paused, unless it is already running again or
+          // someone closed it in the meantime.
+          const paused = card.isCurrentSession || card.state.allDone ? null : card.paused;
+
           return (
             <div
               key={card.stageId}
               className={`xt-task-card ${card.state.allDone ? "xt-task-card-done" : ""} ${
                 card.isCurrentSession ? "xt-task-card-active" : ""
-              }`}
+              } ${paused ? "xt-task-card-paused" : ""}`}
             >
               <div className="xt-task-card-body">
                 <div className="xt-task-card-heading">
                   <p className="xt-eyebrow">
                     {card.isCurrentSession
                       ? "En curso"
-                      : card.state.allDone
-                        ? isGroup
-                          ? "Hecha en todas"
-                          : "Hecha"
-                        : isGroup
-                          ? `Hecha en ${card.state.doneCount} de ${card.state.total}`
-                          : "Pendiente"}
+                      : paused
+                        ? "Pausada"
+                        : card.state.allDone
+                          ? isGroup
+                            ? "Hecha en todas"
+                            : "Hecha"
+                          : isGroup
+                            ? `Hecha en ${card.state.doneCount} de ${card.state.total}`
+                            : "Pendiente"}
                   </p>
                   <h2 className="xt-task-title [font-family:var(--font-barlow-condensed)] text-5xl font-bold leading-none break-words">
                     {card.name}
                   </h2>
-                  {card.isCurrentSession && openSession ? <CardTimer startedAt={openSession.startedAt} /> : null}
+                  {card.isCurrentSession && openSession ? (
+                    <CardTimer startedAt={openSession.startedAt} accumulatedMs={openSession.accumulatedMs} />
+                  ) : null}
+                  {paused ? <p className="xt-task-card-timer">{formatElapsedTime(paused.accumulatedMs)}</p> : null}
                 </div>
 
-                {card.isCurrentSession ? (
+                {paused ? (
+                  <div className="xt-task-card-actions xt-task-card-actions-column">
+                    <div className="xt-task-card-actions">
+                      <button
+                        type="button"
+                        className="xt-task-card-btn xt-task-card-btn-start"
+                        disabled={cardIsPending || hasOtherOpenSession}
+                        onClick={() => handleResume(card.stageId, paused.activityId)}
+                      >
+                        Reanudar
+                      </button>
+                      <button
+                        type="button"
+                        className="xt-task-card-btn"
+                        disabled={cardIsPending}
+                        onClick={() => handleFinishPaused(card.stageId, paused.activityId)}
+                      >
+                        Terminar
+                      </button>
+                    </div>
+                    {hasOtherOpenSession ? (
+                      <p className="xt-task-card-hint">Termina o pausa lo que tienes en curso</p>
+                    ) : null}
+                  </div>
+                ) : card.isCurrentSession ? (
                   <div className="xt-task-card-actions">
                     <button
                       type="button"
@@ -257,7 +339,7 @@ export function TaskGrid({
                       disabled={cardIsPending || hasOtherOpenSession}
                       onClick={() => handleStart(card.stageId)}
                     >
-                      Iniciar
+                      Iniciar cronómetro
                     </button>
                     {hasOtherOpenSession ? (
                       <p className="xt-task-card-hint">Termina o pausa lo que tienes en curso</p>
@@ -289,8 +371,12 @@ export function TaskGrid({
   );
 }
 
-/** Live HH:MM:SS ticker for the card matching the worker's open session. */
-function CardTimer({ startedAt }: { startedAt: string }) {
+/**
+ * Live HH:MM:SS ticker for the card matching the worker's open session. Counts
+ * from the time already logged before the last pause, so reanudar picks up
+ * where the cronómetro left off instead of restarting at zero.
+ */
+function CardTimer({ startedAt, accumulatedMs }: { startedAt: string; accumulatedMs: number }) {
   const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
@@ -298,5 +384,5 @@ function CardTimer({ startedAt }: { startedAt: string }) {
     return () => window.clearInterval(interval);
   }, []);
 
-  return <p className="xt-task-card-timer">{formatElapsedTime(now - new Date(startedAt).getTime())}</p>;
+  return <p className="xt-task-card-timer">{formatElapsedTime(totalElapsedMs(accumulatedMs, startedAt, now))}</p>;
 }

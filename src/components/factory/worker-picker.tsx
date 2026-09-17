@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { describeOpenSession } from "@/lib/work-session-ui";
 import type { OpenSessionSummary } from "@/services/work-sessions";
 
 type WorkerCard = {
@@ -49,7 +50,7 @@ export function WorkerPicker({
             style={{ background: worker.display_color ?? "var(--xt-black)" }}
           >
             {openSession ? (
-              <span className="xt-worker-card-badge">En curso: {openSession.stageName ?? "Otra actividad"}</span>
+              <span className="xt-worker-card-badge">En curso: {describeOpenSession(openSession)}</span>
             ) : null}
             <span className="xt-worker-name [font-family:var(--font-barlow-condensed)] text-2xl font-bold leading-tight break-words lg:text-3xl">
               {worker.full_name}

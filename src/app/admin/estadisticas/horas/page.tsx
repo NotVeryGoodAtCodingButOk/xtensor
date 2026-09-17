@@ -140,8 +140,8 @@ export default async function LaborStatisticsPage({
             <div>
               <p className="font-semibold">Todavía no hay tiempo registrado en este rango.</p>
               <p className="text-sm text-[var(--xt-steel)]">
-                La captura de horas empieza cuando un operario usa Iniciar y Terminar en la tablet de planta, en una etapa o en una
-                actividad &laquo;Otro&raquo;.
+                La captura de horas empieza cuando un operario usa Iniciar cronómetro y Terminar en la tablet de planta, en una
+                etapa o en una actividad &laquo;Otro&raquo;.
               </p>
             </div>
           </CardContent>

@@ -10,7 +10,8 @@ const NOTE_MAX_LENGTH = 200;
 /**
  * Header control for logging time against no specific machine (cleaning,
  * maintenance, meetings, etc). A required short note replaces the machine
- * pick. Iniciar is disabled while the worker already has an open session.
+ * pick. Iniciar cronómetro is disabled while the worker already has an open
+ * session.
  */
 export function OtherActivityPanel({ hasOpenSession, navButtonClass }: { hasOpenSession: boolean; navButtonClass: string }) {
   const router = useRouter();
@@ -91,7 +92,7 @@ export function OtherActivityPanel({ hasOpenSession, navButtonClass }: { hasOpen
                 disabled={hasOpenSession || isPending || note.trim().length === 0}
                 onClick={handleSubmit}
               >
-                Iniciar
+                Iniciar cronómetro
               </button>
             </div>
           </div>

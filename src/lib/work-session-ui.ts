@@ -30,6 +30,17 @@ export function formatElapsedTime(elapsedMs: number): string {
   return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
+/**
+ * Elapsed time to show for a running activity: what earlier segments already
+ * logged (before it was paused) plus the segment running right now.
+ */
+export function totalElapsedMs(accumulatedMs: number, startedAtIso: string, nowMs: number): number {
+  const startedMs = new Date(startedAtIso).getTime();
+  const current = Number.isNaN(startedMs) ? 0 : nowMs - startedMs;
+  const accumulated = Number.isFinite(accumulatedMs) ? Math.max(0, accumulatedMs) : 0;
+  return accumulated + Math.max(0, current);
+}
+
 /** "#12, #34 (+2)" — compact serial-number list for the active-session bar. */
 export function formatMachineList(serialNumbers: number[], maxShown = 2): string {
   if (serialNumbers.length === 0) {
@@ -38,6 +49,23 @@ export function formatMachineList(serialNumbers: number[], maxShown = 2): string
   const shown = serialNumbers.slice(0, maxShown).map((serial) => `#${serial}`);
   const extra = serialNumbers.length - shown.length;
   return extra > 0 ? `${shown.join(", ")} (+${extra})` : shown.join(", ");
+}
+
+/**
+ * "Pulir · #12, #34" — what a worker is working on right now, for the badge in
+ * the operario picker. The machine is part of the label so the worker can tell
+ * which one their cronómetro is running on.
+ */
+export function describeOpenSession(session: {
+  kind: "stage" | "other";
+  stageName: string | null;
+  note: string | null;
+  machineSerialNumbers: number[];
+}): string {
+  const activity =
+    session.kind === "stage" ? (session.stageName ?? "Etapa") : session.note?.trim() || "Otra actividad";
+  const machines = formatMachineList(session.machineSerialNumbers);
+  return machines ? `${activity} · ${machines}` : activity;
 }
 
 /** True when `startedAtIso` falls before the local calendar day of `now`. */

@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   deriveStageCardState,
+  describeOpenSession,
   formatElapsedTime,
   formatMachineList,
   isStartedBeforeToday,
   sameMachineSet,
+  totalElapsedMs,
 } from "@/lib/work-session-ui";
 
 describe("sameMachineSet", () => {
@@ -66,6 +68,63 @@ describe("formatMachineList", () => {
 
   it("respects a custom max", () => {
     expect(formatMachineList([1, 2, 3], 1)).toBe("#1 (+2)");
+  });
+});
+
+describe("totalElapsedMs", () => {
+  const now = new Date("2026-09-16T10:00:00Z").getTime();
+
+  it("counts only the running segment when nothing was logged before", () => {
+    expect(totalElapsedMs(0, "2026-09-16T09:30:00Z", now)).toBe(30 * 60_000);
+  });
+
+  it("adds the time logged before the last pause", () => {
+    // 45 min logged earlier + 30 min since reanudar.
+    expect(totalElapsedMs(45 * 60_000, "2026-09-16T09:30:00Z", now)).toBe(75 * 60_000);
+  });
+
+  it("keeps the accumulated time when the clock is behind the start", () => {
+    expect(totalElapsedMs(45 * 60_000, "2026-09-16T10:30:00Z", now)).toBe(45 * 60_000);
+  });
+
+  it("ignores a malformed start", () => {
+    expect(totalElapsedMs(45 * 60_000, "not-a-date", now)).toBe(45 * 60_000);
+  });
+
+  it("ignores a negative accumulated total", () => {
+    expect(totalElapsedMs(-1000, "2026-09-16T09:30:00Z", now)).toBe(30 * 60_000);
+  });
+});
+
+describe("describeOpenSession", () => {
+  it("names the stage and the machine being worked on", () => {
+    expect(
+      describeOpenSession({ kind: "stage", stageName: "Pulir", note: null, machineSerialNumbers: [12] }),
+    ).toBe("Pulir · #12");
+  });
+
+  it("lists every machine of a group session", () => {
+    expect(
+      describeOpenSession({ kind: "stage", stageName: "Pintar", note: null, machineSerialNumbers: [12, 34] }),
+    ).toBe("Pintar · #12, #34");
+  });
+
+  it("falls back to a generic stage label", () => {
+    expect(describeOpenSession({ kind: "stage", stageName: null, note: null, machineSerialNumbers: [12] })).toBe(
+      "Etapa · #12",
+    );
+  });
+
+  it("uses the note for an activity without a machine", () => {
+    expect(describeOpenSession({ kind: "other", stageName: null, note: "Aseo", machineSerialNumbers: [] })).toBe(
+      "Aseo",
+    );
+  });
+
+  it("falls back when the note is blank", () => {
+    expect(describeOpenSession({ kind: "other", stageName: null, note: "   ", machineSerialNumbers: [] })).toBe(
+      "Otra actividad",
+    );
   });
 });
 

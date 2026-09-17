@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
-import { getOpenSession } from "@/services/work-sessions";
+import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachineGroupPage({
   searchParams,
@@ -55,7 +55,10 @@ export default async function FactoryMachineGroupPage({
     redirect(`/planta/maquinas${workerQuery}`);
   }
 
-  const openSession = await getOpenSession(resolvedWorkerId);
+  const [openSession, pausedActivities] = await Promise.all([
+    getOpenSession(resolvedWorkerId),
+    listPausedActivities(resolvedWorkerId),
+  ]);
   const workerColor = worker?.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
@@ -125,6 +128,12 @@ export default async function FactoryMachineGroupPage({
           })),
         }))}
         openSession={openSession}
+        pausedActivities={pausedActivities.map((activity) => ({
+          activityId: activity.activityId,
+          stageId: activity.stageId,
+          machineIds: activity.machines.map((item) => item.id),
+          accumulatedMs: activity.accumulatedMs,
+        }))}
         continueHref={continueHref}
       />
     </main>

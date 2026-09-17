@@ -16,12 +16,31 @@ export type OpenSessionMachine = {
 export type OpenSessionView = {
   id: string;
   workerId: string;
+  /** Chain id shared by every segment (pausar/reanudar) of this activity. */
+  activityId: string;
   kind: "stage" | "other";
   stageId: number | null;
   stageName: string | null;
   note: string | null;
   isReprocess: boolean;
   startedAt: string;
+  /** Time already logged in earlier segments of the activity, before this one. */
+  accumulatedMs: number;
+  machines: OpenSessionMachine[];
+};
+
+/** An activity the worker paused and can pick up again where it left off. */
+export type PausedActivityView = {
+  activityId: string;
+  stageId: number;
+  stageName: string | null;
+  isReprocess: boolean;
+  /** Start of the first segment — when the worker first began this activity. */
+  startedAt: string;
+  /** End of the last segment — when they paused. */
+  pausedAt: string;
+  /** Time logged across every segment so far. */
+  accumulatedMs: number;
   machines: OpenSessionMachine[];
 };
 
@@ -31,23 +50,26 @@ export type OpenSessionSummary = {
   stageName: string | null;
   note: string | null;
   startedAt: string;
-  machineCount: number;
+  /** Serial numbers of the machines being worked on, to identify them in the picker. */
+  machineSerialNumbers: number[];
+};
+
+type SessionMachineRow = {
+  machine_id: string;
+  machines: Pick<MachineRow, "id" | "serial_number" | "custom_equipment_name" | "status"> & {
+    equipment_catalog: { name: string } | null;
+    clients: { name: string } | null;
+  };
 };
 
 type OpenSessionSelectRow = WorkSessionRow & {
   stages: { name: string } | null;
-  work_session_machines: Array<{
-    machine_id: string;
-    machines: Pick<MachineRow, "id" | "serial_number" | "custom_equipment_name"> & {
-      equipment_catalog: { name: string } | null;
-      clients: { name: string } | null;
-    };
-  }>;
+  work_session_machines: SessionMachineRow[];
 };
 
 type OpenSessionSummaryRow = Pick<WorkSessionRow, "worker_id" | "kind" | "note" | "started_at"> & {
   stages: { name: string } | null;
-  work_session_machines: Array<{ machine_id: string }>;
+  work_session_machines: Array<{ machines: Pick<MachineRow, "serial_number"> | null }>;
 };
 
 type SessionWithMachineIdsRow = WorkSessionRow & {
@@ -59,9 +81,12 @@ const OPEN_SESSION_SELECT = `
   stages(name),
   work_session_machines(
     machine_id,
-    machines(id, serial_number, custom_equipment_name, equipment_catalog(name), clients(name))
+    machines(id, serial_number, custom_equipment_name, status, equipment_catalog(name), clients(name))
   )
 `;
+
+/** How far back a paused activity stays resumable from the factory floor. */
+const PAUSED_ACTIVITY_WINDOW_DAYS = 30;
 
 /** The active worker's own open session, or null. At most one can be open. */
 export async function getOpenSession(workerId: string): Promise<OpenSessionView | null> {
@@ -80,7 +105,10 @@ export async function getOpenSession(workerId: string): Promise<OpenSessionView 
     return null;
   }
 
-  return mapOpenSessionRow(data as unknown as OpenSessionSelectRow);
+  const row = data as unknown as OpenSessionSelectRow;
+  const accumulatedMs = await sumClosedSegmentsMs(supabase, workerId, row.activity_id);
+
+  return mapOpenSessionRow(row, accumulatedMs);
 }
 
 /** Every open session across workers, for the worker-picker badges. */
@@ -88,7 +116,7 @@ export async function listOpenSessions(): Promise<OpenSessionSummary[]> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("work_sessions")
-    .select("worker_id, kind, note, started_at, stages(name), work_session_machines(machine_id)")
+    .select("worker_id, kind, note, started_at, stages(name), work_session_machines(machines(serial_number))")
     .is("ended_at", null);
 
   if (error) {
@@ -103,8 +131,90 @@ export async function listOpenSessions(): Promise<OpenSessionSummary[]> {
     stageName: row.stages?.name ?? null,
     note: row.note,
     startedAt: row.started_at,
-    machineCount: row.work_session_machines?.length ?? 0,
+    machineSerialNumbers: (row.work_session_machines ?? [])
+      .map((entry) => entry.machines?.serial_number)
+      .filter((serial): serial is number => typeof serial === "number")
+      .sort((a, b) => a - b),
   }));
+}
+
+/**
+ * The worker's paused stage activities, newest pause first. An activity is
+ * resumable while every one of its segments is closed, the last one was
+ * closed by Pausar, none was closed by Terminar, every machine is still in
+ * production and the stage is still pending on at least one of them.
+ */
+export async function listPausedActivities(workerId: string): Promise<PausedActivityView[]> {
+  const supabase = createSupabaseAdminClient();
+  const cutoff = new Date(Date.now() - PAUSED_ACTIVITY_WINDOW_DAYS * 24 * 60 * 60_000).toISOString();
+
+  const { data, error } = await supabase
+    .from("work_sessions")
+    .select(OPEN_SESSION_SELECT)
+    .eq("worker_id", workerId)
+    .eq("kind", "stage")
+    .gte("started_at", cutoff)
+    .order("started_at", { ascending: true });
+
+  if (error) {
+    throw new Error(`No se pudieron cargar las actividades pausadas: ${error.message}`);
+  }
+
+  const rows = (data ?? []) as unknown as OpenSessionSelectRow[];
+  const chains = groupByActivity(rows);
+  const candidates: PausedActivityView[] = [];
+
+  for (const segments of chains.values()) {
+    if (!isResumableChain(segments)) {
+      continue;
+    }
+
+    const last = segments[segments.length - 1];
+    if (last.stage_id === null) {
+      continue;
+    }
+
+    const machines = mapSessionMachines(segments);
+    const stillInProduction = segments[0].work_session_machines.every(
+      (entry) => entry.machines?.status === "in_production",
+    );
+    if (machines.length === 0 || !stillInProduction) {
+      continue;
+    }
+
+    candidates.push({
+      activityId: last.activity_id,
+      stageId: last.stage_id,
+      stageName: last.stages?.name ?? null,
+      isReprocess: segments[0].is_reprocess,
+      startedAt: segments[0].started_at,
+      pausedAt: last.ended_at as string,
+      accumulatedMs: sumSegmentsMs(segments),
+      machines,
+    });
+  }
+
+  if (candidates.length === 0) {
+    return [];
+  }
+
+  const pendingByStage = await loadPendingStageMachines(supabase, candidates);
+  const resumable = candidates
+    .filter((activity) => activity.machines.some((machine) => pendingByStage.has(`${machine.id}|${activity.stageId}`)))
+    .sort((a, b) => new Date(b.pausedAt).getTime() - new Date(a.pausedAt).getTime());
+
+  // One entry per etapa + juego de máquinas: the UI offers Reanudar instead of
+  // a fresh Iniciar while something is paused, so older chains on the same
+  // work (sessions paused before pausa/reanudar existed) would only be noise.
+  const latestByWork = new Map<string, PausedActivityView>();
+  for (const activity of resumable) {
+    const key = `${activity.stageId}|${activity.machines.map((machine) => machine.id).join(",")}`;
+    if (!latestByWork.has(key)) {
+      latestByWork.set(key, activity);
+    }
+  }
+
+  return [...latestByWork.values()];
 }
 
 /** Starts a timed stage session on one or several machines (time split equally). */
@@ -118,17 +228,7 @@ export async function startStageSession(input: { workerId: string; machineIds: s
 
   await assertNoOpenSession(supabase, input.workerId);
 
-  const { data: machines, error: machinesError } = await supabase
-    .from("machines")
-    .select("id, status")
-    .in("id", machineIds);
-
-  if (machinesError) {
-    throw new Error(`No se pudieron verificar las máquinas: ${machinesError.message}`);
-  }
-  if ((machines ?? []).length !== machineIds.length || machines.some((machine) => machine.status !== "in_production")) {
-    throw new Error("Todas las máquinas deben estar en producción.");
-  }
+  await assertMachinesInProduction(supabase, machineIds);
 
   const isReprocess = await computeSessionIsReprocess(supabase, machineIds, input.stageId);
 
@@ -187,8 +287,89 @@ export async function startOtherSession(input: { workerId: string; note: string 
 }
 
 /**
+ * Reanudar: opens a new segment on a paused activity, keeping its activity_id
+ * so the floor timer picks up from the time already logged.
+ */
+export async function resumeActivity(input: { workerId: string; activityId: string }) {
+  const supabase = createSupabaseAdminClient();
+
+  await assertNoOpenSession(supabase, input.workerId);
+
+  const segments = await loadActivitySegments(supabase, input.workerId, input.activityId);
+  const last = segments[segments.length - 1];
+
+  if (!isResumableChain(segments) || last.kind !== "stage" || last.stage_id === null) {
+    throw new Error("Esta actividad ya no se puede reanudar.");
+  }
+
+  const machineIds = [...new Set(segments[0].work_session_machines.map((entry) => entry.machine_id))];
+  await assertMachinesInProduction(supabase, machineIds);
+
+  const { data: session, error: insertError } = await supabase
+    .from("work_sessions")
+    .insert({
+      worker_id: input.workerId,
+      activity_id: input.activityId,
+      kind: "stage",
+      stage_id: last.stage_id,
+      is_reprocess: segments[0].is_reprocess,
+    })
+    .select("*")
+    .single();
+
+  if (insertError) {
+    throw new Error(friendlyOpenSessionMessage(insertError));
+  }
+
+  const { error: machinesInsertError } = await supabase
+    .from("work_session_machines")
+    .insert(machineIds.map((machineId) => ({ session_id: session.id, machine_id: machineId })));
+
+  if (machinesInsertError) {
+    await supabase.from("work_sessions").delete().eq("id", session.id);
+    throw new Error(`No se pudieron asociar las máquinas: ${machinesInsertError.message}`);
+  }
+
+  return session;
+}
+
+/**
+ * Terminar on a paused activity: marks the stage done without reopening the
+ * cronómetro. The last segment is re-stamped as "completed" so the activity
+ * stops showing up as resumable.
+ */
+export async function finishPausedActivity(input: { workerId: string; activityId: string }) {
+  const supabase = createSupabaseAdminClient();
+
+  const segments = await loadActivitySegments(supabase, input.workerId, input.activityId);
+  const last = segments[segments.length - 1];
+
+  if (!isResumableChain(segments) || last.kind !== "stage" || last.stage_id === null) {
+    throw new Error("Esta actividad ya fue cerrada.");
+  }
+
+  const { error: updateError } = await supabase
+    .from("work_sessions")
+    .update({ end_reason: "completed" })
+    .eq("id", last.id);
+
+  if (updateError) {
+    throw new Error(`No se pudo cerrar la actividad: ${updateError.message}`);
+  }
+
+  const machineIds = [...new Set(segments[0].work_session_machines.map((entry) => entry.machine_id))];
+
+  return completeStageOnMachines(supabase, {
+    machineIds,
+    stageId: last.stage_id,
+    workerId: input.workerId,
+  });
+}
+
+/**
  * Closes the worker's open session. "completed" also marks the stage done
- * (100%) on every machine of the session; "paused" just closes the session.
+ * (100%) on every machine of the session; "paused" leaves the activity
+ * resumable through `resumeActivity`.
  */
 export async function finishSession(input: {
   workerId: string;
@@ -223,40 +404,54 @@ export async function finishSession(input: {
     throw new Error(`No se pudo cerrar la sesión: ${updateError.message}`);
   }
 
-  // Machines whose LAST pending stage was closed by this Terminar (status flipped to finished).
-  let finishedMachineIds: string[] = [];
-
   if (input.reason === "completed" && session.kind === "stage" && session.stage_id !== null) {
-    const machineIds = session.work_session_machines.map((entry) => entry.machine_id);
-    const changedMachineIds: string[] = [];
+    return completeStageOnMachines(supabase, {
+      machineIds: session.work_session_machines.map((entry) => entry.machine_id),
+      stageId: session.stage_id,
+      workerId: input.workerId,
+    });
+  }
 
-    for (const machineId of machineIds) {
-      const result = await updateStageProgress({
-        machineId,
-        stageId: session.stage_id,
-        completion: 100,
-        workerId: input.workerId,
-      });
-      if (result.log) {
-        changedMachineIds.push(machineId);
-      }
-    }
+  return { finishedMachineIds: [] };
+}
 
-    if (changedMachineIds.length > 0) {
-      const { data: finishedRows, error: finishedError } = await supabase
-        .from("machines")
-        .select("id")
-        .in("id", changedMachineIds)
-        .eq("status", "finished");
+/**
+ * Marks a stage done (100%) on every machine and reports which of them had
+ * their LAST pending stage closed by it (status flipped to finished).
+ */
+async function completeStageOnMachines(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  input: { machineIds: string[]; stageId: number; workerId: string },
+): Promise<{ finishedMachineIds: string[] }> {
+  const changedMachineIds: string[] = [];
 
-      if (finishedError) {
-        throw new Error(`No se pudo verificar las máquinas terminadas: ${finishedError.message}`);
-      }
-      finishedMachineIds = (finishedRows ?? []).map((row) => row.id);
+  for (const machineId of input.machineIds) {
+    const result = await updateStageProgress({
+      machineId,
+      stageId: input.stageId,
+      completion: 100,
+      workerId: input.workerId,
+    });
+    if (result.log) {
+      changedMachineIds.push(machineId);
     }
   }
 
-  return { finishedMachineIds };
+  if (changedMachineIds.length === 0) {
+    return { finishedMachineIds: [] };
+  }
+
+  const { data: finishedRows, error: finishedError } = await supabase
+    .from("machines")
+    .select("id")
+    .in("id", changedMachineIds)
+    .eq("status", "finished");
+
+  if (finishedError) {
+    throw new Error(`No se pudo verificar las máquinas terminadas: ${finishedError.message}`);
+  }
+
+  return { finishedMachineIds: (finishedRows ?? []).map((row) => row.id) };
 }
 
 /**
@@ -360,6 +555,131 @@ export async function listDoneMarksWithoutSession(
     }));
 }
 
+async function assertMachinesInProduction(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  machineIds: string[],
+) {
+  const { data: machines, error } = await supabase.from("machines").select("id, status").in("id", machineIds);
+
+  if (error) {
+    throw new Error(`No se pudieron verificar las máquinas: ${error.message}`);
+  }
+  if ((machines ?? []).length !== machineIds.length || machines.some((machine) => machine.status !== "in_production")) {
+    throw new Error("Todas las máquinas deben estar en producción.");
+  }
+}
+
+/** Every segment of one activity, oldest first. Throws when the chain is unknown. */
+async function loadActivitySegments(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  workerId: string,
+  activityId: string,
+): Promise<OpenSessionSelectRow[]> {
+  const { data, error } = await supabase
+    .from("work_sessions")
+    .select(OPEN_SESSION_SELECT)
+    .eq("worker_id", workerId)
+    .eq("activity_id", activityId)
+    .order("started_at", { ascending: true });
+
+  if (error) {
+    throw new Error(`No se pudo cargar la actividad: ${error.message}`);
+  }
+
+  const segments = (data ?? []) as unknown as OpenSessionSelectRow[];
+  if (segments.length === 0) {
+    throw new Error("Esta actividad ya no existe.");
+  }
+
+  return segments;
+}
+
+function groupByActivity(rows: OpenSessionSelectRow[]): Map<string, OpenSessionSelectRow[]> {
+  const chains = new Map<string, OpenSessionSelectRow[]>();
+  for (const row of rows) {
+    const segments = chains.get(row.activity_id);
+    if (segments) {
+      segments.push(row);
+    } else {
+      chains.set(row.activity_id, [row]);
+    }
+  }
+  return chains;
+}
+
+/**
+ * True when the chain is paused: every segment closed, none of them closed by
+ * Terminar, and the last one closed by Pausar.
+ */
+function isResumableChain(segments: OpenSessionSelectRow[]): boolean {
+  if (segments.length === 0) {
+    return false;
+  }
+  if (segments.some((segment) => segment.ended_at === null || segment.end_reason === "completed")) {
+    return false;
+  }
+  return segments[segments.length - 1].end_reason === "paused";
+}
+
+function sumSegmentsMs(segments: Array<Pick<WorkSessionRow, "started_at" | "ended_at">>): number {
+  let total = 0;
+  for (const segment of segments) {
+    if (!segment.ended_at) continue;
+    const elapsed = new Date(segment.ended_at).getTime() - new Date(segment.started_at).getTime();
+    if (Number.isFinite(elapsed) && elapsed > 0) {
+      total += elapsed;
+    }
+  }
+  return total;
+}
+
+/** Time logged by the already-closed segments of an activity. */
+async function sumClosedSegmentsMs(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  workerId: string,
+  activityId: string,
+): Promise<number> {
+  const { data, error } = await supabase
+    .from("work_sessions")
+    .select("started_at, ended_at")
+    .eq("worker_id", workerId)
+    .eq("activity_id", activityId)
+    .not("ended_at", "is", null);
+
+  if (error) {
+    throw new Error(`No se pudo calcular el tiempo acumulado: ${error.message}`);
+  }
+
+  return sumSegmentsMs(data ?? []);
+}
+
+/** "machineId|stageId" keys for the pairs where the stage is still pending. */
+async function loadPendingStageMachines(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  activities: PausedActivityView[],
+): Promise<Set<string>> {
+  const machineIds = [...new Set(activities.flatMap((activity) => activity.machines.map((machine) => machine.id)))];
+  const stageIds = [...new Set(activities.map((activity) => activity.stageId))];
+
+  const { data, error } = await supabase
+    .from("machine_stages")
+    .select("machine_id, stage_id, completion")
+    .in("machine_id", machineIds)
+    .in("stage_id", stageIds);
+
+  if (error) {
+    throw new Error(`No se pudo verificar el avance de las etapas: ${error.message}`);
+  }
+
+  const pending = new Set<string>();
+  for (const row of data ?? []) {
+    if (row.completion < 100) {
+      pending.add(`${row.machine_id}|${row.stage_id}`);
+    }
+  }
+  return pending;
+}
+
 async function assertNoOpenSession(supabase: ReturnType<typeof createSupabaseAdminClient>, workerId: string) {
   const { data: openSession, error } = await supabase
     .from("work_sessions")
@@ -434,22 +754,38 @@ async function computeSessionIsReprocess(
   return incompleteMachineIds.some((machineId) => latestByMachine.get(machineId) === true);
 }
 
-function mapOpenSessionRow(row: OpenSessionSelectRow): OpenSessionView {
+function mapOpenSessionRow(row: OpenSessionSelectRow, accumulatedMs: number): OpenSessionView {
   return {
     id: row.id,
     workerId: row.worker_id,
+    activityId: row.activity_id,
     kind: row.kind,
     stageId: row.stage_id,
     stageName: row.stages?.name ?? null,
     note: row.note,
     isReprocess: row.is_reprocess,
     startedAt: row.started_at,
-    machines: (row.work_session_machines ?? []).map((entry) => ({
-      id: entry.machine_id,
-      serialNumber: entry.machines?.serial_number ?? 0,
-      equipmentName:
-        entry.machines?.equipment_catalog?.name ?? entry.machines?.custom_equipment_name ?? "Producto personalizado",
-      clientName: entry.machines?.clients?.name ?? null,
-    })),
+    accumulatedMs,
+    machines: mapSessionMachines([row]),
   };
+}
+
+/** Machines of an activity, deduped across its segments. */
+function mapSessionMachines(segments: OpenSessionSelectRow[]): OpenSessionMachine[] {
+  const byId = new Map<string, OpenSessionMachine>();
+
+  for (const segment of segments) {
+    for (const entry of segment.work_session_machines ?? []) {
+      if (byId.has(entry.machine_id)) continue;
+      byId.set(entry.machine_id, {
+        id: entry.machine_id,
+        serialNumber: entry.machines?.serial_number ?? 0,
+        equipmentName:
+          entry.machines?.equipment_catalog?.name ?? entry.machines?.custom_equipment_name ?? "Producto personalizado",
+        clientName: entry.machines?.clients?.name ?? null,
+      });
+    }
+  }
+
+  return [...byId.values()].sort((a, b) => a.serialNumber - b.serialNumber);
 }

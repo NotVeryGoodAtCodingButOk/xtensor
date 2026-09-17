@@ -486,6 +486,8 @@ export type Database = {
         Row: {
           id: string;
           worker_id: string;
+          /** Chains the segments of one logical activity (pausar/reanudar). */
+          activity_id: string;
           kind: "stage" | "other";
           stage_id: number | null;
           note: string | null;
@@ -498,6 +500,7 @@ export type Database = {
         Insert: {
           id?: string;
           worker_id: string;
+          activity_id?: string;
           kind: "stage" | "other";
           stage_id?: number | null;
           note?: string | null;
@@ -510,6 +513,7 @@ export type Database = {
         Update: {
           id?: string;
           worker_id?: string;
+          activity_id?: string;
           kind?: "stage" | "other";
           stage_id?: number | null;
           note?: string | null;

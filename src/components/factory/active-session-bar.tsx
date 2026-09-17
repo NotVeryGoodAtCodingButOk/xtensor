@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { finishSessionAction, pauseSessionAction } from "@/app/planta/actions";
-import { formatElapsedTime, formatMachineList, isStartedBeforeToday } from "@/lib/work-session-ui";
+import { formatElapsedTime, formatMachineList, isStartedBeforeToday, totalElapsedMs } from "@/lib/work-session-ui";
 import type { OpenSessionView } from "@/services/work-sessions";
 
 /**
@@ -23,7 +23,7 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
   }, []);
 
   const startedAt = new Date(session.startedAt);
-  const elapsed = formatElapsedTime(now - startedAt.getTime());
+  const elapsed = formatElapsedTime(totalElapsedMs(session.accumulatedMs, session.startedAt, now));
   const activityLabel = session.kind === "stage" ? session.stageName ?? "Etapa" : `Otra: ${session.note ?? ""}`;
   const machinesLabel =
     session.machines.length > 0 ? formatMachineList(session.machines.map((machine) => machine.serialNumber)) : null;
@@ -63,7 +63,7 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
             type="button"
             className="xt-active-bar-btn xt-active-bar-btn-finish"
             disabled={isPending}
-            onClick={() => runClose(session.kind === "stage" ? finishSessionAction : pauseSessionAction)}
+            onClick={() => runClose(finishSessionAction)}
           >
             Terminar
           </button>

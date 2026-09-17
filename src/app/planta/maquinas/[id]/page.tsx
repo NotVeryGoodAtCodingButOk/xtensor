@@ -10,7 +10,7 @@ import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
 import { getMachine } from "@/services/machines";
-import { getOpenSession } from "@/services/work-sessions";
+import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachineDetailPage({
   params,
@@ -42,7 +42,11 @@ export default async function FactoryMachineDetailPage({
     redirect("/planta/operarios");
   }
 
-  const [machine, openSession] = await Promise.all([getMachine(id), getOpenSession(resolvedWorkerId)]);
+  const [machine, openSession, pausedActivities] = await Promise.all([
+    getMachine(id),
+    getOpenSession(resolvedWorkerId),
+    listPausedActivities(resolvedWorkerId),
+  ]);
   const worker = shared.workers.find((item) => item.id === resolvedWorkerId);
   if (!worker) {
     redirect("/planta/operarios?error=operario");
@@ -115,6 +119,12 @@ export default async function FactoryMachineDetailPage({
           },
         ]}
         openSession={openSession}
+        pausedActivities={pausedActivities.map((activity) => ({
+          activityId: activity.activityId,
+          stageId: activity.stageId,
+          machineIds: activity.machines.map((item) => item.id),
+          accumulatedMs: activity.accumulatedMs,
+        }))}
         continueHref={`/planta/maquinas/${machine.id}${workerQuery}`}
       />
     </main>
