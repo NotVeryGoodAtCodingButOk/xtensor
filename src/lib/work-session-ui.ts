@@ -59,11 +59,15 @@ export function formatMachineList(serialNumbers: number[], maxShown = 2): string
 export function describeOpenSession(session: {
   kind: "stage" | "other";
   stageName: string | null;
+  activityTypeNames: string[];
   note: string | null;
   machineSerialNumbers: number[];
 }): string {
   const activity =
-    session.kind === "stage" ? (session.stageName ?? "Etapa") : session.note?.trim() || "Otra actividad";
+    session.kind === "stage"
+      ? (session.stageName ?? "Etapa")
+      : // Las sesiones anteriores al catálogo solo tienen la nota libre.
+        session.activityTypeNames.join(" + ") || session.note?.trim() || "Actividad";
   const machines = formatMachineList(session.machineSerialNumbers);
   return machines ? `${activity} · ${machines}` : activity;
 }

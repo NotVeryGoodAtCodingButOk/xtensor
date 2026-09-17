@@ -5,8 +5,8 @@ import { changeWorkerAction, lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
 import { ActiveSessionBar } from "@/components/factory/active-session-bar";
+import { ActivityPanel } from "@/components/factory/activity-panel";
 import { MachineMultiSelect } from "@/components/factory/machine-multi-select";
-import { OtherActivityPanel } from "@/components/factory/other-activity-panel";
 import { PausedActivitiesBar } from "@/components/factory/paused-activities-bar";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
+import { listActivityTypes } from "@/services/activity-types";
 import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachinesPage({
@@ -48,9 +49,10 @@ export default async function FactoryMachinesPage({
     redirect("/planta/operarios?error=operario");
   }
 
-  const [openSession, pausedActivities] = await Promise.all([
+  const [openSession, pausedActivities, activityTypes] = await Promise.all([
     getOpenSession(workerId),
     listPausedActivities(workerId),
+    listActivityTypes(true),
   ]);
   const machines = shared.machines;
   const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
@@ -86,7 +88,17 @@ export default async function FactoryMachinesPage({
             <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
               <Link href="/planta/tablero">Cartelera</Link>
             </Button>
-            <OtherActivityPanel hasOpenSession={Boolean(openSession)} navButtonClass={navButtonClass} />
+            <ActivityPanel
+              activityTypes={activityTypes}
+              machines={orderedMachines.map((machine) => ({
+                id: machine.id,
+                serialNumber: machine.serialNumber,
+                equipmentName: machine.equipmentName,
+                clientName: machine.clientName,
+              }))}
+              hasOpenSession={Boolean(openSession)}
+              navButtonClass={navButtonClass}
+            />
             <form action={changeWorkerAction}>
               <Button type="submit" variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
                 Cambiar operario

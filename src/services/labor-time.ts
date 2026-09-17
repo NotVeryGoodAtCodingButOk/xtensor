@@ -161,6 +161,8 @@ export type LaborSessionInput = {
   workerId: string;
   kind: "stage" | "other";
   stageId: number | null;
+  /** Actividades del catálogo marcadas en la sesión (solo kind "other"). */
+  activityTypeIds: string[];
   note: string | null;
   isReprocess: boolean;
   startedAt: string;
@@ -188,6 +190,18 @@ export type LaborStageInput = {
   name: string;
 };
 
+export type LaborActivityTypeInput = {
+  id: string;
+  name: string;
+};
+
+/**
+ * Bucket for the sessions registered before the catálogo de actividades
+ * existed (free-text note, no type). Keeps Σ byActivityType equal to
+ * totals.otherMinutes instead of silently dropping that time.
+ */
+export const UNCLASSIFIED_ACTIVITY_ID = "sin-clasificar";
+
 export type DoneMarkWithoutSession = {
   workerId: string;
   machineId: string;
@@ -202,6 +216,7 @@ export type SummarizeLaborInput = {
   stages: LaborStageInput[];
   shift: FactoryShift;
   holidays: HolidaySet;
+  activityTypes?: LaborActivityTypeInput[];
   range: { startIso: string; endIso: string };
   now: Date | string;
   hourlyCostFallback: number;
@@ -231,12 +246,37 @@ export type LaborByMachine = {
   serialNumber: number;
   label: string;
   isWarranty: boolean;
+  /** Production time only (stage sessions) — what the estimate is compared against. */
   totalMinutes: number;
   minutesByStage: Record<number, number>;
   reprocessMinutes: number;
   laborCostCop: number;
+  /**
+   * Time from catalogued activities tied to this machine (arreglos,
+   * instalaciones). Deliberately outside totalMinutes/deviationPct: it is real
+   * cost, but it is not part of the estimated production hours.
+   */
+  otherMinutes: number;
+  otherCostCop: number;
   estimatedHours: number | null;
   deviationPct: number | null;
+};
+
+export type LaborByActivityType = {
+  activityTypeId: string;
+  name: string;
+  minutes: number;
+  laborCostCop: number;
+  sessionCount: number;
+  workerCount: number;
+};
+
+export type LaborByWorkerActivityType = {
+  workerId: string;
+  fullName: string;
+  activityTypeId: string;
+  name: string;
+  minutes: number;
 };
 
 export type LaborByWorkerMachine = {
@@ -254,7 +294,10 @@ export type LaborOtherActivity = {
   sessionId: string;
   workerId: string;
   fullName: string;
+  activityTypeNames: string[];
+  /** Only on sessions registered before the catálogo existed. */
   note: string;
+  machineSerialNumbers: number[];
   startedAt: string;
   minutes: number;
 };
@@ -264,6 +307,8 @@ export type LaborSummary = {
   byWorker: LaborByWorker[];
   byMachine: LaborByMachine[];
   byWorkerMachine: LaborByWorkerMachine[];
+  byActivityType: LaborByActivityType[];
+  byWorkerActivityType: LaborByWorkerActivityType[];
   otherActivities: LaborOtherActivity[];
   dataQuality: {
     openSessionsStartedBeforeToday: Array<{ sessionId: string; workerId: string; fullName: string; startedAt: string }>;
@@ -287,6 +332,7 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
   const workerById = new Map(input.workers.map((worker) => [worker.id, worker]));
   const machineById = new Map(input.machines.map((machine) => [machine.id, machine]));
   const stageNameById = new Map(input.stages.map((stage) => [stage.id, stage.name]));
+  const activityNameById = new Map((input.activityTypes ?? []).map((type) => [type.id, type.name]));
 
   const byWorker = new Map<string, LaborByWorker & { daySet: Set<string> }>();
   for (const worker of input.workers) {
@@ -323,12 +369,16 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
       minutesByStage: {},
       reprocessMinutes: 0,
       laborCostCop: 0,
+      otherMinutes: 0,
+      otherCostCop: 0,
       estimatedHours,
       deviationPct: null,
     });
   }
 
   const byWorkerMachineMap = new Map<string, LaborByWorkerMachine>();
+  const byActivityTypeMap = new Map<string, LaborByActivityType & { workerIds: Set<string> }>();
+  const byWorkerActivityTypeMap = new Map<string, LaborByWorkerActivityType>();
   const otherActivities: LaborOtherActivity[] = [];
 
   for (const session of input.sessions) {
@@ -359,11 +409,80 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
 
     if (session.kind === "other") {
       workerEntry.otherMinutes += sessionMinutes;
+
+      // El tiempo se reparte en partes iguales entre las actividades marcadas,
+      // igual que entre varias máquinas: la suma por actividad sigue siendo el
+      // tiempo real trabajado, no un múltiplo de él.
+      const activityIds = session.activityTypeIds.length > 0 ? session.activityTypeIds : [UNCLASSIFIED_ACTIVITY_ID];
+      const perActivityMinutes = splitEqually(sessionMinutes, activityIds);
+      const perActivityCost = sessionCost / activityIds.length;
+
+      for (const activityTypeId of activityIds) {
+        const minutes = perActivityMinutes.get(activityTypeId) ?? 0;
+        const name =
+          activityTypeId === UNCLASSIFIED_ACTIVITY_ID
+            ? "Sin clasificar"
+            : (activityNameById.get(activityTypeId) ?? "Actividad eliminada");
+
+        const activityEntry = byActivityTypeMap.get(activityTypeId);
+        if (activityEntry) {
+          activityEntry.minutes += minutes;
+          activityEntry.laborCostCop += perActivityCost;
+          activityEntry.sessionCount += 1;
+          activityEntry.workerIds.add(session.workerId);
+        } else {
+          byActivityTypeMap.set(activityTypeId, {
+            activityTypeId,
+            name,
+            minutes,
+            laborCostCop: perActivityCost,
+            sessionCount: 1,
+            workerCount: 0,
+            workerIds: new Set([session.workerId]),
+          });
+        }
+
+        const workerActivityKey = `${session.workerId}|${activityTypeId}`;
+        const workerActivityEntry = byWorkerActivityTypeMap.get(workerActivityKey);
+        if (workerActivityEntry) {
+          workerActivityEntry.minutes += minutes;
+        } else {
+          byWorkerActivityTypeMap.set(workerActivityKey, {
+            workerId: session.workerId,
+            fullName,
+            activityTypeId,
+            name,
+            minutes,
+          });
+        }
+      }
+
+      // Arreglos e instalaciones pueden apuntar a una máquina: ese tiempo se
+      // acumula aparte, para no distorsionar la desviación contra el estimado.
+      if (session.machineIds.length > 0) {
+        const perMachineMinutes = splitEqually(sessionMinutes, session.machineIds);
+        const perMachineCost = sessionCost / session.machineIds.length;
+        for (const machineId of session.machineIds) {
+          const machineEntry = byMachine.get(machineId);
+          if (machineEntry) {
+            machineEntry.otherMinutes += perMachineMinutes.get(machineId) ?? 0;
+            machineEntry.otherCostCop += perMachineCost;
+          }
+        }
+      }
+
       otherActivities.push({
         sessionId: session.id,
         workerId: session.workerId,
         fullName,
+        activityTypeNames: session.activityTypeIds
+          .map((id) => activityNameById.get(id) ?? "Actividad eliminada")
+          .sort((a, b) => a.localeCompare(b)),
         note: session.note ?? "",
+        machineSerialNumbers: session.machineIds
+          .map((machineId) => machineById.get(machineId)?.serialNumber)
+          .filter((serial): serial is number => typeof serial === "number")
+          .sort((a, b) => a - b),
         startedAt: session.startedAt,
         minutes: sessionMinutes,
       });
@@ -467,6 +586,10 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
     })),
     byMachine: [...byMachine.values()],
     byWorkerMachine: [...byWorkerMachineMap.values()],
+    byActivityType: [...byActivityTypeMap.values()]
+      .map(({ workerIds, ...entry }) => ({ ...entry, workerCount: workerIds.size }))
+      .sort((a, b) => b.minutes - a.minutes),
+    byWorkerActivityType: [...byWorkerActivityTypeMap.values()],
     otherActivities,
     dataQuality: {
       openSessionsStartedBeforeToday,

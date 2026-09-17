@@ -4,8 +4,10 @@ import {
   shiftFromSettings,
   splitEqually,
   summarizeLabor,
+  UNCLASSIFIED_ACTIVITY_ID,
   workedMinutes,
   type FactoryShift,
+  type LaborActivityTypeInput,
   type LaborMachineInput,
   type LaborSessionInput,
   type LaborWorkerInput,
@@ -115,6 +117,29 @@ const machines: LaborMachineInput[] = Array.from({ length: 5 }, (_, index) => ({
   salePriceCop: 100_000,
 }));
 const stages = [{ id: 4, name: "Pulir" }];
+const activityTypes: LaborActivityTypeInput[] = [
+  { id: "a1", name: "Aseo" },
+  { id: "a2", name: "Orden" },
+  { id: "a3", name: "Arreglar máquinas" },
+];
+
+/** A two-hour activity session on the Monday shift (105 minutes once clipped). */
+function otherSession(overrides: Partial<LaborSessionInput> = {}): LaborSessionInput {
+  return {
+    id: "s1",
+    workerId: "w1",
+    kind: "other",
+    stageId: null,
+    activityTypeIds: [],
+    note: null,
+    isReprocess: false,
+    startedAt: "2026-06-01T08:00:00-05:00",
+    endedAt: "2026-06-01T10:00:00-05:00",
+    endReason: "completed",
+    machineIds: [],
+    ...overrides,
+  };
+}
 
 describe("summarizeLabor", () => {
   it("splits a multi-machine stage session equally and prices it with the cost fallback", () => {
@@ -124,6 +149,7 @@ describe("summarizeLabor", () => {
         workerId: "w1",
         kind: "stage",
         stageId: 4,
+        activityTypeIds: [],
         note: null,
         isReprocess: false,
         startedAt: "2026-06-01T08:00:00-05:00",
@@ -175,6 +201,7 @@ describe("summarizeLabor", () => {
         workerId: "w1",
         kind: "stage",
         stageId: 4,
+        activityTypeIds: [],
         note: null,
         isReprocess: false,
         // Starts the day before the range and ends the day after it.
@@ -210,6 +237,7 @@ describe("summarizeLabor", () => {
         workerId: "w1",
         kind: "stage",
         stageId: 4,
+        activityTypeIds: [],
         note: null,
         isReprocess: false,
         startedAt: "2026-06-01T08:00:00-05:00",
@@ -242,6 +270,7 @@ describe("summarizeLabor", () => {
         workerId: "w1",
         kind: "stage",
         stageId: 4,
+        activityTypeIds: [],
         note: null,
         isReprocess: false,
         startedAt: "2026-06-01T08:00:00-05:00",
@@ -271,5 +300,75 @@ describe("summarizeLabor", () => {
     expect(worker.unregisteredMinutes).toBe(495 - 105);
     expect(worker.utilizationPct).toBeCloseTo((105 / 495) * 100, 6);
     expect(summary.totals.unregisteredMinutes).toBe(495 - 105);
+  });
+
+  it("splits an activity session equally among the activities marked", () => {
+    const summary = summarizeLabor({
+      sessions: [otherSession({ activityTypeIds: ["a1", "a2"] })],
+      workers,
+      machines,
+      stages,
+      activityTypes,
+      shift,
+      holidays: noHolidays,
+      range: { startIso: "2026-06-01T00:00:00-05:00", endIso: "2026-06-02T00:00:00-05:00" },
+      now: "2026-06-01T12:00:00-05:00",
+      hourlyCostFallback: 20_000,
+      estimateHours: () => 1,
+    });
+
+    const aseo = summary.byActivityType.find((entry) => entry.activityTypeId === "a1");
+    const orden = summary.byActivityType.find((entry) => entry.activityTypeId === "a2");
+
+    // 105 real worked minutes split in two: the sum stays the time actually worked.
+    expect(aseo?.minutes).toBe(52.5);
+    expect(orden?.minutes).toBe(52.5);
+    expect(aseo!.minutes + orden!.minutes).toBe(summary.totals.otherMinutes);
+    expect(aseo!.laborCostCop + orden!.laborCostCop).toBeCloseTo(summary.totals.laborCostCop, 6);
+    expect(summary.byWorkerActivityType).toHaveLength(2);
+  });
+
+  it("attributes an activity to its machine without touching the production estimate", () => {
+    const summary = summarizeLabor({
+      sessions: [otherSession({ activityTypeIds: ["a3"], machineIds: ["m1"] })],
+      workers,
+      machines,
+      stages,
+      activityTypes,
+      shift,
+      holidays: noHolidays,
+      range: { startIso: "2026-06-01T00:00:00-05:00", endIso: "2026-06-02T00:00:00-05:00" },
+      now: "2026-06-01T12:00:00-05:00",
+      hourlyCostFallback: 20_000,
+      estimateHours: () => 1,
+    });
+
+    const machine = summary.byMachine.find((entry) => entry.machineId === "m1");
+    expect(machine?.otherMinutes).toBe(105);
+    expect(machine?.otherCostCop).toBeCloseTo((105 / 60) * 20_000, 6);
+    // Production hours and the deviation against the estimate stay untouched.
+    expect(machine?.totalMinutes).toBe(0);
+    expect(machine?.laborCostCop).toBe(0);
+    expect(machine?.deviationPct).toBeCloseTo(-100, 6);
+  });
+
+  it("buckets sessions registered before the catálogo as Sin clasificar", () => {
+    const summary = summarizeLabor({
+      sessions: [otherSession({ activityTypeIds: [], note: "Reunión" })],
+      workers,
+      machines,
+      stages,
+      activityTypes,
+      shift,
+      holidays: noHolidays,
+      range: { startIso: "2026-06-01T00:00:00-05:00", endIso: "2026-06-02T00:00:00-05:00" },
+      now: "2026-06-01T12:00:00-05:00",
+      hourlyCostFallback: 20_000,
+      estimateHours: () => 1,
+    });
+
+    expect(summary.byActivityType).toHaveLength(1);
+    expect(summary.byActivityType[0]).toMatchObject({ activityTypeId: UNCLASSIFIED_ACTIVITY_ID, minutes: 105 });
+    expect(summary.otherActivities[0].note).toBe("Reunión");
   });
 });

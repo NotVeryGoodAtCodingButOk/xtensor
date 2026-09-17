@@ -99,32 +99,86 @@ describe("totalElapsedMs", () => {
 describe("describeOpenSession", () => {
   it("names the stage and the machine being worked on", () => {
     expect(
-      describeOpenSession({ kind: "stage", stageName: "Pulir", note: null, machineSerialNumbers: [12] }),
+      describeOpenSession({
+        kind: "stage",
+        stageName: "Pulir",
+        activityTypeNames: [],
+        note: null,
+        machineSerialNumbers: [12],
+      }),
     ).toBe("Pulir · #12");
   });
 
   it("lists every machine of a group session", () => {
     expect(
-      describeOpenSession({ kind: "stage", stageName: "Pintar", note: null, machineSerialNumbers: [12, 34] }),
+      describeOpenSession({
+        kind: "stage",
+        stageName: "Pintar",
+        activityTypeNames: [],
+        note: null,
+        machineSerialNumbers: [12, 34],
+      }),
     ).toBe("Pintar · #12, #34");
   });
 
   it("falls back to a generic stage label", () => {
-    expect(describeOpenSession({ kind: "stage", stageName: null, note: null, machineSerialNumbers: [12] })).toBe(
-      "Etapa · #12",
-    );
+    expect(
+      describeOpenSession({
+        kind: "stage",
+        stageName: null,
+        activityTypeNames: [],
+        note: null,
+        machineSerialNumbers: [12],
+      }),
+    ).toBe("Etapa · #12");
   });
 
-  it("uses the note for an activity without a machine", () => {
-    expect(describeOpenSession({ kind: "other", stageName: null, note: "Aseo", machineSerialNumbers: [] })).toBe(
-      "Aseo",
-    );
+  it("names the activity a worker picked from the catálogo", () => {
+    expect(
+      describeOpenSession({
+        kind: "other",
+        stageName: null,
+        activityTypeNames: ["Aseo"],
+        note: null,
+        machineSerialNumbers: [],
+      }),
+    ).toBe("Aseo");
   });
 
-  it("falls back when the note is blank", () => {
-    expect(describeOpenSession({ kind: "other", stageName: null, note: "   ", machineSerialNumbers: [] })).toBe(
-      "Otra actividad",
-    );
+  it("joins several activities and keeps the machine", () => {
+    expect(
+      describeOpenSession({
+        kind: "other",
+        stageName: null,
+        activityTypeNames: ["Arreglar máquinas", "Orden"],
+        note: null,
+        machineSerialNumbers: [12],
+      }),
+    ).toBe("Arreglar máquinas + Orden · #12");
+  });
+
+  it("falls back to the note on sessions registered before the catálogo", () => {
+    expect(
+      describeOpenSession({
+        kind: "other",
+        stageName: null,
+        activityTypeNames: [],
+        note: "Reunión",
+        machineSerialNumbers: [],
+      }),
+    ).toBe("Reunión");
+  });
+
+  it("falls back to a generic label when there is neither activity nor note", () => {
+    expect(
+      describeOpenSession({
+        kind: "other",
+        stageName: null,
+        activityTypeNames: [],
+        note: "   ",
+        machineSerialNumbers: [],
+      }),
+    ).toBe("Actividad");
   });
 });
 

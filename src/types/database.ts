@@ -540,6 +540,49 @@ export type Database = {
         };
         Relationships: [];
       };
+      activity_types: {
+        Row: {
+          id: string;
+          name: string;
+          sort_order: number;
+          /** Whether the activity can be tied to machines (repairs, installs). */
+          allows_machine: boolean;
+          is_active: boolean;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          sort_order?: number;
+          allows_machine?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          sort_order?: number;
+          allows_machine?: boolean;
+          is_active?: boolean;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      work_session_activity_types: {
+        Row: {
+          session_id: string;
+          activity_type_id: string;
+        };
+        Insert: {
+          session_id: string;
+          activity_type_id: string;
+        };
+        Update: {
+          session_id?: string;
+          activity_type_id?: string;
+        };
+        Relationships: [];
+      };
       workers: {
         Row: {
           id: string;

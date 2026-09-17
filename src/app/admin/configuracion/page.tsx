@@ -4,6 +4,7 @@ import { LogOut } from "lucide-react";
 export const metadata: Metadata = { title: "Configuración XTENSOR" };
 import { signOutAction, updateFactoryPasswordAction } from "@/app/admin/actions";
 import { AdminShell } from "@/components/app-shell";
+import { ActivityTypesManager } from "@/components/admin/activity-types-manager";
 import { ColorsManager } from "@/components/admin/colors-manager";
 import { HolidaysManager } from "@/components/admin/holidays-manager";
 import { SettingsForm } from "@/components/admin/settings-form";
@@ -12,6 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasSupabaseConfig } from "@/lib/env";
+import { listActivityTypes } from "@/services/activity-types";
 import { listColors, listHolidays } from "@/services/catalog";
 import { getSettings } from "@/services/settings";
 
@@ -34,10 +36,11 @@ export default async function SettingsPage({
     );
   }
 
-  const [settings, holidays, colors, params] = await Promise.all([
+  const [settings, holidays, colors, activityTypes, params] = await Promise.all([
     getSettings(),
     listHolidays(),
     listColors(),
+    listActivityTypes(),
     searchParams,
   ]);
 
@@ -112,6 +115,14 @@ export default async function SettingsPage({
                 Cerrar sesión
               </Button>
             </form>
+          </CardContent>
+        </Card>
+        <Card id="actividades" className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Actividades de planta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ActivityTypesManager activityTypes={activityTypes} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">

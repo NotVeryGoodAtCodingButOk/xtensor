@@ -13,6 +13,11 @@ export type OpenSessionMachine = {
   clientName: string | null;
 };
 
+export type SessionActivityType = {
+  id: string;
+  name: string;
+};
+
 export type OpenSessionView = {
   id: string;
   workerId: string;
@@ -21,6 +26,9 @@ export type OpenSessionView = {
   kind: "stage" | "other";
   stageId: number | null;
   stageName: string | null;
+  /** Actividades marcadas cuando kind === "other". Vacío en sesiones de etapa. */
+  activityTypes: SessionActivityType[];
+  /** Solo en sesiones históricas, antes del catálogo de actividades. */
   note: string | null;
   isReprocess: boolean;
   startedAt: string;
@@ -48,10 +56,16 @@ export type OpenSessionSummary = {
   workerId: string;
   kind: "stage" | "other";
   stageName: string | null;
+  activityTypeNames: string[];
   note: string | null;
   startedAt: string;
   /** Serial numbers of the machines being worked on, to identify them in the picker. */
   machineSerialNumbers: number[];
+};
+
+type SessionActivityTypeRow = {
+  activity_type_id: string;
+  activity_types: { name: string } | null;
 };
 
 type SessionMachineRow = {
@@ -64,21 +78,25 @@ type SessionMachineRow = {
 
 type OpenSessionSelectRow = WorkSessionRow & {
   stages: { name: string } | null;
+  work_session_activity_types: SessionActivityTypeRow[];
   work_session_machines: SessionMachineRow[];
 };
 
 type OpenSessionSummaryRow = Pick<WorkSessionRow, "worker_id" | "kind" | "note" | "started_at"> & {
   stages: { name: string } | null;
+  work_session_activity_types: Array<{ activity_types: { name: string } | null }>;
   work_session_machines: Array<{ machines: Pick<MachineRow, "serial_number"> | null }>;
 };
 
 type SessionWithMachineIdsRow = WorkSessionRow & {
+  work_session_activity_types: Array<{ activity_type_id: string }>;
   work_session_machines: Array<{ machine_id: string }>;
 };
 
 const OPEN_SESSION_SELECT = `
   *,
   stages(name),
+  work_session_activity_types(activity_type_id, activity_types(name)),
   work_session_machines(
     machine_id,
     machines(id, serial_number, custom_equipment_name, status, equipment_catalog(name), clients(name))
@@ -116,7 +134,9 @@ export async function listOpenSessions(): Promise<OpenSessionSummary[]> {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("work_sessions")
-    .select("worker_id, kind, note, started_at, stages(name), work_session_machines(machines(serial_number))")
+    .select(
+      "worker_id, kind, note, started_at, stages(name), work_session_activity_types(activity_types(name)), work_session_machines(machines(serial_number))",
+    )
     .is("ended_at", null);
 
   if (error) {
@@ -129,6 +149,10 @@ export async function listOpenSessions(): Promise<OpenSessionSummary[]> {
     workerId: row.worker_id,
     kind: row.kind,
     stageName: row.stages?.name ?? null,
+    activityTypeNames: (row.work_session_activity_types ?? [])
+      .map((entry) => entry.activity_types?.name)
+      .filter((name): name is string => Boolean(name))
+      .sort((a, b) => a.localeCompare(b)),
     note: row.note,
     startedAt: row.started_at,
     machineSerialNumbers: (row.work_session_machines ?? [])
@@ -259,28 +283,74 @@ export async function startStageSession(input: { workerId: string; machineIds: s
   return session;
 }
 
-/** Starts a timed "Otro" session (no machine) with a required free-text note. */
-export async function startOtherSession(input: { workerId: string; note: string }) {
-  const note = input.note.trim();
-  if (!note) {
-    throw new Error("Escribe una nota para la actividad.");
-  }
-  if (note.length > 200) {
-    throw new Error("La nota debe tener máximo 200 caracteres.");
+/**
+ * Starts a timed session outside the production stages, against one or several
+ * activity types from the catálogo (aseo, orden, mejoras planta…). The time is
+ * split equally among the chosen types, and among the machines when the types
+ * allow tying the work to one (arreglos, instalaciones).
+ */
+export async function startOtherSession(input: {
+  workerId: string;
+  activityTypeIds: string[];
+  machineIds?: string[];
+}) {
+  const activityTypeIds = [...new Set(input.activityTypeIds)];
+  if (activityTypeIds.length === 0) {
+    throw new Error("Selecciona al menos una actividad.");
   }
 
+  const machineIds = [...new Set(input.machineIds ?? [])];
   const supabase = createSupabaseAdminClient();
+
+  const { data: typeRows, error: typesError } = await supabase
+    .from("activity_types")
+    .select("id, allows_machine, is_active")
+    .in("id", activityTypeIds);
+
+  if (typesError) {
+    throw new Error(`No se pudieron verificar las actividades: ${typesError.message}`);
+  }
+  if ((typeRows ?? []).length !== activityTypeIds.length || typeRows.some((type) => !type.is_active)) {
+    throw new Error("Alguna de las actividades ya no está disponible.");
+  }
+  if (machineIds.length > 0 && !typeRows.some((type) => type.allows_machine)) {
+    throw new Error("Esta actividad no se asocia a máquinas.");
+  }
 
   await assertNoOpenSession(supabase, input.workerId);
 
+  if (machineIds.length > 0) {
+    await assertMachinesInProduction(supabase, machineIds);
+  }
+
   const { data: session, error: insertError } = await supabase
     .from("work_sessions")
-    .insert({ worker_id: input.workerId, kind: "other", note })
+    .insert({ worker_id: input.workerId, kind: "other" })
     .select("*")
     .single();
 
   if (insertError) {
     throw new Error(friendlyOpenSessionMessage(insertError));
+  }
+
+  const { error: typesInsertError } = await supabase
+    .from("work_session_activity_types")
+    .insert(activityTypeIds.map((activityTypeId) => ({ session_id: session.id, activity_type_id: activityTypeId })));
+
+  if (typesInsertError) {
+    await supabase.from("work_sessions").delete().eq("id", session.id);
+    throw new Error(`No se pudieron asociar las actividades: ${typesInsertError.message}`);
+  }
+
+  if (machineIds.length > 0) {
+    const { error: machinesInsertError } = await supabase
+      .from("work_session_machines")
+      .insert(machineIds.map((machineId) => ({ session_id: session.id, machine_id: machineId })));
+
+    if (machinesInsertError) {
+      await supabase.from("work_sessions").delete().eq("id", session.id);
+      throw new Error(`No se pudieron asociar las máquinas: ${machinesInsertError.message}`);
+    }
   }
 
   return session;
@@ -380,7 +450,7 @@ export async function finishSession(input: {
 
   const { data, error: sessionError } = await supabase
     .from("work_sessions")
-    .select("*, work_session_machines(machine_id)")
+    .select("*, work_session_activity_types(activity_type_id), work_session_machines(machine_id)")
     .eq("id", input.sessionId)
     .eq("worker_id", input.workerId)
     .single();
@@ -462,7 +532,7 @@ export async function listSessionsOverlapping(startIso: string, endIso: string):
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("work_sessions")
-    .select("*, work_session_machines(machine_id)")
+    .select("*, work_session_activity_types(activity_type_id), work_session_machines(machine_id)")
     .lt("started_at", endIso)
     .or(`ended_at.is.null,ended_at.gt.${startIso}`);
 
@@ -477,6 +547,7 @@ export async function listSessionsOverlapping(startIso: string, endIso: string):
     workerId: row.worker_id,
     kind: row.kind,
     stageId: row.stage_id,
+    activityTypeIds: row.work_session_activity_types.map((entry) => entry.activity_type_id),
     note: row.note,
     isReprocess: row.is_reprocess,
     startedAt: row.started_at,
@@ -762,6 +833,9 @@ function mapOpenSessionRow(row: OpenSessionSelectRow, accumulatedMs: number): Op
     kind: row.kind,
     stageId: row.stage_id,
     stageName: row.stages?.name ?? null,
+    activityTypes: (row.work_session_activity_types ?? [])
+      .map((entry) => ({ id: entry.activity_type_id, name: entry.activity_types?.name ?? "Actividad" }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
     note: row.note,
     isReprocess: row.is_reprocess,
     startedAt: row.started_at,

@@ -7,6 +7,7 @@ import { roundToFractionDigits } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireAdmin, getAdminOrAuthError } from "@/lib/admin-auth";
 import { normalizeMachineLine } from "@/lib/machine-lines";
+import { createActivityType, deleteActivityType, updateActivityType } from "@/services/activity-types";
 import {
   createCustomEquipment,
   createColor,
@@ -363,6 +364,37 @@ export async function deleteColorAction(formData: FormData) {
   if (id) await deleteColor(id);
   revalidateFactoryData();
   redirect("/admin/configuracion#colores");
+}
+
+export async function addActivityTypeAction(formData: FormData) {
+  await requireAdmin();
+  const name = String(formData.get("name") ?? "").trim();
+  if (name) await createActivityType({ name, allowsMachine: formData.get("allowsMachine") === "1" });
+  revalidateFactoryData();
+  redirect("/admin/configuracion#actividades");
+}
+
+export async function updateActivityTypeAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (id && name) {
+    await updateActivityType(id, {
+      name,
+      allowsMachine: formData.get("allowsMachine") === "1",
+      isActive: formData.get("isActive") === "1",
+    });
+  }
+  revalidateFactoryData();
+  redirect("/admin/configuracion#actividades");
+}
+
+export async function deleteActivityTypeAction(formData: FormData) {
+  await requireAdmin();
+  const id = String(formData.get("id") ?? "");
+  if (id) await deleteActivityType(id);
+  revalidateFactoryData();
+  redirect("/admin/configuracion#actividades");
 }
 
 export async function addWorkerAction(formData: FormData) {

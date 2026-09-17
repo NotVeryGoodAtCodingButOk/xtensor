@@ -57,7 +57,7 @@ export default async function LaborStatisticsPage({
     ]);
 
   const machineRows = [...summary.byMachine]
-    .filter((machine) => machine.totalMinutes > 0)
+    .filter((machine) => machine.totalMinutes > 0 || machine.otherMinutes > 0)
     .sort((a, b) => b.totalMinutes - a.totalMinutes)
     .map((machine) => [
       `#${machine.serialNumber}`,
@@ -68,7 +68,8 @@ export default async function LaborStatisticsPage({
       formatHoursDecimal(machine.totalMinutes),
       ...stages.map((stage) => formatHoursDecimal(machine.minutesByStage[stage.id] ?? 0)),
       formatHoursDecimal(machine.reprocessMinutes),
-      formatCop(machine.laborCostCop),
+      formatHoursDecimal(machine.otherMinutes),
+      formatCop(machine.laborCostCop + machine.otherCostCop),
       machine.estimatedHours !== null ? formatHoursDecimal(machine.estimatedHours * 60) : "Sin datos",
       deviationCell(machine.deviationPct),
     ]);
@@ -83,9 +84,23 @@ export default async function LaborStatisticsPage({
       entry.isReprocess ? <Badge variant="warning">Reproceso</Badge> : "—",
     ]);
 
+  const activityTypeRows = [...summary.byActivityType].map((activity) => [
+    activity.name,
+    formatHoursDecimal(activity.minutes),
+    String(activity.sessionCount),
+    String(activity.workerCount),
+    formatCop(activity.laborCostCop),
+  ]);
+
   const otherActivityRows = [...summary.otherActivities]
     .sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime())
-    .map((activity) => [activity.fullName, activity.note || "Sin nota", formatDateTime(activity.startedAt), formatHoursDecimal(activity.minutes)]);
+    .map((activity) => [
+      activity.fullName,
+      activity.activityTypeNames.join(" + ") || activity.note || "Sin clasificar",
+      activity.machineSerialNumbers.map((serial) => `#${serial}`).join(", ") || "—",
+      formatDateTime(activity.startedAt),
+      formatHoursDecimal(activity.minutes),
+    ]);
 
   const openSessionRows = summary.dataQuality.openSessionsStartedBeforeToday.map((session) => [
     session.fullName,
@@ -260,6 +275,7 @@ export default async function LaborStatisticsPage({
                 "Horas-hombre",
                 ...stages.map((stage) => stage.name),
                 "Reproceso (h)",
+                "Actividades (h)",
                 "Costo real",
                 "Horas estimadas",
                 "Desviación %",
@@ -287,17 +303,40 @@ export default async function LaborStatisticsPage({
         </Card>
       </section>
 
-      {/* Actividades Otro + Calidad de datos */}
-      <section className="mb-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+      {/* Por actividad */}
+      <section className="mb-5">
         <Card>
           <CardHeader>
-            <CardTitle>Actividades &laquo;Otro&raquo;</CardTitle>
-            <CardDescription>Tiempo capturado fuera de una etapa de producción.</CardDescription>
+            <CardTitle className="flex items-center gap-2">
+              <PauseCircle className="h-5 w-5" />
+              Por actividad
+            </CardTitle>
+            <CardDescription>
+              Horas fuera de las etapas de producción, por actividad del catálogo. Cuando un operario marca varias
+              actividades en un mismo cronómetro, el tiempo se reparte por igual entre ellas.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <StatsTable
-              empty="No hay actividades «Otro» en este rango."
-              headers={["Operario", "Nota", "Inicio", "Horas"]}
+              empty="No hay actividades registradas en este rango."
+              headers={["Actividad", "Horas", "Sesiones", "Operarios", "Costo"]}
+              rows={activityTypeRows}
+            />
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Detalle de actividades + Calidad de datos */}
+      <section className="mb-5 grid gap-5 xl:grid-cols-[1fr_1fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Detalle de actividades</CardTitle>
+            <CardDescription>Cada cronómetro capturado fuera de una etapa de producción.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <StatsTable
+              empty="No hay actividades en este rango."
+              headers={["Operario", "Actividad", "Máquinas", "Inicio", "Horas"]}
               rows={otherActivityRows}
             />
           </CardContent>

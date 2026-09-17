@@ -1,11 +1,13 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { listActivityTypes } from "@/services/activity-types";
 import { DEFAULT_STAGES, estimateTotalHours } from "@/services/calculations";
 import { listHolidays, listWorkers } from "@/services/catalog";
 import {
   shiftFromSettings,
   summarizeLabor,
   type FactoryShift,
+  type LaborActivityTypeInput,
   type LaborMachineInput,
   type LaborStageInput,
   type LaborSummary,
@@ -106,6 +108,7 @@ function isLaborRangePreset(value: string | undefined): value is LaborRangePrese
 export type LaborDashboard = {
   range: LaborRange;
   stages: LaborStageInput[];
+  activityTypes: LaborActivityTypeInput[];
   shift: FactoryShift;
   settings: ProductionSettings;
   summary: LaborSummary;
@@ -121,17 +124,19 @@ type LaborMachineRow = Pick<
 };
 
 export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboard> {
-  const [sessions, doneMarksWithoutSession, settingsRow, holidays, workerRows] = await Promise.all([
+  const [sessions, doneMarksWithoutSession, settingsRow, holidays, workerRows, activityTypeRows] = await Promise.all([
     listSessionsOverlapping(range.startIso, range.endIso),
     listDoneMarksWithoutSession(range.startIso, range.endIso),
     getSettings(),
     listHolidays(),
     listWorkers(),
+    listActivityTypes(),
   ]);
 
   const settings = mapSettings(settingsRow);
   const shift = shiftFromSettings(settings);
   const stages: LaborStageInput[] = DEFAULT_STAGES.map((stage) => ({ id: stage.id, name: stage.name }));
+  const activityTypes: LaborActivityTypeInput[] = activityTypeRows.map((type) => ({ id: type.id, name: type.name }));
 
   const machineIds = [...new Set(sessions.flatMap((session) => session.machineIds))];
   const machines = machineIds.length > 0 ? await fetchLaborMachines(machineIds) : [];
@@ -147,6 +152,7 @@ export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboa
     workers,
     machines,
     stages,
+    activityTypes,
     shift,
     holidays,
     range: { startIso: range.startIso, endIso: range.endIso },
@@ -165,6 +171,7 @@ export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboa
   return {
     range,
     stages,
+    activityTypes,
     shift,
     settings,
     summary: { ...summary, byWorker },

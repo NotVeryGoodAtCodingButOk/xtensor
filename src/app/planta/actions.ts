@@ -184,15 +184,18 @@ export async function startStageSessionAction(input: {
   return { ok: true };
 }
 
-/** Starts a timed "Otra actividad" session (no machine) with a required note. */
-export async function startOtherSessionAction(input: { note: string }): Promise<SessionActionResult> {
+/** Starts a timed session on one or several catalogued activities (aseo, orden…). */
+export async function startOtherSessionAction(input: {
+  activityTypeIds: string[];
+  machineIds?: string[];
+}): Promise<SessionActionResult> {
   const workerId = await resolveSessionWorkerId();
   if (!workerId) {
     return { ok: false, error: "Selecciona un operario para continuar." };
   }
 
   try {
-    await startOtherSession({ workerId, note: input.note });
+    await startOtherSession({ workerId, activityTypeIds: input.activityTypeIds, machineIds: input.machineIds });
   } catch (error) {
     return { ok: false, error: sessionErrorMessage(error, "No se pudo iniciar la actividad.") };
   }

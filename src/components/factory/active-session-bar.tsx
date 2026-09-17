@@ -24,7 +24,10 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
 
   const startedAt = new Date(session.startedAt);
   const elapsed = formatElapsedTime(totalElapsedMs(session.accumulatedMs, session.startedAt, now));
-  const activityLabel = session.kind === "stage" ? session.stageName ?? "Etapa" : `Otra: ${session.note ?? ""}`;
+  const activityLabel =
+    session.kind === "stage"
+      ? (session.stageName ?? "Etapa")
+      : session.activityTypes.map((type) => type.name).join(" + ") || session.note?.trim() || "Actividad";
   const machinesLabel =
     session.machines.length > 0 ? formatMachineList(session.machines.map((machine) => machine.serialNumber)) : null;
   const label = [activityLabel, machinesLabel, elapsed].filter(Boolean).join(" · ");
