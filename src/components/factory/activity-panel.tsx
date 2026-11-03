@@ -16,7 +16,7 @@ export type ActivityPanelMachine = {
 
 /**
  * Header control for logging time against something other than a production
- * stage: aseo, orden, mejoras planta, arreglos, instalaciones. The worker
+ * stage: 5S, empaque/carga/instalación, arreglos de máquinas. The worker
  * picks one or several activities from the catálogo — the time is split
  * equally among them — and, when the activity allows it, the machines it was
  * done on. Iniciar cronómetro is disabled while they already have a session
@@ -127,7 +127,12 @@ export function ActivityPanel({
                         <span className="xt-activity-option-check" aria-hidden="true">
                           {isSelected ? <Check className="h-4 w-4" /> : null}
                         </span>
-                        <span className="xt-activity-option-name">{type.name}</span>
+                        <span className="xt-activity-option-text">
+                          <span className="xt-activity-option-name">{type.name}</span>
+                          {type.description ? (
+                            <span className="xt-activity-option-description">{type.description}</span>
+                          ) : null}
+                        </span>
                       </button>
                     </li>
                   );

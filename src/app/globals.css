@@ -1155,11 +1155,25 @@ select {
   background: var(--xt-white);
 }
 
+.xt-activity-option-text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
 .xt-activity-option-name {
   min-width: 0;
   font-size: 1rem;
   font-weight: 600;
   line-height: 1.2;
+}
+
+.xt-activity-option-description {
+  color: var(--xt-steel);
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.25;
 }
 
 .xt-activity-machines {
