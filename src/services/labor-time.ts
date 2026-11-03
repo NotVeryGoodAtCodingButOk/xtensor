@@ -1,6 +1,9 @@
+import { format } from "date-fns";
+import { es } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import type { ProductionSettings, ShiftBreak } from "@/services/calculations";
 import type { Holiday } from "@/services/schedule";
+import type { LaborGranularity, LaborPeriodRow } from "@/types/labor-report";
 
 // Pure module: no Supabase import, so it (and its tests) never touch the
 // admin client or environment. Kept separate from statistics.ts, which
@@ -183,6 +186,8 @@ export type LaborMachineInput = {
   label: string;
   salePriceCop: number;
   isWarranty?: boolean;
+  /** % MO del equipo (fracción) o null/undefined = usa el % general de Configuración. */
+  laborFactor?: number | null;
 };
 
 export type LaborStageInput = {
@@ -220,7 +225,8 @@ export type SummarizeLaborInput = {
   range: { startIso: string; endIso: string };
   now: Date | string;
   hourlyCostFallback: number;
-  estimateHours: (salePriceCop: number) => number;
+  /** Horas máximas de una máquina; recibe la máquina para poder usar el % de su equipo. */
+  estimateHours: (salePriceCop: number, machine: LaborMachineInput) => number;
   doneMarksWithoutSession?: DoneMarkWithoutSession[];
 };
 
@@ -367,7 +373,7 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
   for (const machine of input.machines) {
     let estimatedHours: number | null = null;
     try {
-      estimatedHours = input.estimateHours(machine.salePriceCop);
+      estimatedHours = input.estimateHours(machine.salePriceCop, machine);
     } catch {
       estimatedHours = null;
     }
@@ -393,27 +399,22 @@ export function summarizeLabor(input: SummarizeLaborInput): LaborSummary {
   const sessionDetails: LaborSessionDetail[] = [];
 
   for (const session of input.sessions) {
-    const effectiveStart = maxIso(session.startedAt, input.range.startIso);
-    const effectiveEnd = minIso(session.endedAt ?? now.toISOString(), input.range.endIso);
-    if (new Date(effectiveEnd).getTime() <= new Date(effectiveStart).getTime()) {
+    const allocation = allocateSession(session, {
+      shift: input.shift,
+      holidays: input.holidays,
+      now,
+      range: input.range,
+      hourlyCost: resolveHourlyCost(workerById, session.workerId, input.hourlyCostFallback),
+    });
+    if (!allocation) {
       continue;
     }
 
-    const worker = workerById.get(session.workerId);
-    const fullName = worker?.fullName ?? "Operario sin nombre";
-    const hourlyCost = worker?.hourlyCostCop ?? input.hourlyCostFallback;
-
-    const minutesByDay = workedMinutesByDay(effectiveStart, effectiveEnd, input.shift, input.holidays);
-    const sessionMinutes = sumMapValues(minutesByDay);
-    if (sessionMinutes <= 0) {
-      continue;
-    }
+    const fullName = workerById.get(session.workerId)?.fullName ?? "Operario sin nombre";
+    const { minutesByDay, minutes: sessionMinutes, costCop: sessionCost } = allocation;
 
     const workerEntry = getOrCreateWorkerEntry(byWorker, session.workerId, fullName);
     for (const day of minutesByDay.keys()) workerEntry.daySet.add(day);
-
-    const sessionHours = sessionMinutes / 60;
-    const sessionCost = sessionHours * hourlyCost;
 
     workerEntry.registeredMinutes += sessionMinutes;
     workerEntry.laborCostCop += sessionCost;
@@ -678,8 +679,318 @@ function getOrCreateWorkerEntry(
 }
 
 // ---------------------------------------------------------------------------
+// summarizeMachineLabor
+// ---------------------------------------------------------------------------
+
+export type MachineLaborTotals = {
+  machineId: string;
+  /** Etapas de producción, INCLUYE reproceso. */
+  productionMinutes: number;
+  reprocessMinutes: number;
+  minutesByStage: Record<number, number>;
+  reprocessMinutesByStage: Record<number, number>;
+  /** Solo producción. */
+  minutesByWorker: Record<string, number>;
+  /** Solo producción. */
+  costByWorker: Record<string, number>;
+  productionCostCop: number;
+  /** Actividades (kind = 'other') con esta máquina asociada. */
+  extraMinutes: number;
+  extraCostCop: number;
+  extraMinutesByActivityType: Record<string, number>;
+  extraCostByActivityType: Record<string, number>;
+  /** Inicio de la primera sesión (etapa o actividad) que le sumó tiempo a la máquina. */
+  firstSessionAt: string | null;
+};
+
+export type SummarizeMachineLaborInput = {
+  /** Cada sesión con TODOS sus machineIds, para repartir bien entre máquinas. */
+  sessions: LaborSessionInput[];
+  workers: LaborWorkerInput[];
+  shift: FactoryShift;
+  holidays: HolidaySet;
+  now: Date | string;
+  hourlyCostFallback: number;
+  /** Si viene, solo devuelve esas máquinas (todas presentes, aunque no tengan sesiones). */
+  machineIds?: string[];
+};
+
+/**
+ * Horas de toda la vida de cada máquina (sin rango de fechas): producción por
+ * etapa, reproceso, por operario y actividades asociadas (empaque, carga,
+ * instalación, garantías). Cada sesión se recorta a la jornada y se reparte en
+ * partes iguales entre las máquinas que tenía, igual que en summarizeLabor; el
+ * costo usa el costo hora de cada operario (o el promedio si no tiene).
+ */
+export function summarizeMachineLabor(input: SummarizeMachineLaborInput): Map<string, MachineLaborTotals> {
+  const now = typeof input.now === "string" ? new Date(input.now) : input.now;
+  const workerById = new Map(input.workers.map((worker) => [worker.id, worker]));
+  const wanted = input.machineIds ? new Set(input.machineIds) : null;
+  const result = new Map<string, MachineLaborTotals>();
+
+  for (const machineId of wanted ?? []) {
+    result.set(machineId, emptyMachineLaborTotals(machineId));
+  }
+
+  for (const session of input.sessions) {
+    if (session.machineIds.length === 0) continue;
+    if (session.kind === "stage" && session.stageId === null) continue;
+    if (wanted && !session.machineIds.some((machineId) => wanted.has(machineId))) continue;
+
+    const allocation = allocateSession(session, {
+      shift: input.shift,
+      holidays: input.holidays,
+      now,
+      hourlyCost: resolveHourlyCost(workerById, session.workerId, input.hourlyCostFallback),
+    });
+    if (!allocation) continue;
+
+    const perMachineMinutes = splitEqually(allocation.minutes, session.machineIds);
+    const perMachineCost = allocation.costCop / session.machineIds.length;
+    const activityIds = session.activityTypeIds.length > 0 ? session.activityTypeIds : [UNCLASSIFIED_ACTIVITY_ID];
+
+    for (const machineId of session.machineIds) {
+      if (wanted && !wanted.has(machineId)) continue;
+
+      let entry = result.get(machineId);
+      if (!entry) {
+        entry = emptyMachineLaborTotals(machineId);
+        result.set(machineId, entry);
+      }
+
+      const minutes = perMachineMinutes.get(machineId) ?? 0;
+      if (entry.firstSessionAt === null || new Date(session.startedAt) < new Date(entry.firstSessionAt)) {
+        entry.firstSessionAt = session.startedAt;
+      }
+
+      if (session.kind === "stage" && session.stageId !== null) {
+        entry.productionMinutes += minutes;
+        entry.productionCostCop += perMachineCost;
+        addTo(entry.minutesByStage, session.stageId, minutes);
+        addTo(entry.minutesByWorker, session.workerId, minutes);
+        addTo(entry.costByWorker, session.workerId, perMachineCost);
+        if (session.isReprocess) {
+          entry.reprocessMinutes += minutes;
+          addTo(entry.reprocessMinutesByStage, session.stageId, minutes);
+        }
+        continue;
+      }
+
+      entry.extraMinutes += minutes;
+      entry.extraCostCop += perMachineCost;
+      const perActivityMinutes = splitEqually(minutes, activityIds);
+      for (const activityTypeId of activityIds) {
+        addTo(entry.extraMinutesByActivityType, activityTypeId, perActivityMinutes.get(activityTypeId) ?? 0);
+        addTo(entry.extraCostByActivityType, activityTypeId, perMachineCost / activityIds.length);
+      }
+    }
+  }
+
+  return result;
+}
+
+function emptyMachineLaborTotals(machineId: string): MachineLaborTotals {
+  return {
+    machineId,
+    productionMinutes: 0,
+    reprocessMinutes: 0,
+    minutesByStage: {},
+    reprocessMinutesByStage: {},
+    minutesByWorker: {},
+    costByWorker: {},
+    productionCostCop: 0,
+    extraMinutes: 0,
+    extraCostCop: 0,
+    extraMinutesByActivityType: {},
+    extraCostByActivityType: {},
+    firstSessionAt: null,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// summarizeLaborByPeriod
+// ---------------------------------------------------------------------------
+
+/**
+ * Reparto de la jornada por día, semana (lunes a domingo) o mes, en hora de
+ * Bogotá, para toda la planta o para un operario (`options.workerId`).
+ *
+ * Por operario-día: la jornada (availableShiftMinutes) solo cuenta si ese
+ * operario registró algo ese día (regla de ausencia) y
+ * «Sin registrar» = max(0, jornada − registrado), sumado después por período.
+ * Las sesiones se recortan a input.range y a `now` (sesiones abiertas).
+ * Filas ordenadas por startDate ascendente; solo períodos con registro.
+ */
+export function summarizeLaborByPeriod(
+  input: SummarizeLaborInput,
+  granularity: LaborGranularity,
+  options?: { workerId?: string },
+): LaborPeriodRow[] {
+  const now = typeof input.now === "string" ? new Date(input.now) : input.now;
+  const workerById = new Map(input.workers.map((worker) => [worker.id, worker]));
+  const rows = new Map<string, LaborPeriodRow & { workerIds: Set<string> }>();
+  // `${workerId}|${yyyy-MM-dd}` → minutos registrados ese día.
+  const registeredByWorkerDay = new Map<string, number>();
+
+  const rowFor = (dateKey: string) => {
+    const { periodKey, startDate } = periodOf(dateKey, granularity);
+    let row = rows.get(periodKey);
+    if (!row) {
+      row = {
+        periodKey,
+        label: periodLabel(startDate, granularity),
+        startDate,
+        workersWithRecords: 0,
+        availableMinutes: 0,
+        machineMinutes: 0,
+        reprocessMinutes: 0,
+        machineActivityMinutes: 0,
+        plantActivityMinutes: 0,
+        unregisteredMinutes: 0,
+        assignedMinutes: 0,
+        unassignedMinutes: 0,
+        minutesByActivityType: {},
+        workerIds: new Set<string>(),
+      };
+      rows.set(periodKey, row);
+    }
+    return row;
+  };
+
+  for (const session of input.sessions) {
+    if (options?.workerId && session.workerId !== options.workerId) continue;
+
+    const allocation = allocateSession(session, {
+      shift: input.shift,
+      holidays: input.holidays,
+      now,
+      range: input.range,
+      hourlyCost: resolveHourlyCost(workerById, session.workerId, input.hourlyCostFallback),
+    });
+    if (!allocation) continue;
+
+    const activityIds = session.activityTypeIds.length > 0 ? session.activityTypeIds : [UNCLASSIFIED_ACTIVITY_ID];
+
+    for (const [dateKey, minutes] of allocation.minutesByDay) {
+      const workerDayKey = `${session.workerId}|${dateKey}`;
+      registeredByWorkerDay.set(workerDayKey, (registeredByWorkerDay.get(workerDayKey) ?? 0) + minutes);
+
+      const row = rowFor(dateKey);
+      row.workerIds.add(session.workerId);
+
+      if (session.kind === "stage") {
+        if (session.isReprocess) row.reprocessMinutes += minutes;
+        else row.machineMinutes += minutes;
+        continue;
+      }
+
+      if (session.machineIds.length > 0) row.machineActivityMinutes += minutes;
+      else row.plantActivityMinutes += minutes;
+
+      const perActivityMinutes = splitEqually(minutes, activityIds);
+      for (const activityTypeId of activityIds) {
+        addTo(row.minutesByActivityType, activityTypeId, perActivityMinutes.get(activityTypeId) ?? 0);
+      }
+    }
+  }
+
+  for (const [workerDayKey, registered] of registeredByWorkerDay) {
+    if (registered <= 0) continue;
+    const dateKey = workerDayKey.slice(workerDayKey.lastIndexOf("|") + 1);
+    const available = availableShiftMinutes(dateKey, input.shift, input.holidays);
+    const row = rowFor(dateKey);
+    row.availableMinutes += available;
+    row.unregisteredMinutes += Math.max(0, available - registered);
+  }
+
+  return [...rows.values()]
+    .map(({ workerIds, ...row }) => ({
+      ...row,
+      workersWithRecords: workerIds.size,
+      assignedMinutes: row.machineMinutes + row.reprocessMinutes + row.machineActivityMinutes,
+      unassignedMinutes: row.plantActivityMinutes + row.unregisteredMinutes,
+    }))
+    .sort((a, b) => a.startDate.localeCompare(b.startDate));
+}
+
+function periodOf(dateKey: string, granularity: LaborGranularity): { periodKey: string; startDate: string } {
+  if (granularity === "semana") {
+    const weekday = getDateKeyWeekday(dateKey); // 0=Sun..6=Sat
+    const monday = addDaysToDateKey(dateKey, -(weekday === 0 ? 6 : weekday - 1));
+    return { periodKey: monday, startDate: monday };
+  }
+  if (granularity === "mes") {
+    const month = dateKey.slice(0, 7);
+    return { periodKey: month, startDate: `${month}-01` };
+  }
+  return { periodKey: dateKey, startDate: dateKey };
+}
+
+/** "mar 3 nov" · "Semana del 3 nov" · "Noviembre 2026". */
+function periodLabel(startDate: string, granularity: LaborGranularity): string {
+  const [year, month, day] = startDate.split("-").map(Number);
+  // Fecha local (no UTC): format() trabaja en la zona del proceso y aquí solo importa el día calendario.
+  const date = new Date(year, month - 1, day);
+  if (granularity === "semana") return `Semana del ${format(date, "d MMM", { locale: es })}`;
+  if (granularity === "mes") {
+    const label = format(date, "LLLL yyyy", { locale: es });
+    return label.charAt(0).toUpperCase() + label.slice(1);
+  }
+  return format(date, "EEE d MMM", { locale: es });
+}
+
+// ---------------------------------------------------------------------------
 // internal helpers
 // ---------------------------------------------------------------------------
+
+type SessionAllocation = {
+  /** Minutos de jornada por día de Bogotá (ya recortados a horario, pausas y festivos). */
+  minutesByDay: Map<string, number>;
+  minutes: number;
+  /** minutes / 60 × costo hora del operario. */
+  costCop: number;
+};
+
+/**
+ * Recorta una sesión (al rango si viene, y a `now` si sigue abierta) a la
+ * jornada de planta y la costea. null si no aporta minutos. Compartido por
+ * summarizeLabor, summarizeMachineLabor y summarizeLaborByPeriod para que las
+ * tres cifras siempre cuadren entre sí.
+ */
+function allocateSession(
+  session: LaborSessionInput,
+  context: {
+    shift: FactoryShift;
+    holidays: HolidaySet;
+    now: Date;
+    hourlyCost: number;
+    range?: { startIso: string; endIso: string };
+  },
+): SessionAllocation | null {
+  const rawEnd = session.endedAt ?? context.now.toISOString();
+  const effectiveStart = context.range ? maxIso(session.startedAt, context.range.startIso) : session.startedAt;
+  const effectiveEnd = context.range ? minIso(rawEnd, context.range.endIso) : rawEnd;
+  if (new Date(effectiveEnd).getTime() <= new Date(effectiveStart).getTime()) {
+    return null;
+  }
+
+  const minutesByDay = workedMinutesByDay(effectiveStart, effectiveEnd, context.shift, context.holidays);
+  const minutes = sumMapValues(minutesByDay);
+  if (minutes <= 0) {
+    return null;
+  }
+
+  const hours = minutes / 60;
+  return { minutesByDay, minutes, costCop: hours * context.hourlyCost };
+}
+
+function resolveHourlyCost(workerById: Map<string, LaborWorkerInput>, workerId: string, fallback: number): number {
+  return workerById.get(workerId)?.hourlyCostCop ?? fallback;
+}
+
+function addTo<K extends string | number>(record: Record<K, number>, key: K, value: number) {
+  record[key] = (record[key] ?? 0) + value;
+}
 
 function dayIntersectionMinutes(
   dateKey: string,
