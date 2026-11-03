@@ -13,11 +13,14 @@ export function CatalogCombobox({
   defaultId,
   defaultLabel,
   name = "equipmentId",
+  onChange,
 }: {
   items: CatalogItem[];
   defaultId: string | null;
   defaultLabel: string;
   name?: string;
+  /** Avisa el equipo elegido (null al limpiar o al escribir sin elegir). */
+  onChange?: (id: string | null) => void;
 }) {
   const [query, setQuery] = useState(defaultLabel);
   const [selectedId, setSelectedId] = useState(defaultId ?? "");
@@ -52,12 +55,14 @@ export function CatalogCombobox({
     setSelectedId(item.id);
     setQuery(`${item.code} · ${item.name}`);
     setOpen(false);
+    onChange?.(item.id);
   }
 
   function handleClear() {
     setSelectedId("");
     setQuery("");
     setOpen(false);
+    onChange?.(null);
   }
 
   return (
@@ -69,6 +74,7 @@ export function CatalogCombobox({
           value={query}
           onChange={(e) => {
             setQuery(e.target.value);
+            if (selectedId) onChange?.(null);
             setSelectedId("");
             setOpen(true);
           }}

@@ -3,9 +3,10 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Calculadora XTENSOR" };
 import { AdminShell } from "@/components/app-shell";
 import { CalculatorForm } from "@/components/admin/calculator-form";
+import { ownLaborFactor } from "@/components/admin/stats-ui";
 import { ConfigWarning } from "@/components/config-warning";
 import { hasSupabaseConfig } from "@/lib/env";
-import { listHolidays } from "@/services/catalog";
+import { listCatalog, listHolidays } from "@/services/catalog";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 import type { CalculatedMachineView } from "@/types/domain";
@@ -20,7 +21,7 @@ export default async function CalculadoraPage() {
   }
 
   const settings = mapSettings(await getSettings());
-  const holidays = await listHolidays();
+  const [holidays, catalog] = await Promise.all([listHolidays(), listCatalog()]);
   const machines = await listCalculatedMachines({ settings, holidays, status: "in_production" });
 
   const lastMachine = machines.reduce<CalculatedMachineView | null>(
@@ -43,6 +44,14 @@ export default async function CalculadoraPage() {
         baseAccumulatedHours={lastMachine?.accumulatedHours ?? 0}
         anchorSerial={lastMachine?.serialNumber ?? null}
         anchorDate={lastMachine?.estimatedDate ?? null}
+        catalog={catalog
+          .filter((item) => item.is_active)
+          .map((item) => ({
+            id: item.id,
+            code: item.code,
+            name: item.name,
+            laborFactor: ownLaborFactor(item.labor_factor),
+          }))}
       />
     </AdminShell>
   );
