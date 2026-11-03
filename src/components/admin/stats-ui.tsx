@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ export function MetricCard({
   detail,
   formula,
   prominent = false,
+  action,
 }: {
   icon: ComponentType<{ className?: string }>;
   eyebrow: string;
@@ -25,6 +26,8 @@ export function MetricCard({
   detail: string;
   formula: string;
   prominent?: boolean;
+  /** Enlace opcional bajo la fórmula (p. ej. "ver el dato real en Máquinas"). */
+  action?: ReactNode;
 }) {
   return (
     <Card className={cn(prominent && "border-[var(--xt-black)] bg-[var(--xt-yellow-soft)]")}>
@@ -41,6 +44,7 @@ export function MetricCard({
       <CardContent>
         <p className="text-sm text-[var(--xt-steel)]">{detail}</p>
         <p className="mt-1 text-xs text-[var(--xt-steel)]">Función: {formula}</p>
+        {action ? <div className="mt-2 text-sm">{action}</div> : null}
       </CardContent>
     </Card>
   );
