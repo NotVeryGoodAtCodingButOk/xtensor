@@ -104,6 +104,36 @@ export function formatPct(value: number | null | undefined) {
   return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value)} %`;
 }
 
+/**
+ * % de mano de obra a partir de una fracción (0.35 → "35%", 0.325 → "32,5%").
+ * Sin espacio antes del %: así lo pide el contrato para el catálogo y las tablas.
+ */
+export function formatLaborPct(fraction: number | null | undefined) {
+  if (fraction === null || fraction === undefined || !Number.isFinite(fraction)) {
+    return "Sin datos";
+  }
+
+  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(fraction * 100)}%`;
+}
+
+/**
+ * `equipment_catalog.labor_factor` tal como llega de la base: puede faltar
+ * (antes de la migración), ser null (usa el general) o venir como texto
+ * (numeric de PostgREST). Devuelve la fracción propia válida o null.
+ */
+export function ownLaborFactor(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 && parsed <= 1 ? parsed : null;
+}
+
+/** Valor inicial de un input en % (0.35 → "35", 0.325 → "32.5", null → ""). */
+export function laborPctInputValue(fraction: number | null) {
+  return fraction === null ? "" : String(Math.round(fraction * 1000) / 10);
+}
+
 export function formatCop(value: number | null | undefined) {
   if (value === null || value === undefined || !Number.isFinite(value) || value === 0) {
     return "Sin datos";

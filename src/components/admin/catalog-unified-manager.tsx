@@ -11,6 +11,7 @@ import {
   updateCatalogItemAction,
 } from "@/app/admin/actions";
 import { CatalogBulkImport } from "@/components/admin/catalog-bulk-import";
+import { formatLaborPct, laborPctInputValue, ownLaborFactor } from "@/components/admin/stats-ui";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,14 +25,41 @@ type CatalogRow = Database["public"]["Tables"]["equipment_catalog"]["Row"] & {
   previos: EquipmentPrevioView[];
 };
 
+// Columnas de la tabla de equipos; los paneles de agregar/editar ocupan todas menos la del chevron.
+const FORM_COLSPAN = 7;
+
 const selectCls =
   "flex h-8 rounded-[2px] border border-[var(--xt-aluminum)] bg-[var(--xt-white)] px-2 py-1 text-sm focus-visible:border-[var(--xt-black)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--xt-yellow)]";
 
-function AddRow({ onCancel }: { onCancel: () => void }) {
+/**
+ * % de mano de obra del equipo, en %. Vacío = el equipo usa el % general de
+ * Configuración. La acción lo guarda como fracción (35 → 0.35).
+ */
+function LaborPctInput({ defaultValue, generalLaborFactor }: { defaultValue?: string; generalLaborFactor: number }) {
+  const generalLabel = formatLaborPct(generalLaborFactor);
+  return (
+    <label className="flex items-center gap-1 text-xs text-[var(--xt-steel)]">
+      <Input
+        name="labor_pct"
+        type="number"
+        min="1"
+        max="100"
+        step="any"
+        defaultValue={defaultValue}
+        placeholder={`% MO (${generalLabel})`}
+        title={`% de mano de obra del equipo. Vacío = usa el general (${generalLabel}).`}
+        className="h-8 w-28 text-sm"
+      />
+      %
+    </label>
+  );
+}
+
+function AddRow({ onCancel, generalLaborFactor }: { onCancel: () => void; generalLaborFactor: number }) {
   return (
     <TableRow className="bg-[var(--xt-yellow-soft)]">
       <TableCell />
-      <TableCell colSpan={6}>
+      <TableCell colSpan={FORM_COLSPAN}>
         <form action={addCatalogItemAction} className="flex flex-wrap items-center gap-2">
           <Input name="code" placeholder="Código" className="h-8 w-28 text-sm" required autoFocus />
           <Input name="name" placeholder="Nombre del equipo" className="h-8 w-52 text-sm" required />
@@ -41,6 +69,7 @@ function AddRow({ onCancel }: { onCancel: () => void }) {
             ))}
           </select>
           <Input name="default_price_cop" type="number" min="0" placeholder="Precio" className="h-8 w-32 text-sm" />
+          <LaborPctInput generalLaborFactor={generalLaborFactor} />
           <Button type="submit" size="sm">
             <Check className="h-3 w-3" />
             Agregar
@@ -57,16 +86,18 @@ function AddRow({ onCancel }: { onCancel: () => void }) {
 function EditPanel({
   item,
   onClose,
+  generalLaborFactor,
 }: {
   item: CatalogRow;
   onClose: () => void;
+  generalLaborFactor: number;
 }) {
   const currentLine = normalizeMachineLine(item.line);
 
   return (
     <TableRow className="bg-[var(--xt-yellow-soft)]/45 hover:bg-[var(--xt-yellow-soft)]/45">
       <TableCell />
-      <TableCell colSpan={6}>
+      <TableCell colSpan={FORM_COLSPAN}>
         <div className="py-3">
           <p className="mb-2 text-sm font-semibold">Editar equipo</p>
           <div className="flex flex-wrap items-center gap-2">
@@ -86,6 +117,10 @@ function EditPanel({
                 defaultValue={item.default_price_cop ?? ""}
                 placeholder="Precio"
                 className="h-8 w-32 text-sm"
+              />
+              <LaborPctInput
+                defaultValue={laborPctInputValue(ownLaborFactor(item.labor_factor))}
+                generalLaborFactor={generalLaborFactor}
               />
               <select name="is_active" defaultValue={item.is_active ? "true" : "false"} className={selectCls}>
                 <option value="true">Activo</option>
@@ -178,9 +213,12 @@ function InlinePrevioChip({
 export function CatalogUnifiedManager({
   catalog,
   previosCatalog,
+  generalLaborFactor,
 }: {
   catalog: CatalogRow[];
   previosCatalog: PrevioCatalogView[];
+  /** settings.labor_factor (fracción): el % que usan los equipos sin % propio. */
+  generalLaborFactor: number;
 }) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -250,7 +288,7 @@ export function CatalogUnifiedManager({
         </div>
 
         <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-          <Table className="min-w-[960px] text-xs">
+          <Table className="min-w-[1040px] text-xs">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12" />
@@ -258,15 +296,19 @@ export function CatalogUnifiedManager({
                 <TableHead>Equipo</TableHead>
                 <TableHead>Línea</TableHead>
                 <TableHead className="text-right">Precio</TableHead>
+                <TableHead className="text-right" title="% de mano de obra del equipo. Sin % propio usa el general de Configuración.">
+                  % MO
+                </TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead>Previos requeridos</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {adding && <AddRow onCancel={() => setAdding(false)} />}
+              {adding && <AddRow onCancel={() => setAdding(false)} generalLaborFactor={generalLaborFactor} />}
               {filtered.map((item) => {
                 const expanded = expandedId === item.id;
                 const activePrevioIds = new Set(item.previos.map((p) => p.previoCatalogId));
+                const laborFactor = ownLaborFactor(item.labor_factor);
                 return (
                   <Fragment key={item.id}>
                     <TableRow>
@@ -289,6 +331,13 @@ export function CatalogUnifiedManager({
                       <TableCell>{item.line ?? <span className="text-[var(--xt-aluminum)]">—</span>}</TableCell>
                       <TableCell className="text-right">
                         {formatCurrencyCop(Number(item.default_price_cop ?? 0))}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-right tabular-nums">
+                        {laborFactor !== null ? (
+                          formatLaborPct(laborFactor)
+                        ) : (
+                          <span className="text-[var(--xt-steel)]">{formatLaborPct(generalLaborFactor)} (general)</span>
+                        )}
                       </TableCell>
                       <TableCell>
                         <Badge variant={item.is_active ? "success" : "muted"}>
@@ -317,6 +366,7 @@ export function CatalogUnifiedManager({
                         key={`${item.id}-edit`}
                         item={item}
                         onClose={() => setExpandedId(null)}
+                        generalLaborFactor={generalLaborFactor}
                       />
                     )}
                   </Fragment>

@@ -6,6 +6,7 @@ export const metadata: Metadata = { title: "Catálogo XTENSOR" };
 import { ConfigWarning } from "@/components/config-warning";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listCatalogWithMachineTargets, listPrevioCatalog } from "@/services/previos";
+import { getSettings, mapSettings } from "@/services/settings";
 
 export default async function CatalogPage() {
   if (!hasSupabaseConfig()) {
@@ -16,14 +17,20 @@ export default async function CatalogPage() {
     );
   }
 
-  const [catalog, previosCatalog] = await Promise.all([
+  const [catalog, previosCatalog, settingsRow] = await Promise.all([
     listCatalogWithMachineTargets(),
     listPrevioCatalog(),
+    getSettings(),
   ]);
+  const settings = mapSettings(settingsRow);
 
   return (
     <AdminShell>
-      <CatalogUnifiedManager catalog={catalog} previosCatalog={previosCatalog} />
+      <CatalogUnifiedManager
+        catalog={catalog}
+        previosCatalog={previosCatalog}
+        generalLaborFactor={settings.laborFactor}
+      />
     </AdminShell>
   );
 }
