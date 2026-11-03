@@ -6,6 +6,7 @@ import {
   calculateQueue,
   DEFAULT_STAGES,
   type ProductionSettings,
+  resolveLaborFactor,
 } from "@/services/calculations";
 import { createMachinePreviosFromEquipment } from "@/services/previos";
 import { addClientBuffer, estimateDeliveryDate, type Holiday } from "@/services/schedule";
@@ -147,6 +148,7 @@ export function calculateMachines(
       .map((machine) => ({
         id: machine.id,
         salePriceCop: machine.salePriceCop,
+        laborFactor: machine.equipmentLaborFactor,
         orderPosition: machine.orderPosition,
         promisedDate: machine.promisedDate,
         stages: machine.stages.map((stage) => ({
@@ -175,10 +177,13 @@ export function calculateMachines(
     const lastCompletedStageAt = machine.stages
       .filter((stage) => stage.completion === 100 && stage.lastUpdatedAt)
       .sort((a, b) => b.id - a.id)[0]?.lastUpdatedAt ?? null;
+    const { laborFactor, source: laborFactorSource } = resolveLaborFactor(machine.equipmentLaborFactor, settings);
 
     return {
       ...machine,
       ...calculation,
+      laborFactor,
+      laborFactorSource,
       estimatedDate,
       clientEstimatedDate: addClientBuffer(estimatedDate, settings.clientBufferDays),
       lastCompletedStageAt,
@@ -661,6 +666,7 @@ function mapMachineRow(row: MachineRow): MachineView {
     equipmentId: row.equipment_id,
     equipmentCode: row.equipment_catalog?.code ?? null,
     equipmentName,
+    equipmentLaborFactor: toLaborFactorOrNull(row.equipment_catalog?.labor_factor),
     colorId: row.color_id ?? null,
     colorName: row.colors?.name ?? null,
     city: row.city,
@@ -776,4 +782,14 @@ async function normalizeProductionQueue(supabase = createSupabaseAdminClient()) 
   const queue = await listProductionQueue(supabase);
   const orderedIds = sortProductionQueue(queue).map((machine) => machine.id);
   await persistProductionQueueOrder(supabase, orderedIds);
+}
+
+/** labor_factor llega como numeric (string o number) desde PostgREST; null/undefined si no hay % propio. */
+function toLaborFactorOrNull(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }

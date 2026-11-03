@@ -36,6 +36,8 @@ export type ProductionSettings = {
 export type QueueMachineInput = {
   id: string;
   salePriceCop: number;
+  /** % MO del equipo (fracción). null/undefined = settings.laborFactor. */
+  laborFactor?: number | null;
   orderPosition: number;
   promisedDate: string;
   stages: StageProgress[];
@@ -80,12 +82,68 @@ export const DEFAULT_SETTINGS: ProductionSettings = {
   ],
 };
 
-export function estimateTotalHours(salePriceCop: number, settings: ProductionSettings) {
+/**
+ * Horas máximas de mano de obra de una máquina: venta × % MO ÷ costo hora
+ * promedio de planta. El % es el del equipo en el catálogo; si el equipo no
+ * tiene % propio (null/undefined) se usa el general de Configuración.
+ */
+export function estimateTotalHours(
+  salePriceCop: number,
+  settings: ProductionSettings,
+  laborFactor?: number | null,
+) {
   if (settings.hourlyCostPerWorkerCop <= 0) {
     throw new Error("El costo hora debe ser mayor que cero.");
   }
 
-  return (salePriceCop * settings.laborFactor) / settings.hourlyCostPerWorkerCop;
+  return (salePriceCop * resolveLaborFactor(laborFactor, settings).laborFactor) / settings.hourlyCostPerWorkerCop;
+}
+
+/** % MO efectivo de un equipo: el suyo si es válido (0 < f ≤ 1), si no el general. */
+export function resolveLaborFactor(
+  equipmentLaborFactor: number | null | undefined,
+  settings: Pick<ProductionSettings, "laborFactor">,
+): { laborFactor: number; source: "catalogo" | "general" } {
+  if (
+    typeof equipmentLaborFactor === "number" &&
+    Number.isFinite(equipmentLaborFactor) &&
+    equipmentLaborFactor > 0 &&
+    equipmentLaborFactor <= 1
+  ) {
+    return { laborFactor: equipmentLaborFactor, source: "catalogo" };
+  }
+
+  return { laborFactor: settings.laborFactor, source: "general" };
+}
+
+/** Margen (en fracción de avance) antes de marcar una máquina "en riesgo". */
+export const BUDGET_RISK_MARGIN = 0.1;
+
+/**
+ * Estado del presupuesto de horas de una máquina:
+ * - excedida: ya registró más horas que las máximas.
+ * - riesgo: sin terminar, ha consumido más del presupuesto de lo que ha avanzado (+10 pp de margen).
+ * - ok: lo demás, incluido "sin presupuesto" (venta 0).
+ */
+export function budgetStatus(input: {
+  budgetHours: number;
+  spentHours: number;
+  progressPct: number;
+  isFinished: boolean;
+}): "ok" | "riesgo" | "excedida" {
+  if (!(input.budgetHours > 0)) {
+    return "ok";
+  }
+
+  if (input.spentHours > input.budgetHours) {
+    return "excedida";
+  }
+
+  if (!input.isFinished && input.spentHours / input.budgetHours > clamp(input.progressPct, 0, 1) + BUDGET_RISK_MARGIN) {
+    return "riesgo";
+  }
+
+  return "ok";
 }
 
 export function calculateProgressPct(
@@ -131,7 +189,7 @@ export function calculateQueue(
     .sort((a, b) => a.orderPosition - b.orderPosition)
     .map<QueueMachineCalculation>((machine) => {
       const progressPct = calculateProgressPct(machine.stages, stages);
-      const totalHours = estimateTotalHours(machine.salePriceCop, settings);
+      const totalHours = estimateTotalHours(machine.salePriceCop, settings, machine.laborFactor);
       const remainingHours = calculateRemainingHours(totalHours, progressPct);
       const remainingHumanDays = calculateRemainingHumanDays(remainingHours, settings);
       accumulatedHours += remainingHours;

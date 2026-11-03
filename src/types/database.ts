@@ -69,6 +69,8 @@ export type Database = {
           name: string;
           line: string | null;
           default_price_cop: number | null;
+          /** Fracción de la venta para mano de obra (0.3 = 30%). null = usa settings.labor_factor. */
+          labor_factor: number | null;
           is_custom: boolean;
           is_active: boolean;
           created_at: string;
@@ -80,6 +82,7 @@ export type Database = {
           name: string;
           line?: string | null;
           default_price_cop?: number | null;
+          labor_factor?: number | null;
           is_custom?: boolean;
           is_active?: boolean;
           created_at?: string;
@@ -91,6 +94,7 @@ export type Database = {
           name?: string;
           line?: string | null;
           default_price_cop?: number | null;
+          labor_factor?: number | null;
           is_custom?: boolean;
           is_active?: boolean;
           created_at?: string;
@@ -544,6 +548,8 @@ export type Database = {
         Row: {
           id: string;
           name: string;
+          /** Texto corto que la tablet muestra bajo el nombre. */
+          description: string | null;
           sort_order: number;
           /** Whether the activity can be tied to machines (repairs, installs). */
           allows_machine: boolean;
@@ -553,6 +559,7 @@ export type Database = {
         Insert: {
           id?: string;
           name: string;
+          description?: string | null;
           sort_order?: number;
           allows_machine?: boolean;
           is_active?: boolean;
@@ -561,6 +568,7 @@ export type Database = {
         Update: {
           id?: string;
           name?: string;
+          description?: string | null;
           sort_order?: number;
           allows_machine?: boolean;
           is_active?: boolean;
@@ -635,6 +643,23 @@ export type Database = {
       reorder_in_production_machines: {
         Args: {
           ordered_machine_ids: string[];
+        };
+        Returns: void;
+      };
+      /** 0031: order_position + reestimated_date en una sola transacción. */
+      reorder_production_queue: {
+        Args: {
+          ordered_machine_ids: string[];
+          /** { "<machine uuid>": "yyyy-MM-dd" } */
+          reestimated_dates: Json;
+        };
+        Returns: void;
+      };
+      /** 0030: mueve las horas de una actividad a otra y borra la de origen. */
+      merge_activity_type: {
+        Args: {
+          source_activity_type_id: string;
+          target_activity_type_id: string;
         };
         Returns: void;
       };

@@ -1,4 +1,5 @@
 import type { MachineStatus } from "@/types/database";
+import type { LaborFactorSource, MachineLaborSnapshot } from "@/types/labor-report";
 
 export type StageView = {
   id: number;
@@ -17,6 +18,8 @@ export type MachineView = {
   equipmentId: string | null;
   equipmentCode: string | null;
   equipmentName: string;
+  /** equipment_catalog.labor_factor crudo (fracción) o null si el equipo no tiene % propio. */
+  equipmentLaborFactor: number | null;
   colorId: string | null;
   colorName: string | null;
   city: string | null;
@@ -39,6 +42,11 @@ export type MachineView = {
 };
 
 export type CalculatedMachineView = MachineView & {
+  /** % MO efectivo (fracción): el del equipo o, si no tiene, settings.labor_factor. */
+  laborFactor: number;
+  laborFactorSource: LaborFactorSource;
+  /** Solo presente cuando la página lo pide con attachMachineLabor (src/services/machine-labor.ts). */
+  labor?: MachineLaborSnapshot;
   progressPct: number;
   totalHours: number;
   remainingHours: number;

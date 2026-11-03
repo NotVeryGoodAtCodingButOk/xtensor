@@ -3,10 +3,12 @@ import type { Database } from "@/types/database";
 
 export type ActivityTypeRow = Database["public"]["Tables"]["activity_types"]["Row"];
 
-/** Catálogo de actividades sin etapa: aseo, orden, mejoras planta, etc. */
+/** Catálogo de labores fuera de etapa: 5S, empaque/carga/instalación, arreglos, etc. */
 export type ActivityTypeView = {
   id: string;
   name: string;
+  /** Texto corto bajo el nombre en la tablet (p. ej. "Aseo, orden, limpieza y mantenimiento de planta"). */
+  description: string | null;
   sortOrder: number;
   allowsMachine: boolean;
   isActive: boolean;
@@ -18,6 +20,7 @@ export function mapActivityType(row: ActivityTypeRow): ActivityTypeView {
   return {
     id: row.id,
     name: row.name,
+    description: row.description?.trim() ? row.description.trim() : null,
     sortOrder: row.sort_order,
     allowsMachine: row.allows_machine,
     isActive: row.is_active,
