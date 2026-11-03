@@ -49,6 +49,30 @@ export type CalculatedMachineView = MachineView & {
   lastCompletedStageAt: string | null;
 };
 
+/**
+ * What the client portal is allowed to see. Client Components serialize their
+ * props into the page HTML, so the portal must only receive these fields —
+ * never prices, internal dates, queue position, hours or worker names.
+ */
+export type ClientMachineView = Pick<
+  CalculatedMachineView,
+  "id" | "equipmentName" | "progressPct" | "status" | "shippedAt" | "clientEstimatedDate"
+> & {
+  stages: Pick<StageView, "id" | "name" | "completion" | "lastUpdatedAt">[];
+};
+
+export function toClientMachineView(machine: CalculatedMachineView): ClientMachineView {
+  return {
+    id: machine.id,
+    equipmentName: machine.equipmentName,
+    progressPct: machine.progressPct,
+    status: machine.status,
+    shippedAt: machine.shippedAt,
+    clientEstimatedDate: machine.clientEstimatedDate,
+    stages: machine.stages.map(({ id, name, completion, lastUpdatedAt }) => ({ id, name, completion, lastUpdatedAt })),
+  };
+}
+
 export type PrevioCatalogView = {
   id: string;
   name: string;

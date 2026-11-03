@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { ArrowDownUp } from "lucide-react";
 import { MachineCard } from "@/components/client/machine-card";
-import type { CalculatedMachineView } from "@/types/domain";
+import type { ClientMachineView } from "@/types/domain";
 
-export function MachineList({ machines }: { machines: CalculatedMachineView[] }) {
+export function MachineList({ machines }: { machines: ClientMachineView[] }) {
   const [asc, setAsc] = useState(false);
 
   const sorted = [...machines].sort((a, b) =>

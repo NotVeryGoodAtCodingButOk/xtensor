@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import type { StageView } from "@/types/domain";
 
-export function StageStrip({ stages }: { stages: StageView[] }) {
+export function StageStrip({ stages }: { stages: Pick<StageView, "id" | "name" | "completion">[] }) {
   return (
     <div className="xt-stage-strip flex flex-wrap gap-1">
       {stages.map((stage) => (

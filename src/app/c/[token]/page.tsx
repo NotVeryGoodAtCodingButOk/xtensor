@@ -9,6 +9,7 @@ import { listHolidays } from "@/services/catalog";
 import { calculateMachines, listClientVisibleMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 import { formatDateEs } from "@/services/schedule";
+import { toClientMachineView } from "@/types/domain";
 
 export default async function ClientPortalPage({ params }: { params: Promise<{ token: string }> }) {
   if (!hasSupabaseConfig()) {
@@ -30,7 +31,7 @@ export default async function ClientPortalPage({ params }: { params: Promise<{ t
     listHolidays(),
     listClientVisibleMachines(client.id),
   ]);
-  const machines = calculateMachines(rawMachines, mapSettings(settingsRow), holidays);
+  const machines = calculateMachines(rawMachines, mapSettings(settingsRow), holidays).map(toClientMachineView);
 
   const totalCount = machines.length;
   const terminadasCount = machines.filter((m) => m.progressPct >= 1 || m.status === "shipped").length;

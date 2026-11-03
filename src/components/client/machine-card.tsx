@@ -7,9 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { formatPercent } from "@/lib/utils";
 import { formatDateEs } from "@/services/schedule";
-import type { CalculatedMachineView } from "@/types/domain";
+import type { ClientMachineView } from "@/types/domain";
 
-function getCompletionDate(machine: CalculatedMachineView): string | null {
+function getCompletionDate(machine: ClientMachineView): string | null {
   if (machine.shippedAt) return machine.shippedAt.slice(0, 10);
   const dates = machine.stages
     .map((s) => s.lastUpdatedAt)
@@ -18,7 +18,7 @@ function getCompletionDate(machine: CalculatedMachineView): string | null {
   return dates.sort().at(-1)!.slice(0, 10);
 }
 
-export function MachineCard({ machine }: { machine: CalculatedMachineView }) {
+export function MachineCard({ machine }: { machine: ClientMachineView }) {
   const [stagesOpen, setStagesOpen] = useState(false);
 
   const isComplete = machine.progressPct >= 1;
