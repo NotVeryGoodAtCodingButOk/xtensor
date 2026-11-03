@@ -65,7 +65,7 @@ export default async function SettingsPage({
             {passwordStatus ? (
               <p
                 className={`mb-3 text-sm font-semibold ${
-                  passwordStatus.tone === "ok" ? "text-[var(--xt-green)]" : "text-[var(--xt-red)]"
+                  passwordStatus.tone === "ok" ? "text-[var(--line-bio-green)]" : "text-[var(--line-pro-red)]"
                 }`}
               >
                 {passwordStatus.text}
