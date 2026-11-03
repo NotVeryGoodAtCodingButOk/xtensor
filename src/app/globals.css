@@ -1540,7 +1540,8 @@ select {
 .xt-board-columns,
 .xt-board-row {
   display: grid;
-  grid-template-columns: 4.5rem minmax(0, 1.8fr) minmax(0, 1.5fr) minmax(0, 1.1fr) minmax(0, 2.1fr) minmax(0, 1.7fr) minmax(0, 1.3fr) minmax(0, 1.3fr) minmax(0, 1.5fr);
+  /* Debe coincidir con la clase grid-cols-[…] del encabezado y de BoardRow (src/app/planta/tablero/page.tsx). */
+  grid-template-columns: 4.5rem minmax(0, 1.8fr) minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1.8fr) minmax(0, 1.4fr) minmax(0, 1.1fr) minmax(0, 1.1fr) minmax(0, 1.2fr);
   align-items: center;
   gap: 0.75rem;
 }
@@ -1705,6 +1706,86 @@ select {
 
 .xt-board-reestimated {
   color: rgba(255, 255, 255, 0.4);
+}
+
+/* Columna «Horas»: llevadas / máximas con barra de consumo (board-hours-cell.tsx). */
+.xt-board-hours {
+  min-width: 0;
+  margin: 0;
+  color: var(--xt-white);
+  font-size: 1.25rem;
+  font-weight: 700;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.xt-board-hours-text {
+  overflow: hidden;
+  margin: 0;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.xt-board-hours-empty {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.xt-board-hours-final {
+  display: inline-block;
+  max-width: 100%;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 1.125rem;
+}
+
+.xt-board-hours-riesgo {
+  color: var(--xt-yellow-deep);
+}
+
+.xt-board-hours-excedida {
+  color: var(--line-pro-red);
+}
+
+/* Rojo sobre el parpadeo rojo de las atrasadas (o el verde de las terminadas) no se lee: fondo negro detrás. */
+.xt-board-row-late .xt-board-hours,
+.xt-board-row-done .xt-board-hours-excedida {
+  margin: -0.125rem -0.25rem;
+  border-radius: 2px;
+  background: var(--xt-black);
+  padding: 0.125rem 0.25rem;
+}
+
+.xt-board-hours-track {
+  position: relative;
+  height: 0.25rem;
+  margin-top: 0.125rem;
+  border-radius: 1px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.xt-board-hours-fill {
+  height: 100%;
+  border-radius: 1px;
+  background: var(--xt-aluminum);
+}
+
+.xt-board-hours-riesgo .xt-board-hours-fill {
+  background: var(--xt-yellow-deep);
+}
+
+.xt-board-hours-excedida .xt-board-hours-fill {
+  background: var(--line-pro-red);
+}
+
+/* Marca de exceso: tope que sobresale al final de la barra llena. */
+.xt-board-hours-track-over::after {
+  content: "";
+  position: absolute;
+  top: -0.1875rem;
+  right: -0.125rem;
+  bottom: -0.1875rem;
+  width: 0.1875rem;
+  border-radius: 1px;
+  background: var(--line-pro-red);
 }
 
 .xt-planta-loading-header {

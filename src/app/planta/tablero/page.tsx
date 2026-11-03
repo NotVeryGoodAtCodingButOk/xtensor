@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { ConfigWarning } from "@/components/config-warning";
+import { BoardHoursCell } from "@/components/factory/board-hours-cell";
 import { PlantaNav } from "@/components/factory/planta-nav";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Progress } from "@/components/ui/progress";
@@ -81,12 +82,13 @@ export default async function FactoryBoardPage() {
       </header>
 
       {/* Column labels */}
-      <div className="xt-board-columns sticky top-0 z-10 grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 bg-[var(--xt-black)] px-6 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-extrabold uppercase tracking-widest text-white">
+      <div className="xt-board-columns sticky top-0 z-10 grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.8fr)_minmax(0,1.4fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.2fr)] items-center gap-3 bg-[var(--xt-black)] px-6 py-2 [font-family:var(--font-barlow-condensed)] text-sm font-extrabold uppercase tracking-widest text-white">
         <span className="text-center">SERIAL</span>
         <span>Máquina</span>
         <span>Cliente</span>
         <span>Color</span>
         <span>Avance</span>
+        <span>Horas</span>
         <span>Siguiente tarea</span>
         <span className="text-right">Prometida</span>
         <span className="text-right">Reestimada</span>
@@ -124,7 +126,7 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
     <div
       style={rowStyle}
       className={cn(
-        "xt-board-row grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.5fr)_minmax(0,1.1fr)_minmax(0,2.1fr)_minmax(0,1.7fr)_minmax(0,1.3fr)_minmax(0,1.3fr)_minmax(0,1.5fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
+        "xt-board-row grid grid-cols-[4.5rem_minmax(0,1.8fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,1.5fr)_minmax(0,1.8fr)_minmax(0,1.4fr)_minmax(0,1.1fr)_minmax(0,1.1fr)_minmax(0,1.2fr)] items-center gap-3 rounded-[4px] border px-4 py-1.5",
         `xt-board-row-${status}`,
         status === "late" ? "xt-flash-late border-[var(--line-pro-red)]" : "border-white/10",
       )}
@@ -178,6 +180,11 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
         <span className="xt-board-percent w-12 shrink-0 text-right text-base font-bold tabular-nums leading-none">
           {formatPercent(machine.progressPct)}
         </span>
+      </div>
+
+      {/* Hours: spent vs. budget (máximas) */}
+      <div className="xt-board-cell min-w-0">
+        <BoardHoursCell labor={machine.labor} />
       </div>
 
       {/* Next task */}
