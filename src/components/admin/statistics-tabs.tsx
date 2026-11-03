@@ -4,10 +4,11 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { key: "resumen" as const, href: "/admin/estadisticas", label: "Resumen" },
   { key: "horas" as const, href: "/admin/estadisticas/horas", label: "Horas-hombre" },
+  { key: "maquinas" as const, href: "/admin/estadisticas/maquinas", label: "Máquinas" },
 ];
 
-/** Shared tab strip for the two admin Estadísticas pages (Resumen / Horas-hombre). */
-export function StatisticsTabs({ active }: { active: "resumen" | "horas" }) {
+/** Shared tab strip for the admin Estadísticas pages (Resumen / Horas-hombre / Máquinas). */
+export function StatisticsTabs({ active }: { active: (typeof TABS)[number]["key"] }) {
   return (
     <div className="mb-5 flex gap-1 border-b border-[var(--xt-black)]">
       {TABS.map((tab) => (
