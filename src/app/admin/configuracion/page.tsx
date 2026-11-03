@@ -122,7 +122,8 @@ export default async function SettingsPage({
             <CardTitle>Actividades de planta</CardTitle>
           </CardHeader>
           <CardContent>
-            <ActivityTypesManager activityTypes={activityTypes} />
+            {/* Fase 2: usageById = await listActivityTypeUsage() (servicio de B). */}
+            <ActivityTypesManager activityTypes={activityTypes} usageById={{}} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">
