@@ -40,7 +40,7 @@ This is a **factory production tracker** for XTENSOR — a company that manufact
 | Factory floor | `/planta/*` | Shared factory password → HMAC-signed cookie (`xt_factory`) + per-worker cookie (`xt_worker`) |
 | Client portal | `/c/[token]` | Magic-link token in URL (no login) |
 
-Middleware (`middleware.ts`) only guards `/admin/*`. Factory and client routes handle auth themselves in Server Actions.
+Middleware (`src/middleware.ts` — must live in `src/` because the app uses `src/app`) only guards `/admin/*`. Factory and client routes handle auth themselves in Server Actions.
 
 ### Data flow
 
