@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { MACHINE_LINE_VALUES, normalizeMachineLine } from "@/lib/machine-lines";
+import { chunked } from "@/services/batching";
 import { listActivityTypes } from "@/services/activity-types";
 import {
   budgetStatus,
@@ -102,18 +103,42 @@ export async function getMachineLaborTotals(machineIds: string[]): Promise<Map<s
  * Agrega `labor` (horas máximas, llevadas, % consumido y estado) a cada
  * máquina. Las horas máximas usan el % vigente del equipo, también para las
  * terminadas; en las terminadas/despachadas las llevadas son las finales.
+ * Una máquina en producción por garantía solo cuenta las horas desde su
+ * última garantía y queda en «ok» (la garantía no tiene presupuesto).
+ * `options.holidays` evita volver a pedir los festivos si la página ya los tiene.
  */
 export async function attachMachineLabor<T extends CalculatedMachineView>(
   machines: T[],
   settings: ProductionSettings,
+  options?: { holidays?: HolidaySet },
 ): Promise<Array<T & { labor: MachineLaborSnapshot }>> {
-  const [totals, trackingSince] = await Promise.all([
-    getMachineLaborTotals(machines.map((machine) => machine.id)),
+  const ids = [...new Set(machines.map((machine) => machine.id))];
+  const warrantyIds = machines
+    .filter((machine) => machine.status === "in_production" && machine.isWarranty)
+    .map((machine) => machine.id);
+
+  const [context, trackingSince, sessions, warrantySinceById] = await Promise.all([
+    loadLaborContext({ settings, holidays: options?.holidays }),
     getFirstSessionStartedAt(),
+    listSessionsForMachines(ids),
+    getLastWarrantyEventAt(warrantyIds),
   ]);
+
+  const snapshots = buildAttachedLaborSnapshots({
+    machines,
+    sessions,
+    workers: context.workers,
+    shift: context.shift,
+    holidays: context.holidays,
+    now: new Date(),
+    settings: context.settings,
+    trackingSince,
+    warrantySinceById,
+  });
+
   return machines.map((machine) => ({
     ...machine,
-    labor: buildMachineLaborSnapshot(machine, totals.get(machine.id), settings, trackingSince),
+    labor: snapshots.get(machine.id) ?? buildMachineLaborSnapshot(machine, undefined, context.settings, trackingSince),
   }));
 }
 
@@ -243,6 +268,74 @@ export function buildMachineLaborSnapshot(
       trackingSince,
     }),
   };
+}
+
+/**
+ * Resumen de horas para la cartelera y la tabla de producción. Las máquinas
+ * con `warrantySinceById` (en producción por garantía) solo cuentan las
+ * sesiones que empezaron desde su última garantía, y su estado queda en «ok».
+ */
+export function buildAttachedLaborSnapshots(input: {
+  machines: Array<
+    Pick<MachineLaborSource, "id" | "salePriceCop" | "equipmentLaborFactor" | "status" | "progressPct" | "productionStartedAt">
+  >;
+  /** Sesiones de estas máquinas, cada una con TODAS sus máquinas. */
+  sessions: LaborSessionInput[];
+  workers: LaborWorkerInput[];
+  shift: FactoryShift;
+  holidays: HolidaySet;
+  now: Date;
+  settings: ProductionSettings;
+  trackingSince: string | null;
+  /** machineId → created_at de su última garantía. */
+  warrantySinceById?: Map<string, string>;
+}): Map<string, MachineLaborSnapshot> {
+  const warrantySince = input.warrantySinceById ?? new Map<string, string>();
+  const summarize = (sessions: LaborSessionInput[], machineIds: string[]) =>
+    summarizeMachineLabor({
+      sessions,
+      workers: input.workers,
+      shift: input.shift,
+      holidays: input.holidays,
+      now: input.now,
+      hourlyCostFallback: input.settings.hourlyCostPerWorkerCop,
+      machineIds,
+    });
+
+  const regular = input.machines.filter((machine) => !warrantySince.has(machine.id));
+  const totals = summarize(
+    input.sessions,
+    regular.map((machine) => machine.id),
+  );
+  const snapshots = new Map<string, MachineLaborSnapshot>();
+
+  for (const machine of regular) {
+    snapshots.set(
+      machine.id,
+      buildMachineLaborSnapshot(machine, totals.get(machine.id), input.settings, input.trackingSince),
+    );
+  }
+
+  for (const machine of input.machines) {
+    const since = warrantySince.get(machine.id);
+    if (!since) continue;
+
+    const sinceMs = new Date(since).getTime();
+    const sessions = input.sessions.filter(
+      (session) => session.machineIds.includes(machine.id) && new Date(session.startedAt).getTime() >= sinceMs,
+    );
+    const warrantyTotals = summarize(sessions, [machine.id]).get(machine.id);
+    // «Datos parciales» se mide desde la garantía: lo que cuenta empieza ahí.
+    const snapshot = buildMachineLaborSnapshot(
+      { ...machine, productionStartedAt: since },
+      warrantyTotals,
+      input.settings,
+      input.trackingSince,
+    );
+    snapshots.set(machine.id, { ...snapshot, status: "ok" });
+  }
+
+  return snapshots;
 }
 
 export function buildMachineLaborRow(
@@ -460,9 +553,13 @@ type ReportMachineRow = Pick<
   machine_stages: Array<{ stage_id: number; completion: number }>;
 };
 
-async function loadLaborContext(): Promise<LaborContext> {
-  const [settingsRow, holidays, workerRows] = await Promise.all([getSettings(), listHolidays(), listWorkers()]);
-  const settings = mapSettings(settingsRow);
+/** Configuración, festivos y operarios; los que ya vengan en `known` no se vuelven a pedir. */
+async function loadLaborContext(known: { settings?: ProductionSettings; holidays?: HolidaySet } = {}): Promise<LaborContext> {
+  const [settings, holidays, workerRows] = await Promise.all([
+    known.settings ?? getSettings().then(mapSettings),
+    known.holidays ?? listHolidays(),
+    listWorkers(),
+  ]);
   return {
     settings,
     shift: shiftFromSettings(settings),
@@ -473,6 +570,30 @@ async function loadLaborContext(): Promise<LaborContext> {
       hourlyCostCop: worker.hourly_cost_cop === null ? null : Number(worker.hourly_cost_cop),
     })),
   };
+}
+
+/** machineId → created_at de su última garantía (machine_warranty_events). */
+async function getLastWarrantyEventAt(machineIds: string[]): Promise<Map<string, string>> {
+  const result = new Map<string, string>();
+  if (machineIds.length === 0) return result;
+
+  const supabase = createSupabaseAdminClient();
+  for (const chunk of chunked([...new Set(machineIds)])) {
+    const { data, error } = await supabase
+      .from("machine_warranty_events")
+      .select("machine_id, created_at")
+      .in("machine_id", chunk);
+    if (error) {
+      throw new Error(`No se pudieron cargar las garantías: ${error.message}`);
+    }
+    for (const row of data ?? []) {
+      const previous = result.get(row.machine_id);
+      if (!previous || new Date(row.created_at).getTime() > new Date(previous).getTime()) {
+        result.set(row.machine_id, row.created_at);
+      }
+    }
+  }
+  return result;
 }
 
 async function computeMachineLaborTotals(machineIds: string[], context: LaborContext) {

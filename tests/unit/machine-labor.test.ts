@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { DEFAULT_SETTINGS } from "@/services/calculations";
 import { shiftFromSettings, summarizeMachineLabor, type LaborSessionInput } from "@/services/labor-time";
 import {
+  buildAttachedLaborSnapshots,
   buildEquipmentLaborRows,
   buildMachineLaborDetail,
   buildMachineLaborRow,
@@ -257,5 +258,51 @@ describe("hasPartialLaborData", () => {
     expect(
       hasPartialLaborData({ productionStartedAt: "2026-10-01T13:00:00Z", isFinal: true, productionMinutes: 300, trackingSince: TRACKING }),
     ).toBe(false);
+  });
+});
+
+describe("buildAttachedLaborSnapshots", () => {
+  const WARRANTY_AT = "2026-06-10T08:00:00-05:00";
+  const sessions = [
+    // Antes de la garantía: 105 min en m1 (fabricación original) y en m2.
+    stageSession({ id: "s1", machineIds: ["m1", "m2"], endedAt: "2026-06-02T10:00:00-05:00" }),
+    // Después de la garantía: 60 min en m1.
+    stageSession({ id: "s2", startedAt: "2026-06-11T13:00:00-05:00", endedAt: "2026-06-11T14:00:00-05:00" }),
+  ];
+  const base = {
+    sessions,
+    workers: [{ id: "w1", fullName: "Ana", hourlyCostCop: 30_000 }],
+    shift,
+    holidays: [],
+    now: new Date("2026-06-30T12:00:00-05:00"),
+    settings,
+    trackingSince: TRACKING_SINCE,
+  };
+
+  it("counts a warranty machine in production only from its last warranty, with status ok", () => {
+    // Presupuesto de 0,5 h: sin la regla de garantía, 1 h llevada saldría «excedida».
+    const warranty = machine({ status: "in_production", progressPct: 0, salePriceCop: SALE_100_HOURS / 200 });
+    const other = machine({ id: "m2", status: "in_production", progressPct: 0, salePriceCop: SALE_100_HOURS / 100 });
+    const snapshots = buildAttachedLaborSnapshots({
+      ...base,
+      machines: [warranty, other],
+      warrantySinceById: new Map([["m1", WARRANTY_AT]]),
+    });
+
+    // m1: solo la sesión después de la garantía (60 min) y sin alarma de presupuesto.
+    expect(snapshots.get("m1")).toMatchObject({ spentHours: 1, status: "ok", isFinal: false, hasPartialData: false });
+    expect(snapshots.get("m1")?.budgetHours).toBeCloseTo(0.5, 6);
+    // m2 no está en garantía: cuenta toda su vida y sí alarma (52,5 min con 0% de avance → riesgo).
+    expect(snapshots.get("m2")?.spentHours).toBeCloseTo(52.5 / 60, 6);
+    expect(snapshots.get("m2")?.status).toBe("riesgo");
+  });
+
+  it("leaves machines without warranty exactly as buildMachineLaborSnapshot", () => {
+    const finished = machine();
+    const snapshots = buildAttachedLaborSnapshots({ ...base, machines: [finished] });
+
+    expect(snapshots.get("m1")).toEqual(
+      buildMachineLaborSnapshot(finished, totalsFor(sessions), settings, TRACKING_SINCE),
+    );
   });
 });
