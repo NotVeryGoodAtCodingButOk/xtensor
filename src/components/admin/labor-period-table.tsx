@@ -41,6 +41,7 @@ export const LABOR_GRANULARITY_OPTIONS: Array<{ value: LaborGranularity; label: 
 const PERIOD_COLUMN: Record<LaborGranularity, string> = { dia: "Día", semana: "Semana", mes: "Mes" };
 
 const UNCLASSIFIED_ACTIVITY_ID = "sin-clasificar";
+const MIN_ACTIVITY_DETAIL_MINUTES = 3;
 
 /** Segmentos para un TimeSplitBar de totales (p. ej. el resumen del rango). */
 export function buildLaborPeriodSplit(minutes: SplitMinutes): TimeSplitSegment[] {
@@ -132,8 +133,9 @@ function ActivityDetail({
   minutesByActivityType: Record<string, number>;
   activityNames: Record<string, string>;
 }) {
+  // Menos de 3 min se vería como «0,0 h»: es ruido (p. ej. cronómetros de segundos).
   const entries = Object.entries(minutesByActivityType)
-    .filter(([, minutes]) => minutes > 0)
+    .filter(([, minutes]) => minutes >= MIN_ACTIVITY_DETAIL_MINUTES)
     .sort((a, b) => b[1] - a[1]);
 
   if (entries.length === 0) {
