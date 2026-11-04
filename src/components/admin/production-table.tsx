@@ -67,7 +67,16 @@ function SpentHoursCell({ machine }: { machine: CalculatedMachineView }) {
     labor.spentPct !== null ? `${Math.round(labor.spentPct * 100)}% consumido` : null,
     labor.reprocessHours > 0 ? `${labor.reprocessHours.toFixed(1)} h de reproceso` : null,
     labor.status !== "ok" ? BUDGET_STATUS_LABEL[labor.status] : null,
+    labor.hasPartialData ? "Datos parciales: entró a producción antes de los cronómetros o terminó sin horas registradas" : null,
   ].filter(Boolean);
+
+  if (labor.hasPartialData && labor.status === "ok") {
+    return (
+      <span className="text-[var(--xt-aluminum)]" title={parts.join(" · ")}>
+        —
+      </span>
+    );
+  }
 
   return (
     <BudgetHoursText

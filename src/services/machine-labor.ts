@@ -107,10 +107,13 @@ export async function attachMachineLabor<T extends CalculatedMachineView>(
   machines: T[],
   settings: ProductionSettings,
 ): Promise<Array<T & { labor: MachineLaborSnapshot }>> {
-  const totals = await getMachineLaborTotals(machines.map((machine) => machine.id));
+  const [totals, trackingSince] = await Promise.all([
+    getMachineLaborTotals(machines.map((machine) => machine.id)),
+    getFirstSessionStartedAt(),
+  ]);
   return machines.map((machine) => ({
     ...machine,
-    labor: buildMachineLaborSnapshot(machine, totals.get(machine.id), settings),
+    labor: buildMachineLaborSnapshot(machine, totals.get(machine.id), settings, trackingSince),
   }));
 }
 
@@ -198,10 +201,29 @@ export async function getMachineLaborDetail(machineId: string): Promise<MachineL
 // Funciones puras
 // ---------------------------------------------------------------------------
 
+/**
+ * Datos parciales: no hay cronómetros aún, la máquina entró a producción antes
+ * del primero, o terminó sin horas de producción. Una máquina en curso que
+ * entró después y todavía no tiene horas NO es parcial: simplemente va en 0.
+ */
+export function hasPartialLaborData(input: {
+  productionStartedAt: string | null;
+  isFinal: boolean;
+  productionMinutes: number;
+  trackingSince: string | null;
+}): boolean {
+  if (input.trackingSince === null) return true;
+  const startedBeforeTracking =
+    input.productionStartedAt !== null &&
+    new Date(input.productionStartedAt).getTime() < new Date(input.trackingSince).getTime();
+  return startedBeforeTracking || (input.isFinal && input.productionMinutes <= 0);
+}
+
 export function buildMachineLaborSnapshot(
-  machine: Pick<MachineLaborSource, "salePriceCop" | "equipmentLaborFactor" | "status" | "progressPct">,
+  machine: Pick<MachineLaborSource, "salePriceCop" | "equipmentLaborFactor" | "status" | "progressPct" | "productionStartedAt">,
   totals: MachineLaborTotals | undefined,
   settings: ProductionSettings,
+  trackingSince: string | null = null,
 ): MachineLaborSnapshot {
   const budgetHours = safeBudgetHours(machine.salePriceCop, settings, machine.equipmentLaborFactor);
   const spentHours = (totals?.productionMinutes ?? 0) / 60;
@@ -214,6 +236,12 @@ export function buildMachineLaborSnapshot(
     spentPct: budgetHours > 0 ? spentHours / budgetHours : null,
     status: budgetStatus({ budgetHours, spentHours, progressPct: machine.progressPct, isFinished: isFinal }),
     isFinal,
+    hasPartialData: hasPartialLaborData({
+      productionStartedAt: machine.productionStartedAt,
+      isFinal,
+      productionMinutes: totals?.productionMinutes ?? 0,
+      trackingSince,
+    }),
   };
 }
 
@@ -223,13 +251,9 @@ export function buildMachineLaborRow(
   settings: ProductionSettings,
   trackingSince: string | null,
 ): MachineLaborRow {
-  const snapshot = buildMachineLaborSnapshot(machine, totals, settings);
+  const snapshot = buildMachineLaborSnapshot(machine, totals, settings, trackingSince);
   const { laborFactor, source } = resolveLaborFactor(machine.equipmentLaborFactor, settings);
   const realCostCop = totals?.productionCostCop ?? 0;
-  const startedBeforeTracking =
-    machine.productionStartedAt !== null &&
-    trackingSince !== null &&
-    new Date(machine.productionStartedAt).getTime() < new Date(trackingSince).getTime();
 
   return {
     machineId: machine.id,
@@ -252,7 +276,7 @@ export function buildMachineLaborRow(
     realCostCop,
     extraCostCop: totals?.extraCostCop ?? 0,
     realLaborPct: machine.salePriceCop > 0 ? realCostCop / machine.salePriceCop : null,
-    hasPartialData: !totals || totals.productionMinutes <= 0 || trackingSince === null || startedBeforeTracking,
+    hasPartialData: snapshot.hasPartialData,
     productionStartedAt: machine.productionStartedAt,
     completedAt: machine.completedAt,
     shippedAt: machine.shippedAt,

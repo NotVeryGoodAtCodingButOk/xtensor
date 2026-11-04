@@ -30,6 +30,12 @@ export type MachineLaborSnapshot = {
   status: BudgetStatus;
   /** true si la máquina ya terminó (finished/shipped): spentHours son las horas finales. */
   isFinal: boolean;
+  /**
+   * Horas incompletas: la máquina entró a producción antes del primer
+   * cronómetro, no hay ningún cronómetro aún, o terminó sin horas registradas.
+   * La cartelera muestra «—» en vez de un engañoso «Terminó en 0 h».
+   */
+  hasPartialData: boolean;
 };
 
 export type MachineLaborStatusFilter = "en-produccion" | "terminadas" | "despachadas" | "todas";

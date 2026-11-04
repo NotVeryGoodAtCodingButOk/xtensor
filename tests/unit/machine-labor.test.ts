@@ -6,6 +6,7 @@ import {
   buildMachineLaborDetail,
   buildMachineLaborRow,
   buildMachineLaborSnapshot,
+  hasPartialLaborData,
   resolveMachineLaborFilters,
   summarizeMachineLaborRows,
   type MachineLaborSource,
@@ -233,5 +234,28 @@ describe("buildMachineLaborDetail", () => {
     ]);
     expect(detail.promisedDate).toBe("2026-06-25");
     expect(detail.reestimatedDate).toBe("2026-06-22");
+  });
+});
+
+describe("hasPartialLaborData", () => {
+  const TRACKING = "2026-09-16T12:00:00Z";
+
+  it("is partial when no cronómetro exists yet or the machine started before the first one", () => {
+    expect(hasPartialLaborData({ productionStartedAt: null, isFinal: false, productionMinutes: 0, trackingSince: null })).toBe(true);
+    expect(
+      hasPartialLaborData({ productionStartedAt: "2026-08-20T13:00:00Z", isFinal: false, productionMinutes: 90, trackingSince: TRACKING }),
+    ).toBe(true);
+  });
+
+  it("is partial when a finished machine has no production hours, but not an in-progress one", () => {
+    expect(
+      hasPartialLaborData({ productionStartedAt: "2026-10-01T13:00:00Z", isFinal: true, productionMinutes: 0, trackingSince: TRACKING }),
+    ).toBe(true);
+    expect(
+      hasPartialLaborData({ productionStartedAt: "2026-10-01T13:00:00Z", isFinal: false, productionMinutes: 0, trackingSince: TRACKING }),
+    ).toBe(false);
+    expect(
+      hasPartialLaborData({ productionStartedAt: "2026-10-01T13:00:00Z", isFinal: true, productionMinutes: 300, trackingSince: TRACKING }),
+    ).toBe(false);
   });
 });
