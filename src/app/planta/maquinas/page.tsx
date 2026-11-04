@@ -151,7 +151,22 @@ export default async function FactoryMachinesPage({
           </div>
 
           {isMultiMode ? (
-            <MachineMultiSelect machines={orderedMachines} groupHrefBase={groupHrefBase} />
+            <MachineMultiSelect
+              // Solo los campos de la tarjeta: CalculatedMachineView trae venta, % MO y fechas internas.
+              machines={orderedMachines.map((machine) => ({
+                id: machine.id,
+                serialNumber: machine.serialNumber,
+                equipmentCode: machine.equipmentCode,
+                equipmentName: machine.equipmentName,
+                clientName: machine.clientName,
+                stages: machine.stages.map((stage) => ({
+                  id: stage.id,
+                  name: stage.name,
+                  completion: stage.completion,
+                })),
+              }))}
+              groupHrefBase={groupHrefBase}
+            />
           ) : (
             <div className="xt-machine-grid">
               {orderedMachines.map((machine) => {
