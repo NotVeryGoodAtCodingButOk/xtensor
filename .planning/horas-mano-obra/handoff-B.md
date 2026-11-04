@@ -3,7 +3,7 @@
 - **Rama:** `worktree-agent-a8823bacd93bd3cc5`
 - **Worktree:** `/Users/simonb/xtensor/.claude/worktrees/agent-a8823bacd93bd3cc5`
 - **Base:** `b39340f` (hice fast-forward desde `953ddd3` al empezar). Las correcciones de la §9 van sobre `6b5ff7d` (`main`, con fast-forward): ver §9 de este handoff.
-- **Verificación:** `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build` en verde: 23 archivos y 202 tests. Los tests de paridad con Excel de `calculations.test.ts` pasan sin cambios.
+- **Verificación:** `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build` en verde: 23 archivos y 204 tests. Los tests de paridad con Excel de `calculations.test.ts` pasan sin cambios.
 - No hice push ni deploy.
 
 ---
@@ -129,7 +129,7 @@ export function toLaborFactorOrNull(value: unknown): number | null; // ahora exp
 - `updateMachine` replanifica sola cuando la máquina queda en cola y cambia la posición, entra a la cola o cambia la venta o el equipo. Por eso las funciones de entrada (`sendMachineToProduction`, `sendFinishedToProduction`, `unmarkMachineShipped`, `sendHoldMachineToProduction`) ya no llaman nada aparte.
 - `createMachine` (en producción), `sendMachineToWarranty` y `bulkSendToProduction` hacen su cambio dentro del `mutate` de `replanQueue`.
 - `reorderMachines` y todas las entradas a la cola hacen **una sola** llamada a `reorder_production_queue`.
-- `normalizeProductionQueue` (cuando una máquina sale de la cola) también usa la RPC nueva, con `{}`.
+- `normalizeProductionQueue` ya no existe. Las salidas de la cola (terminar, despachar, Propias en Espera, volver a previos, borrar) también pasan por `replanQueue`; ver §9.4. El cálculo puro de toda replanificación es `planQueueReplan({ before, after, orderedIds?, startDate? })`, exportado y con tests.
 - **Desde esta rama nada llama ya a `reorder_in_production_machines`**: la 0032 la puede borrar después del deploy.
 
 ### `src/services/machine-labor.ts` (nuevo)
@@ -337,7 +337,7 @@ Este handoff va en un commit aparte (`docs(planificacion): …`).
   - un null recibe la Actualizada;
   - cruce de mes y de año;
   - las máquinas que salen de la cola se ignoran.
-- **Pregunta abierta para el líder.** Cuando una máquina **sale** de la cola (terminar, despachar, Propias en Espera, borrar), las de detrás se adelantan y su Reestimada no se mueve, como antes. Siguen saliendo «adelantadas» y no hay falsas alarmas. El contrato no incluye ese caso. Si se quiere aplicar la misma regla (correr la Reestimada hacia antes), basta con envolver `normalizeProductionQueue` en `replanQueue`. Ojo: eso haría visible antes un atraso posterior.
+- **Salidas de la cola:** el líder decidió aplicarles la misma regla. Ver §9.4.
 
 ### 9.2 Paginación (M2)
 - `src/services/batching.ts`:
@@ -362,3 +362,24 @@ Este handoff va en un commit aparte (`docs(planificacion): …`).
 - `attachMachineLabor(machines, settings, options?: { holidays?: HolidaySet })` ya no vuelve a pedir la configuración: usa la que recibe.
 - Si la página pasa `{ holidays }`, tampoco vuelve a pedir los festivos. Solo pide los operarios.
 - **Para FA/FP (opcional):** en `/admin`, `/admin/despachados` y `/planta/tablero` ya tienen `holidays` a mano y pueden pasar `attachMachineLabor(machines, settings, { holidays })`. Con la base real medí ≈1 s para 35 máquinas.
+
+### 9.4 Salidas de la cola con la misma regla (decisión del líder, base `1819814`)
+- Commit: `8669417 fix(fechas): las salidas de la cola también desplazan la reestimada`.
+- **Salidas que ahora replanifican:**
+  - terminar (una o en lote);
+  - despachar (una o en lote);
+  - Propias en Espera (una o en lote);
+  - volver a previos;
+  - borrar una máquina en cola. Borrar máquinas de previos o despachadas no toca la cola.
+- **Cómo lo hacen:** el cambio va dentro de `leaveQueue`, que es `replanQueue({ mutate })`. Pasos: Actualizada antes → salida → Actualizada después → `shiftReestimatedDates` → una sola RPC atómica.
+- **Efecto:** las de detrás se adelantan y su Reestimada se corre lo mismo. Así no ganan un colchón que esconda atrasos reales. Una máquina que sale terminada (0 h faltantes) no mueve a nadie (delta 0).
+- `normalizeProductionQueue` y `listProductionQueue` se retiraron. `planQueueReplan` (pura, exportada) concentra el cálculo de entradas, salidas, reordenamientos y cambios de horas.
+- **Tests:**
+  - una salida con 140 h faltantes adelanta la Reestimada de las de detrás exactamente su delta (−4 y −2 días) y conserva el atraso;
+  - una terminada que sale no cambia nada.
+- **Validación con la base real, en memoria y sin escribir:**
+  - Simulé la salida de la 128 (faltan 24,5 h) y de la 129 (42,1 h): se mueven 12 y 10 reestimadas.
+  - **Ninguna máquina que queda cambia sus días de atraso.**
+  - Las atrasadas pasan de 21 a 20 solo porque la que sale era una de ellas.
+  - `check-reestimated.ts` sigue con 21 atrasadas en la cola real, que no toqué.
+- **Fuera de esto:** la planta marca una máquina como terminada sola al completar la última etapa (`stages.ts`), sin replanificar. Como sale con 0 h faltantes, el delta es 0 y no hace falta. Deshacer esa última etapa la devuelve a la cola con sus horas casi en 0, y tampoco replanifica.
