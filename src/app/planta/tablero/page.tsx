@@ -14,8 +14,10 @@ import { attachMachineLabor } from "@/services/machine-labor";
 import { FACTORY_BOARD_STATUSES, listCalculatedMachines } from "@/services/machines";
 import { formatDateEsNoYear } from "@/services/schedule";
 import { getSettings, mapSettings } from "@/services/settings";
+import { getFirstSessionStartedAt } from "@/services/work-sessions";
 import { CellTooltip } from "@/components/ui/tooltip";
 import type { CalculatedMachineView } from "@/types/domain";
+import type { MachineLaborSnapshot } from "@/types/labor-report";
 
 export const dynamic = "force-dynamic";
 
@@ -34,7 +36,11 @@ export default async function FactoryBoardPage() {
     redirect("/planta");
   }
 
-  const [settingsRow, holidays] = await Promise.all([getSettings(), listHolidays()]);
+  const [settingsRow, holidays, trackingSince] = await Promise.all([
+    getSettings(),
+    listHolidays(),
+    getFirstSessionStartedAt(),
+  ]);
   const settings = mapSettings(settingsRow);
   const machines = await listCalculatedMachines({
     settings,
@@ -42,7 +48,11 @@ export default async function FactoryBoardPage() {
     status: FACTORY_BOARD_STATUSES,
   });
   // Horas llevadas vs. máximas por máquina (columna «Horas»). Se actualizan con el poll de 30 s.
-  const orderedMachines = orderBoardMachines(await attachMachineLabor(machines, settings));
+  const withLabor = (await attachMachineLabor(machines, settings)).map((machine) => ({
+    ...machine,
+    labor: boardLabor(machine, trackingSince),
+  }));
+  const orderedMachines = orderBoardMachines(withLabor);
 
   const lateCount = orderedMachines.filter((m) => getRowStatus(m) === "late").length;
 
@@ -225,6 +235,25 @@ function BoardRow({ machine }: { machine: CalculatedMachineView }) {
       </p>
     </div>
   );
+}
+
+/**
+ * Horas incompletas: la máquina entró a producción antes del primer cronómetro
+ * (el mismo criterio que «Datos parciales» en Estadísticas → Máquinas) o
+ * terminó sin horas registradas. Si así y todo va «ok», la celda muestra «—»
+ * en vez de un engañoso «Terminó en 0 h de 48». Si ya va en riesgo o
+ * excedida, la alerta vale igual, porque las horas reales solo pueden ser más.
+ */
+function boardLabor(machine: CalculatedMachineView, trackingSince: string | null): MachineLaborSnapshot | undefined {
+  const { labor } = machine;
+  if (!labor || labor.status !== "ok") return labor;
+
+  const startedBeforeTracking =
+    trackingSince === null ||
+    (machine.productionStartedAt !== null && Date.parse(machine.productionStartedAt) < Date.parse(trackingSince));
+  const finishedWithoutHours = labor.isFinal && Math.round(labor.spentHours * 10) === 0;
+
+  return startedBeforeTracking || finishedWithoutHours ? undefined : labor;
 }
 
 function doneTimestampKey(machine: CalculatedMachineView): string | null {
