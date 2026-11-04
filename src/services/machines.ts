@@ -250,9 +250,8 @@ export async function createMachine(input: MachineInsert) {
   }
 
   // Slot the new machine into the queue by its requested position and recompact
-  // so positions stay gapless and unique.
+  // so positions stay gapless and unique (same RPC takes the reestimada).
   if (machine.status === "in_production") {
-    await normalizeProductionQueue(supabase);
     await snapshotReestimatedDates([machine.id]);
   }
 
@@ -284,7 +283,7 @@ export async function updateMachine(id: string, patch: MachineUpdate) {
         }
       }
 
-      await reorderProductionQueue(id, order_position);
+      await reorderProductionQueue(id, order_position, { entering: current.status !== "in_production" });
       return getMachine(id);
     }
   }
@@ -311,28 +310,9 @@ export async function deleteMachine(id: string) {
 
 export async function reorderMachines(orderedIds: string[]) {
   const supabase = createSupabaseAdminClient();
-  const queue = await listProductionQueue(supabase);
-  const beforeIds = sortProductionQueue(queue).map((machine) => machine.id);
-  const queueIds = new Set(queue.map((machine) => machine.id));
-  const nextIds: string[] = [];
-  const seen = new Set<string>();
-
-  for (const id of orderedIds) {
-    if (queueIds.has(id) && !seen.has(id)) {
-      nextIds.push(id);
-      seen.add(id);
-    }
-  }
-
-  for (const machine of queue) {
-    if (!seen.has(machine.id)) {
-      nextIds.push(machine.id);
-      seen.add(machine.id);
-    }
-  }
-
-  await persistProductionQueueOrder(supabase, nextIds);
-  await snapshotReestimatedDates(changedQueueIds(beforeIds, nextIds));
+  const { queue, settings, holidays } = await loadQueueContext(supabase);
+  const plan = planQueueReorder({ queue, orderedIds, settings, holidays });
+  await saveProductionQueue(supabase, plan.orderedIds, plan.reestimatedDates);
 }
 
 /** Ids whose position in the queue changed between the two orderings (ids new to the list count as changed). */
@@ -346,10 +326,71 @@ export function buildMovedQueueOrder(
   machineId: string,
   targetPosition: number,
 ) {
-  const ordered = sortProductionQueue(queue).map((machine) => machine.id).filter((id) => id !== machineId);
+  return moveIdInOrder(sortProductionQueue(queue).map((machine) => machine.id), machineId, targetPosition);
+}
+
+/** Saca `machineId` de la lista y lo pone en `targetPosition` (1 = primera), recortada a los extremos. */
+function moveIdInOrder(ids: string[], machineId: string, targetPosition: number) {
+  const ordered = ids.filter((id) => id !== machineId);
   const targetIndex = Math.min(Math.max(Math.trunc(targetPosition) - 1, 0), ordered.length);
   ordered.splice(targetIndex, 0, machineId);
   return ordered;
+}
+
+/**
+ * Plan de un reordenamiento de la cola, calculado en memoria antes de
+ * escribir nada: el orden completo (los ids desconocidos se descartan y los
+ * que falten se agregan al final en su orden actual) y la nueva fecha
+ * reestimada = Actualizada en el nuevo orden, solo para las máquinas cuyo
+ * índice cambió. Las demás conservan su reestimada (su fecha no se movió).
+ *
+ * `previousIds` (opcional) es el orden de antes cuando la cola ya cambió en la
+ * base (p. ej. entraron máquinas); por defecto, el de `queue` por orderPosition.
+ * Los ids que no estaban antes cuentan como cambiados.
+ */
+export function planQueueReorder(input: {
+  queue: MachineView[];
+  orderedIds: string[];
+  settings: ProductionSettings;
+  holidays: Holiday[];
+  startDate?: Date;
+  previousIds?: string[];
+}): { orderedIds: string[]; reestimatedDates: Record<string, string> } {
+  const queue = input.queue.filter((machine) => machine.status === "in_production");
+  // Array.prototype.sort es estable: con posiciones repetidas se respeta el orden de llegada.
+  const currentIds = [...queue].sort((a, b) => a.orderPosition - b.orderPosition).map((machine) => machine.id);
+  const queueIds = new Set(currentIds);
+  const seen = new Set<string>();
+  const orderedIds: string[] = [];
+
+  for (const id of [...input.orderedIds, ...currentIds]) {
+    if (queueIds.has(id) && !seen.has(id)) {
+      orderedIds.push(id);
+      seen.add(id);
+    }
+  }
+
+  const changed = changedQueueIds(input.previousIds ?? currentIds, orderedIds);
+  if (changed.length === 0) {
+    return { orderedIds, reestimatedDates: {} };
+  }
+
+  const indexById = new Map(orderedIds.map((id, index) => [id, index]));
+  const reordered = queue.map((machine) => ({ ...machine, orderPosition: (indexById.get(machine.id) ?? 0) + 1 }));
+  const estimatedDateById = new Map(
+    calculateMachines(reordered, input.settings, input.holidays, input.startDate).map((machine) => [
+      machine.id,
+      machine.estimatedDate,
+    ]),
+  );
+
+  const reestimatedDates: Record<string, string> = {};
+  for (const id of changed) {
+    const estimatedDate = estimatedDateById.get(id);
+    if (estimatedDate) reestimatedDates[id] = estimatedDate;
+  }
+
+  return { orderedIds, reestimatedDates };
 }
 
 export async function markMachineFinished(id: string) {
@@ -409,7 +450,6 @@ export async function sendMachineToProduction(id: string) {
     status: "in_production",
     shipped_at: null,
   });
-  await normalizeProductionQueue();
   await snapshotReestimatedDates([id]);
   return machine;
 }
@@ -441,9 +481,10 @@ export async function bulkSendToHold(ids: string[]) {
 }
 
 // Reactivate a parked machine: it re-enters the current production queue at the
-// end (a large target position is clamped to the tail by reorderProductionQueue)
-// with its stage progress and previos intact. The original production start is
-// preserved since it was stamped the first time the machine entered production.
+// end (a large target position is clamped to the tail by reorderProductionQueue,
+// which also takes its reestimada in the same RPC) with its stage progress and
+// previos intact. The original production start is preserved since it was
+// stamped the first time the machine entered production.
 export async function sendHoldMachineToProduction(id: string) {
   const supabase = createSupabaseAdminClient();
   await ensureMachineStages(supabase, [id]);
@@ -461,7 +502,6 @@ export async function sendHoldMachineToProduction(id: string) {
     shipped_at: null,
     order_position: 999_999,
   });
-  await snapshotReestimatedDates([id]);
   return machine;
 }
 
@@ -525,7 +565,6 @@ export async function sendMachineToWarranty(id: string, message: string) {
     throw new Error(`No se pudieron reiniciar las etapas: ${resetError.message}`);
   }
 
-  await normalizeProductionQueue(supabase);
   await snapshotReestimatedDates([machine.id]);
   return getMachine(machine.id);
 }
@@ -535,8 +574,8 @@ export async function bulkSendToProduction(ids: string[]) {
   await ensureMachineStages(supabase, ids);
 
   // Only machines actually coming from "pending" enter the queue here; track
-  // them so the reestimada snapshot isn't reset for ids that were already
-  // in_production (a no-op is possible if the caller passes stale ids).
+  // them so ids that were already in_production aren't treated as new (a
+  // no-op is possible if the caller passes stale ids).
   const { data: pendingRows, error: pendingError } = await supabase
     .from("machines")
     .select("id")
@@ -561,7 +600,8 @@ export async function bulkSendToProduction(ids: string[]) {
     .eq("status", "pending");
   if (error) throw new Error(`No se pudo enviar a producción: ${error.message}`);
 
-  await normalizeProductionQueue(supabase);
+  // Recompacta y toma la reestimada de las que entran y de las que ya estaban
+  // en cola pero quedaron en otro índice (p. ej. una que entra en el medio).
   await snapshotReestimatedDates(enteringIds);
 }
 
@@ -593,7 +633,6 @@ export async function sendFinishedToProduction(id: string) {
   const supabase = createSupabaseAdminClient();
   await ensureMachineStages(supabase, [id]);
   const machine = await updateMachine(id, { status: "in_production", completed_at: null, is_reproceso: true });
-  await normalizeProductionQueue();
   await snapshotReestimatedDates([id]);
   return machine;
 }
@@ -688,44 +727,105 @@ function mapMachineRow(row: MachineRow): MachineView {
   };
 }
 
-async function reorderProductionQueue(machineId: string, targetPosition: number) {
+async function reorderProductionQueue(
+  machineId: string,
+  targetPosition: number,
+  options?: { entering?: boolean },
+) {
   const supabase = createSupabaseAdminClient();
-  const queue = await listProductionQueue(supabase);
-  const beforeIds = sortProductionQueue(queue).map((machine) => machine.id);
-  const orderedIds = buildMovedQueueOrder(queue, machineId, targetPosition);
-  await persistProductionQueueOrder(supabase, orderedIds);
-  await snapshotReestimatedDates(changedQueueIds(beforeIds, orderedIds));
+  const { queue, settings, holidays } = await loadQueueContext(supabase);
+  const currentIds = queue.map((machine) => machine.id);
+  const plan = planQueueReorder({
+    queue,
+    orderedIds: moveIdInOrder(currentIds, machineId, targetPosition),
+    settings,
+    holidays,
+    // Si la máquina recién vuelve a la cola (p. ej. desde Propias en Espera), el
+    // orden de antes es el de la cola sin ella: no desplaza a las demás.
+    previousIds: options?.entering ? currentIds.filter((id) => id !== machineId) : undefined,
+  });
+  await saveProductionQueue(supabase, plan.orderedIds, plan.reestimatedDates);
 }
 
-// Snapshots the live estimatedDate as the "reestimada" baseline for the given
-// machines. Called when a machine enters the in-production queue or when a
-// reorder shifts its position, so the late flag (isBehindReestimate) compares
-// against this baseline instead of the immovable promised_date.
+/**
+ * Recompacta la cola (1..N, mismo orden relativo) y toma la reestimada =
+ * Actualizada viva de las máquinas que acaban de entrar (`machineIds`) y de
+ * las que esa entrada desplazó de índice, todo en la misma RPC atómica. Así
+ * el aviso de atraso (isBehindReestimate) compara contra esta línea base y no
+ * contra la prometida, que no se mueve.
+ */
 export async function snapshotReestimatedDates(machineIds: string[]) {
-  const ids = [...new Set(machineIds.filter(Boolean))];
-  if (ids.length === 0) {
-    return;
+  const supabase = createSupabaseAdminClient();
+  const { queue, settings, holidays } = await loadQueueContext(supabase);
+  const currentIds = queue.map((machine) => machine.id);
+  const entering = new Set(machineIds.filter(Boolean));
+  const plan = planQueueReorder({
+    queue,
+    orderedIds: currentIds,
+    settings,
+    holidays,
+    previousIds: currentIds.filter((id) => !entering.has(id)),
+  });
+  await saveProductionQueue(supabase, plan.orderedIds, plan.reestimatedDates);
+}
+
+/**
+ * Toma la reestimada de TODA la cola. Replanificación deliberada: se usa
+ * cuando cambia el % de mano de obra de un equipo con máquinas en cola, o el
+ * % / costo hora generales, para que el cambio de horas no aparezca como
+ * atraso de producción.
+ */
+export async function snapshotWholeQueueReestimatedDates(): Promise<void> {
+  const supabase = createSupabaseAdminClient();
+  const { queue, settings, holidays } = await loadQueueContext(supabase);
+  const plan = planQueueReorder({
+    queue,
+    orderedIds: queue.map((machine) => machine.id),
+    settings,
+    holidays,
+    previousIds: [],
+  });
+  await saveProductionQueue(supabase, plan.orderedIds, plan.reestimatedDates);
+}
+
+/** ¿Alguna máquina en cola es de este equipo? (para no replanificar la cola sin necesidad). */
+export async function equipmentHasMachinesInQueue(equipmentId: string): Promise<boolean> {
+  const supabase = createSupabaseAdminClient();
+  const { count, error } = await supabase
+    .from("machines")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "in_production")
+    .eq("equipment_id", equipmentId);
+
+  if (error) {
+    throw new Error(`No se pudo revisar la cola de producción: ${error.message}`);
   }
 
-  const settings = mapSettings(await getSettings());
-  const holidays = await listHolidays();
-  const machines = await listCalculatedMachines({ settings, holidays, status: "in_production" });
-  const estimatedDateById = new Map(machines.map((machine) => [machine.id, machine.estimatedDate]));
+  return (count ?? 0) > 0;
+}
 
-  const supabase = createSupabaseAdminClient();
-  await Promise.all(
-    ids
-      .filter((id) => estimatedDateById.has(id))
-      .map(async (id) => {
-        const { error } = await supabase
-          .from("machines")
-          .update({ reestimated_date: estimatedDateById.get(id) })
-          .eq("id", id);
-        if (error) {
-          throw new Error(`No se pudo guardar la fecha reestimada: ${error.message}`);
-        }
-      }),
-  );
+/** Cola en producción con todo lo que necesita el cálculo de fechas, en su orden actual. */
+async function loadQueueContext(supabase: ReturnType<typeof createSupabaseAdminClient>) {
+  const [settingsRow, holidays, queueResult] = await Promise.all([
+    getSettings(),
+    listHolidays(),
+    supabase
+      .from("machines")
+      .select(MACHINE_SELECT)
+      .eq("status", "in_production")
+      .order("order_position", { ascending: true })
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true }),
+  ]);
+
+  if (queueResult.error) {
+    throw new Error(`No se pudo cargar la cola de producción: ${queueResult.error.message}`);
+  }
+
+  const rows = (queueResult.data ?? []) as unknown as MachineRow[];
+  // orderPosition = índice actual (1..N): desempata posiciones repetidas por created_at/id.
+  const queue = rows.map((row, index) => ({ ...mapMachineRow(row), orderPosition: index + 1 }));
+  return { queue, settings: mapSettings(settingsRow), holidays };
 }
 
 async function listProductionQueue(supabase = createSupabaseAdminClient()) {
@@ -758,15 +858,26 @@ function sortProductionQueue(queue: MachineQueueRow[]) {
   });
 }
 
-async function persistProductionQueueOrder(supabase = createSupabaseAdminClient(), orderedIds: string[]) {
+/**
+ * Guarda el orden de la cola y, en la misma sentencia, la reestimada de las
+ * máquinas de `reestimatedDates` (las demás conservan la suya). Usa la RPC
+ * atómica reorder_production_queue (0031); la vieja
+ * reorder_in_production_machines ya no se llama desde aquí.
+ */
+async function saveProductionQueue(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  orderedIds: string[],
+  reestimatedDates: Record<string, string> = {},
+) {
   const ordered = orderedIds.filter(Boolean);
 
   if (ordered.length === 0) {
     return;
   }
 
-  const { error } = await supabase.rpc("reorder_in_production_machines", {
+  const { error } = await supabase.rpc("reorder_production_queue", {
     ordered_machine_ids: ordered,
+    reestimated_dates: reestimatedDates,
   });
 
   if (error) {
@@ -775,13 +886,14 @@ async function persistProductionQueueOrder(supabase = createSupabaseAdminClient(
 }
 
 // Recompacts the in-production queue to a gapless 1..N sequence, preserving the
-// current relative order. Run after any machine enters or leaves production so
-// the "#" column never shows gaps (e.g. starting at 10 after shipping) or
-// duplicate positions.
+// current relative order. Run after any machine leaves production so the "#"
+// column never shows gaps (e.g. starting at 10 after shipping) or duplicate
+// positions. The machines behind move up (earlier dates): their reestimada is
+// kept, so a real gain never hides a later slip.
 async function normalizeProductionQueue(supabase = createSupabaseAdminClient()) {
   const queue = await listProductionQueue(supabase);
   const orderedIds = sortProductionQueue(queue).map((machine) => machine.id);
-  await persistProductionQueueOrder(supabase, orderedIds);
+  await saveProductionQueue(supabase, orderedIds);
 }
 
 /** labor_factor llega como numeric (string o number) desde PostgREST; null/undefined si no hay % propio. */
