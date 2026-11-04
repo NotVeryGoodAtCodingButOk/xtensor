@@ -321,3 +321,46 @@ Si necesitas algo en un archivo ajeno (p. ej. FA necesita un campo nuevo de un s
   `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. **No hagas push ni deploy** (lo hace el líder).
 - Antes de terminar: `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test` (y `corepack pnpm build` en fase 2).
 - CLAUDE.md del repo aplica: cambios de base en la base online, simplicidad y estética de la marca.
+
+---
+
+## 9. Ajustes tras la revisión de R (2026-11-04)
+
+### 9.1 Reestimada: desplazar en vez de reiniciar (B) — corrige A1, M1 y B2
+Reiniciar la reestimada = Actualizada en cada replanificación borra los atrasos reales (hoy 21). Nueva regla única:
+**al replanificar, la Reestimada se mueve los mismos días que se movió la Actualizada.**
+```ts
+export function shiftReestimatedDates(input: {
+  before: Record<string, string>;          // Actualizada por id ANTES del cambio (máquinas que ya estaban en cola)
+  after: Record<string, string>;           // Actualizada por id DESPUÉS del cambio (cola nueva)
+  current: Record<string, string | null>;  // reestimated_date actual por id
+}): Record<string, string>;                // solo ids que cambian
+```
+- id en `after` y no en `before` (entra a la cola) o con `current` null → `after[id]` (línea base nueva).
+- Si no, `delta = días(after) − días(before)` (calendario); si `delta ≠ 0` → `current + delta`; si 0 → no se toca.
+- Aplica a: reordenar (`planQueueReorder` devuelve estas fechas y sigue yendo en la misma RPC atómica), entradas a la cola
+  (enviar a producción, en lote, reproceso, garantía, reactivar propias, **desmarcar despachada**), cambio de % de un equipo,
+  del % general o del costo hora, y **cambio de venta o equipo de una máquina en cola** (B2).
+- `snapshotWholeQueueReestimatedDates` se reemplaza por un helper `replanQueue(mutate)` (o equivalente): Actualizada antes →
+  mutación → Actualizada después → `shiftReestimatedDates` → escribir.
+- La posición de entrada (una máquina vuelve con su `order_position` viejo) **no cambia** en esta tarea; con la nueva regla ya no
+  borra atrasos.
+
+### 9.2 Consultas sin tope silencioso de 1000 filas (B) — M2
+Paginar con `.range` + orden estable en `listSessionsOverlapping` y `listDoneMarksWithoutSession`; partir `.in("id", …)` en
+lotes de 100 en `labor-dashboard.ts` (como `listSessionsForMachines`).
+
+### 9.3 Garantías en cola (B) — M4
+En `attachMachineLabor`, una máquina en producción con garantía activa cuenta solo las sesiones posteriores a su último
+`machine_warranty_events.created_at`, con estado `ok` (sin alarma de presupuesto: la garantía no tiene presupuesto). Las
+estadísticas de toda la vida (pestaña Máquinas) no cambian.
+
+### 9.4 Precisión del % al editar (FA) — M3
+`laborPctInputValue` redondea a 2 decimales (`Math.round(f * 10000) / 100`) para que guardar sin tocar no cambie el %.
+
+### 9.5 Planta no expone salarios ni precios (FP) — M5
+`/planta/operarios` y `/planta/maquinas` pasan a los componentes de cliente solo los campos de su prop (`WorkerCard`,
+`MultiSelectMachine`), como ya hace `grupo`: nada de `hourly_cost_cop`, `salePriceCop`, `laborFactor`.
+
+### 9.6 Refresco en tiempo real con debounce (FA) — B1
+`src/components/realtime-refresh.tsx`: agrupar eventos (≈800 ms) antes de `router.refresh()` (un reordenamiento emite 26).
