@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { CalendarClock, Clock, Wallet } from "lucide-react";
+import { CatalogCombobox } from "@/components/admin/catalog-combobox";
+import { formatLaborPct } from "@/components/admin/stats-ui";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { formatCurrencyCop } from "@/lib/utils";
-import { estimateTotalHours, type ProductionSettings } from "@/services/calculations";
+import { estimateTotalHours, resolveLaborFactor, type ProductionSettings } from "@/services/calculations";
 import { estimateDeliveryDate, type Holiday } from "@/services/schedule";
 
 const IVA_DIVISOR = 1.19;
@@ -25,30 +27,62 @@ function formatDateLargo(dateKey: string) {
   return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
+/** Equipo del catálogo con su % MO propio (fracción) o null si usa el general. */
+export type CalculatorCatalogItem = {
+  id: string;
+  code: string;
+  name: string;
+  laborFactor: number | null;
+};
+
 type Props = {
   settings: ProductionSettings;
   holidays: Holiday[];
   baseAccumulatedHours: number;
   anchorSerial: number | null;
   anchorDate: string | null;
+  catalog: CalculatorCatalogItem[];
 };
 
-export function CalculatorForm({ settings, holidays, baseAccumulatedHours, anchorSerial, anchorDate }: Props) {
+export function CalculatorForm({ settings, holidays, baseAccumulatedHours, anchorSerial, anchorDate, catalog }: Props) {
   const [digits, setDigits] = useState("");
+  const [equipmentId, setEquipmentId] = useState<string | null>(null);
 
   const valorConIva = digits ? Number(digits) : 0;
+  const equipment = equipmentId ? (catalog.find((item) => item.id === equipmentId) ?? null) : null;
+  const equipmentLaborFactor = equipment?.laborFactor ?? null;
+  const labor = resolveLaborFactor(equipmentLaborFactor, settings);
 
   const result = useMemo(() => {
     if (!valorConIva || valorConIva <= 0) return null;
     const valorSinIva = valorConIva / IVA_DIVISOR;
-    const horas = estimateTotalHours(valorSinIva, settings);
+    const horas = estimateTotalHours(valorSinIva, settings, equipmentLaborFactor);
     const fecha = estimateDeliveryDate(baseAccumulatedHours + horas, new Date(), settings, holidays);
     const diasPlanta = horas / (settings.activeWorkersCount * settings.dailyHoursMonFri);
     return { valorSinIva, horas, fecha, diasPlanta };
-  }, [valorConIva, settings, holidays, baseAccumulatedHours]);
+  }, [valorConIva, settings, holidays, baseAccumulatedHours, equipmentLaborFactor]);
 
   return (
     <div className="max-w-3xl">
+      <div className="mb-4 grid max-w-md gap-2 text-sm font-medium">
+        <span>Equipo (opcional)</span>
+        <CatalogCombobox
+          items={catalog}
+          defaultId={null}
+          defaultLabel=""
+          name="calculatorEquipmentId"
+          onChange={setEquipmentId}
+        />
+        <p className="text-xs font-normal text-[var(--xt-steel)]">
+          % mano de obra:{" "}
+          <strong className="text-[var(--xt-black)]">{formatLaborPct(labor.laborFactor)}</strong>{" "}
+          {labor.source === "catalogo"
+            ? "del equipo en el catálogo."
+            : equipment
+              ? "general (este equipo no tiene % propio)."
+              : "general. Elige un equipo para usar su %."}
+        </p>
+      </div>
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Cajón 1 — valor con IVA */}
         <Card>

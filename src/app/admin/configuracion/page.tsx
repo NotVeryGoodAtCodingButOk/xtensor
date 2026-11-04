@@ -65,7 +65,7 @@ export default async function SettingsPage({
             {passwordStatus ? (
               <p
                 className={`mb-3 text-sm font-semibold ${
-                  passwordStatus.tone === "ok" ? "text-[var(--xt-green)]" : "text-[var(--xt-red)]"
+                  passwordStatus.tone === "ok" ? "text-[var(--line-bio-green)]" : "text-[var(--line-pro-red)]"
                 }`}
               >
                 {passwordStatus.text}
@@ -122,7 +122,8 @@ export default async function SettingsPage({
             <CardTitle>Actividades de planta</CardTitle>
           </CardHeader>
           <CardContent>
-            <ActivityTypesManager activityTypes={activityTypes} />
+            {/* Fase 2: usageById = await listActivityTypeUsage() (servicio de B). */}
+            <ActivityTypesManager activityTypes={activityTypes} usageById={{}} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">

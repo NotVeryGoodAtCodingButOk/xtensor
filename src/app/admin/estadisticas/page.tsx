@@ -137,10 +137,18 @@ export default async function StatisticsPage({
           <MetricCard
             icon={BarChart3}
             eyebrow="Mano de obra"
-            title="% del precio"
+            title="Mano de obra % (aprox. por fechas)"
             value={formatPct(summary.rangeProduction.laborCostShareAvgPct)}
-            detail={`% promedio del precio de venta · ${dashboard.range.label}`}
+            detail={`% promedio del precio de venta, estimado con las fechas de producción · ${dashboard.range.label}`}
             formula="averageLaborCostPct(completedMachinesInRange)"
+            action={
+              <Link
+                href="/admin/estadisticas/maquinas"
+                className="font-semibold underline decoration-[var(--xt-yellow-deep)] decoration-2 underline-offset-4"
+              >
+                Ver % MO real por máquina
+              </Link>
+            }
           />
           <MetricCard
             icon={AlertTriangle}
@@ -181,7 +189,15 @@ export default async function StatisticsPage({
           <CardContent>
             <StatsTable
               empty="No hay máquinas con datos de productividad en este rango."
-              headers={["SERIAL", "Cliente", "Equipo", "Pedido → terminado", "Producción → terminado", "Mano de obra %", "A tiempo"]}
+              headers={[
+                "SERIAL",
+                "Cliente",
+                "Equipo",
+                "Pedido → terminado",
+                "Producción → terminado",
+                "Mano de obra % (aprox. por fechas)",
+                "A tiempo",
+              ]}
               rows={dashboard.productivityByMachine.map((m) => [
                 `#${m.serialNumber}`,
                 m.clientName,

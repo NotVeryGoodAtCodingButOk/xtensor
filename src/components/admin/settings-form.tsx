@@ -43,8 +43,19 @@ function normalizeInitialBreaks(value: unknown): ShiftBreak[] {
     }));
 }
 
+/** settings.labor_factor se guarda como fracción (0.30); en pantalla se edita en % (30). */
+function toLaborPct(fraction: number) {
+  return String(Math.round(Number(fraction) * 1000) / 10);
+}
+
+function toLaborFraction(pct: string) {
+  const value = Number(pct.replace(",", "."));
+  return Number.isFinite(value) ? String(Math.round(value * 10) / 1000) : "";
+}
+
 export function SettingsForm({ settings, savedOk }: { settings: Settings; savedOk?: boolean }) {
   const [breaks, setBreaks] = useState<ShiftBreak[]>(() => normalizeInitialBreaks(settings.shift_breaks));
+  const [laborPct, setLaborPct] = useState(() => toLaborPct(settings.labor_factor));
 
   function addBreak() {
     setBreaks((prev) => [...prev, { start: "10:00", minutes: 15 }]);
@@ -61,7 +72,7 @@ export function SettingsForm({ settings, savedOk }: { settings: Settings; savedO
   return (
     <form action={updateSettingsAction} className="grid gap-4">
       {savedOk && (
-        <p className="text-sm font-semibold text-[var(--xt-green)]">Parámetros actualizados.</p>
+        <p className="text-sm font-semibold text-[var(--line-bio-green)]">Parámetros actualizados.</p>
       )}
       <Table>
         <TableBody>
@@ -72,9 +83,27 @@ export function SettingsForm({ settings, savedOk }: { settings: Settings; savedO
             </TableCell>
           </TableRow>
           <TableRow>
-            <TableCell>Factor mano de obra</TableCell>
+            <TableCell>
+              % mano de obra por defecto
+              <p className="text-xs text-[var(--xt-steel)]">Se usa en los equipos del catálogo sin % propio.</p>
+            </TableCell>
             <TableCell className="text-right">
-              <Input name="labor_factor" type="number" step="0.01" min="0" defaultValue={Number(settings.labor_factor).toFixed(2)} required className={inputCls} />
+              <span className="inline-flex items-center gap-1 text-sm text-[var(--xt-steel)]">
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="1"
+                  max="100"
+                  value={laborPct}
+                  onChange={(e) => setLaborPct(e.target.value)}
+                  aria-label="% mano de obra por defecto"
+                  required
+                  className={inputCls}
+                />
+                %
+              </span>
+              {/* La acción sigue leyendo labor_factor como fracción (30 % → 0.3). */}
+              <input type="hidden" name="labor_factor" value={toLaborFraction(laborPct)} />
             </TableCell>
           </TableRow>
           <TableRow>

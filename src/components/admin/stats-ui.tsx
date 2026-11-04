@@ -1,4 +1,4 @@
-import type { ComponentType } from "react";
+import type { ComponentType, ReactNode } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
@@ -17,6 +17,7 @@ export function MetricCard({
   detail,
   formula,
   prominent = false,
+  action,
 }: {
   icon: ComponentType<{ className?: string }>;
   eyebrow: string;
@@ -25,6 +26,8 @@ export function MetricCard({
   detail: string;
   formula: string;
   prominent?: boolean;
+  /** Enlace opcional bajo la fórmula (p. ej. "ver el dato real en Máquinas"). */
+  action?: ReactNode;
 }) {
   return (
     <Card className={cn(prominent && "border-[var(--xt-black)] bg-[var(--xt-yellow-soft)]")}>
@@ -41,6 +44,7 @@ export function MetricCard({
       <CardContent>
         <p className="text-sm text-[var(--xt-steel)]">{detail}</p>
         <p className="mt-1 text-xs text-[var(--xt-steel)]">Función: {formula}</p>
+        {action ? <div className="mt-2 text-sm">{action}</div> : null}
       </CardContent>
     </Card>
   );
@@ -102,6 +106,36 @@ export function formatPct(value: number | null | undefined) {
   }
 
   return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(value)} %`;
+}
+
+/**
+ * % de mano de obra a partir de una fracción (0.35 → "35%", 0.325 → "32,5%").
+ * Sin espacio antes del %: así lo pide el contrato para el catálogo y las tablas.
+ */
+export function formatLaborPct(fraction: number | null | undefined) {
+  if (fraction === null || fraction === undefined || !Number.isFinite(fraction)) {
+    return "Sin datos";
+  }
+
+  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(fraction * 100)}%`;
+}
+
+/**
+ * `equipment_catalog.labor_factor` tal como llega de la base: puede faltar
+ * (antes de la migración), ser null (usa el general) o venir como texto
+ * (numeric de PostgREST). Devuelve la fracción propia válida o null.
+ */
+export function ownLaborFactor(value: unknown): number | null {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 && parsed <= 1 ? parsed : null;
+}
+
+/** Valor inicial de un input en % (0.35 → "35", 0.325 → "32.5", null → ""). */
+export function laborPctInputValue(fraction: number | null) {
+  return fraction === null ? "" : String(Math.round(fraction * 1000) / 10);
 }
 
 export function formatCop(value: number | null | undefined) {

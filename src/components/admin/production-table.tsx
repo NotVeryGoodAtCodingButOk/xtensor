@@ -10,6 +10,8 @@ import {
   sendMachineToHoldAction,
   warrantyMachineAction,
 } from "@/app/admin/actions";
+import { BUDGET_STATUS_LABEL, BudgetHoursText } from "@/components/admin/budget-meter";
+import { formatLaborPct } from "@/components/admin/stats-ui";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ActionTooltip, CellTooltip } from "@/components/ui/tooltip";
@@ -21,8 +23,61 @@ import { isBehindReestimate } from "@/services/calculations";
 import { formatDateEs } from "@/services/schedule";
 import type { CalculatedMachineView } from "@/types/domain";
 
-export type SortKey = keyof CalculatedMachineView;
+/**
+ * Claves de orden: campos de la máquina más dos virtuales para las horas de
+ * mano de obra (`labor` es un objeto y no se puede comparar directo).
+ */
+export type SortKey = keyof CalculatedMachineView | "laborBudgetHours" | "laborSpentHours";
 export type SortConfig = { key: SortKey; dir: "asc" | "desc" } | null;
+
+/** H. máx: la del snapshot de mano de obra si la página lo pidió; si no, la de la cola. */
+function budgetHoursOf(machine: CalculatedMachineView) {
+  return machine.labor?.budgetHours ?? machine.totalHours;
+}
+
+/** Valor por el que se ordena una columna (lo usan los paneles de producción y despachados). */
+export function machineSortValue(machine: CalculatedMachineView, key: SortKey): unknown {
+  if (key === "laborBudgetHours") return budgetHoursOf(machine);
+  if (key === "laborSpentHours") return machine.labor?.spentHours ?? null;
+  return machine[key];
+}
+
+const BUDGET_HOURS_TITLE = "Horas máximas = venta × % MO del equipo ÷ costo hora promedio";
+
+function LaborFactorCell({ machine }: { machine: CalculatedMachineView }) {
+  const general = machine.laborFactorSource === "general";
+  return (
+    <span
+      className={general ? "text-[var(--xt-steel)]" : undefined}
+      title={general ? "% general de Configuración (el equipo no tiene % propio)" : "% del equipo en el catálogo"}
+    >
+      {formatLaborPct(machine.laborFactor)}
+    </span>
+  );
+}
+
+function SpentHoursCell({ machine }: { machine: CalculatedMachineView }) {
+  const labor = machine.labor;
+  if (!labor) {
+    return <span className="text-[var(--xt-aluminum)]">—</span>;
+  }
+
+  const parts = [
+    `${labor.isFinal ? "H. finales" : "H. llevadas"}: ${labor.spentHours.toFixed(1)} de ${labor.budgetHours.toFixed(1)} h máx`,
+    labor.spentPct !== null ? `${Math.round(labor.spentPct * 100)}% consumido` : null,
+    labor.reprocessHours > 0 ? `${labor.reprocessHours.toFixed(1)} h de reproceso` : null,
+    labor.status !== "ok" ? BUDGET_STATUS_LABEL[labor.status] : null,
+  ].filter(Boolean);
+
+  return (
+    <BudgetHoursText
+      hours={labor.spentHours}
+      status={labor.status}
+      text={labor.spentHours.toFixed(1)}
+      title={parts.join(" · ")}
+    />
+  );
+}
 type EditableField = "serialNumber" | "salePriceCop" | "assignedTo" | "promisedDate" | "orderPosition" | "city" | "line" | "colorId";
 
 function StagePin({ completion }: { completion: number }) {
@@ -414,7 +469,7 @@ export function ProductionTable({
 
   return (
     <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-      <Table className="min-w-[1280px] text-xs">
+      <Table className="min-w-[1440px] text-xs">
         <TableHeader>
           <TableRow>
             {selectable && <TableHead className="w-8 px-2" />}
@@ -428,7 +483,14 @@ export function ProductionTable({
             {sh("city", "Ciudad")}
             {sh("line", "Línea")}
             {!shipped && sh("salePriceCop", "Venta", `${C} text-right`, "Venta antes de IVA")}
-            {sh("totalHours", "H.Tot", `${C} text-right`, "Horas totales")}
+            {sh("laborFactor", "% MO", `${C} text-right`, "% de mano de obra del equipo (gris = % general de Configuración)")}
+            {sh("laborBudgetHours", "H. máx", `${C} text-right`, BUDGET_HOURS_TITLE)}
+            {sh(
+              "laborSpentHours",
+              shipped ? "H. finales" : "H. llevadas",
+              `${C} text-right`,
+              "Horas registradas con cronómetro en etapas de producción (incluye reproceso)",
+            )}
             {!shipped && sh("remainingHours", "H.Fal", `${C} text-right`, "Horas faltantes")}
             {!shipped && sh("remainingHumanDays", "D-H", `${C} text-right`, "Días-hombre restantes")}
             {sh("accumulatedHours", "Acum", `${C} text-right`, "Horas acumuladas en cola")}
@@ -575,7 +637,13 @@ export function ProductionTable({
                     />
                   </TableCell>
                 )}
-                <TableCell className={`${C} text-right tabular-nums`}>{machine.totalHours.toFixed(1)}</TableCell>
+                <TableCell className={`${C} text-right tabular-nums`}>
+                  <LaborFactorCell machine={machine} />
+                </TableCell>
+                <TableCell className={`${C} text-right tabular-nums`}>{budgetHoursOf(machine).toFixed(1)}</TableCell>
+                <TableCell className={`${C} whitespace-nowrap text-right`}>
+                  <SpentHoursCell machine={machine} />
+                </TableCell>
                 {!shipped && <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHours.toFixed(1)}</TableCell>}
                 {!shipped && <TableCell className={`${C} text-right tabular-nums`}>{machine.remainingHumanDays.toFixed(1)}</TableCell>}
                 <TableCell className={`${C} text-right tabular-nums`}>{machine.accumulatedHours.toFixed(1)}</TableCell>

@@ -3,7 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, CheckCircle, Palette, PauseCircle, Search, X } from "lucide-react";
 import { bulkMarkFinishedAction, bulkSendToHoldAction } from "@/app/admin/actions";
-import { ProductionTable } from "@/components/admin/production-table";
+import { machineSortValue, ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
 import { Button } from "@/components/ui/button";
 import { ActionTooltip } from "@/components/ui/tooltip";
@@ -62,8 +62,8 @@ function filterMachines(machines: CalculatedMachineView[], f: FilterState): Calc
 function sortMachines(machines: CalculatedMachineView[], s: SortConfig): CalculatedMachineView[] {
   if (!s) return machines;
   return [...machines].sort((a, b) => {
-    const av = a[s.key];
-    const bv = b[s.key];
+    const av = machineSortValue(a, s.key);
+    const bv = machineSortValue(b, s.key);
     let cmp = 0;
     if (av == null && bv == null) cmp = 0;
     else if (av == null) cmp = 1;

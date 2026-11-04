@@ -1,12 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { updateMachineAction } from "@/app/admin/actions";
+import { formatLaborHours } from "@/components/admin/budget-meter";
 import { CatalogCombobox } from "@/components/admin/catalog-combobox";
+import { formatLaborPct } from "@/components/admin/stats-ui";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MACHINE_LINE_OPTIONS, normalizeMachineLine } from "@/lib/machine-lines";
 import type { MachineView } from "@/types/domain";
+import type { LaborFactorSource } from "@/types/labor-report";
 
 type MachineEditFormMachine = Pick<
   MachineView,
@@ -42,16 +46,26 @@ type ClientOption = {
   name: string;
 };
 
+/** Mano de obra de la máquina según lo guardado: el % sale del catálogo y no se edita aquí. */
+type MachineLaborInfo = {
+  laborFactor: number;
+  laborFactorSource: LaborFactorSource;
+  /** null si el costo hora de Configuración no es válido. */
+  budgetHours: number | null;
+};
+
 export function MachineEditForm({
   machine,
   catalog,
   colors,
   clients,
+  labor,
 }: {
   machine: MachineEditFormMachine;
   catalog: CatalogOption[];
   colors: ColorOption[];
   clients: ClientOption[];
+  labor?: MachineLaborInfo;
 }) {
   const [clientName, setClientName] = useState(machine.clientName);
   const [clientMode, setClientMode] = useState<"reassign" | "rename">("reassign");
@@ -158,12 +172,40 @@ export function MachineEditForm({
       <Field label="Posición en cola">
         <Input name="orderPosition" type="number" min="1" defaultValue={machine.orderPosition} />
       </Field>
+      {labor ? <LaborReadout labor={labor} /> : null}
       <div className="md:col-span-2">
         <Button type="submit" size="lg">
           Guardar cambios
         </Button>
       </div>
     </form>
+  );
+}
+
+function LaborReadout({ labor }: { labor: MachineLaborInfo }) {
+  const general = labor.laborFactorSource === "general";
+  return (
+    <div className="grid gap-1 border border-[var(--xt-cement)] bg-[var(--xt-paper)] px-3 py-2 text-sm md:col-span-2">
+      <div className="flex flex-wrap gap-x-8 gap-y-1">
+        <span>
+          % MO del catálogo:{" "}
+          <strong className={general ? "text-[var(--xt-steel)]" : undefined}>
+            {formatLaborPct(labor.laborFactor)}
+            {general ? " (general)" : ""}
+          </strong>
+        </span>
+        <span title="Horas máximas = venta × % MO del equipo ÷ costo hora promedio">
+          H. máx: <strong className="tabular-nums">{labor.budgetHours !== null ? formatLaborHours(labor.budgetHours) : "Sin datos"}</strong>
+        </span>
+      </div>
+      <p className="text-xs text-[var(--xt-steel)]">
+        Solo lectura, con la venta y el equipo guardados. El % se cambia en el{" "}
+        <Link href="/admin/catalogo" className="underline">
+          Catálogo
+        </Link>
+        {general ? " (este equipo usa el % general de Configuración)" : ""}.
+      </p>
+    </div>
   );
 }
 

@@ -42,6 +42,21 @@ function buildAdminToast(toastCode: string | null, count: number) {
       return {
         message: plural ? `${total} máquinas eliminadas` : "Máquina eliminada",
       };
+    // Configuración → Actividades (deleteActivityTypeAction redirige con ?toast=…#actividades).
+    case "actividad-eliminada":
+      return { message: "Actividad eliminada" };
+    case "actividad-movida":
+      return {
+        message: "Actividad eliminada",
+        description: "Sus horas pasaron a la actividad elegida.",
+      };
+    case "actividad-con-horas":
+      return {
+        message: "No se eliminó la actividad",
+        description: "Esta actividad tiene horas registradas. Elige a qué actividad moverlas.",
+      };
+    case "actividad-error":
+      return { message: "No se pudo eliminar la actividad" };
     default:
       return null;
   }
