@@ -181,3 +181,47 @@ Resultado hoy (35 máquinas):
 - **Visual** (maqueta con datos ficticios inyectada en `/planta` con el CSS compilado, a 1024×768): el selector con las tres etiquetas. La etiqueta queda alineada a la derecha y no se encoge, aunque el nombre ocupe tres líneas. La celda «Horas» no cambió de estilo desde la fase 1 (ver las medidas a 1920 y 1366 arriba).
 - **Datos reales:** solo lectura (scripts de scratch con `listCalculatedMachines`, `attachMachineLabor` y `listMachinesForActivities`). No se crearon ni modificaron datos, y no hice push ni deploy.
 - **Pendiente en el iPad real**, tras el deploy: iniciar «Empaque, carga e instalación» sobre una máquina «Terminada» y ver que la cartelera muestra «—» en las terminadas antiguas y «N / M h» en las demás.
+
+---
+
+# Handoff FP — corrección M5 (CONTRATO §9.5: la planta no expone salarios ni precios)
+
+Base: `6b5ff7d` (fast-forward desde `1ac4c10`). Revisé el refactor del líder en la cartelera: `boardLabor()` ya usa `labor.hasPartialData` y la regla duplicada desapareció. La propuesta D de la fase 2 queda resuelta.
+
+## Commits
+
+- `5a02ad8 fix(planta): no enviar los salarios a la tablet en Operarios`
+- `900aa8c fix(planta): no enviar venta ni % MO en la selección de varias máquinas`
+- (este archivo) `docs(planificacion): handoff FP corrección M5`
+
+## Qué cambió
+
+| Archivo | Cambio |
+|---|---|
+| `src/app/planta/operarios/page.tsx` | `WorkerPicker` recibe `workers.map(→ { id, full_name, role, display_color })` y ya no las filas de `select *`, que traían `hourly_cost_cop`. |
+| `src/components/factory/worker-picker.tsx` | Solo un comentario en `WorkerCard` que explica por qué es angosto. |
+| `src/app/planta/maquinas/page.tsx` | `MachineMultiSelect` recibe `{ id, serialNumber, equipmentCode, equipmentName, clientName, stages: { id, name, completion }[] }` y ya no los `CalculatedMachineView` completos. Es el mismo patrón que la página `grupo`. |
+| `src/components/factory/machine-multi-select.tsx` | `MultiSelectMachine.stages` se angosta a `Pick<StageView, "id" \| "name" \| "completion">[]`, que es lo que usa `StageStrip`, más un comentario del porqué. |
+
+## Revisión de todos los componentes de cliente de `/planta/**`
+
+| Página | Componente de cliente | Props | Estado |
+|---|---|---|---|
+| operarios | `WorkerPicker` | `workers` | **Corregido** (salarios). |
+| operarios | `WorkerPicker` | `openSessions` (`OpenSessionSummary`) | Limpio. |
+| maquinas | `MachineMultiSelect` | `machines` | **Corregido** (venta, % MO, horas y fechas internas). |
+| maquinas | `ActivityPanel` | `machines` | Limpio: `listMachinesForActivities` mapea explícitamente `id, serialNumber, equipmentName, clientName, status`. |
+| maquinas | `ActivityPanel` | `activityTypes` | Limpio: `mapActivityType` devuelve `id, name, description, sortOrder, allowsMachine, isActive`. |
+| maquinas, [id], grupo | `ActiveSessionBar`, `PausedActivitiesBar`, `TaskGrid` | `OpenSessionView` / `PausedActivityView` / mapeo explícito | Limpio. Las máquinas de sesión son `id, serialNumber, equipmentName, clientName`; el select no trae precios. `TaskGrid` ya recibía `{ id, serialNumber, stages: { id, name, completion } }`. |
+| almacen | `AlmacenManager` | `MachinePrevioListRow` | Limpio: `mapMachinePrevioListRow` mapea explícitamente, sin precios. |
+| tablero | (ninguno con datos) | — | `BoardRow`, `BoardHoursCell`, `CellTooltip` y `Progress` son de servidor; solo `RealtimeRefresh` es de cliente (canal y tablas). |
+| todas | `RealtimeRefresh`, `Link` | — | Sin datos de negocio. |
+
+## Verificación
+
+- `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build`: verde (189 tests).
+- **Script de solo lectura con datos reales.** Serializa con `JSON.stringify`, como el payload RSC, los props que cada página pasa a sus componentes de cliente, y busca `hourly_cost`, `salePriceCop`, `sale_price`, `laborFactor`, `labor_factor`, `equipmentLaborFactor`, `remainingHours` y `totalHours`.
+  - **Antes:** `WorkerPicker.workers` mostraba la fuga `hourly_cost`. `MachineMultiSelect.machines` mostraba `salePriceCop, laborFactor, equipmentLaborFactor, remainingHours, totalHours` (50 KB).
+  - **Después:** todo limpio. `MachineMultiSelect` bajó a 12 KB. `WorkerPicker.openSessions`, `ActivityPanel.machines` y `.activityTypes`, y `AlmacenManager.machines` estaban limpios desde antes.
+- No pude revisar el HTML real de la tablet porque las páginas exigen la cookie de planta y no tengo la contraseña. El script replica el mapeo de las páginas; en el código, el mapeo es un objeto literal explícito, así que no puede colarse ningún campo extra.
+- No se escribió nada en la base. No hice push ni deploy.
