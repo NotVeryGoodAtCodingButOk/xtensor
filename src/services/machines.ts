@@ -897,7 +897,7 @@ async function normalizeProductionQueue(supabase = createSupabaseAdminClient()) 
 }
 
 /** labor_factor llega como numeric (string o number) desde PostgREST; null/undefined si no hay % propio. */
-function toLaborFactorOrNull(value: unknown): number | null {
+export function toLaborFactorOrNull(value: unknown): number | null {
   if (value === null || value === undefined || value === "") {
     return null;
   }

@@ -553,25 +553,11 @@ async function completeStageOnMachines(
   return { finishedMachineIds: (finishedRows ?? []).map((row) => row.id) };
 }
 
-/**
- * Sessions overlapping [startIso, endIso), mapped to the camelCase shape
- * `summarizeLabor` (src/services/labor-time.ts) expects.
- */
-export async function listSessionsOverlapping(startIso: string, endIso: string): Promise<LaborSessionInput[]> {
-  const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("work_sessions")
-    .select("*, work_session_activity_types(activity_type_id), work_session_machines(machine_id)")
-    .lt("started_at", endIso)
-    .or(`ended_at.is.null,ended_at.gt.${startIso}`);
+const LABOR_SESSION_SELECT = "*, work_session_activity_types(activity_type_id), work_session_machines(machine_id)";
 
-  if (error) {
-    throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
-  }
-
-  const rows = (data ?? []) as unknown as SessionWithMachineIdsRow[];
-
-  return rows.map((row) => ({
+/** Fila de work_sessions (con sus actividades y TODAS sus máquinas) → entrada del motor de labor-time.ts. */
+function mapLaborSessionRow(row: SessionWithMachineIdsRow): LaborSessionInput {
+  return {
     id: row.id,
     workerId: row.worker_id,
     kind: row.kind,
@@ -583,7 +569,96 @@ export async function listSessionsOverlapping(startIso: string, endIso: string):
     endedAt: row.ended_at,
     endReason: row.end_reason,
     machineIds: row.work_session_machines.map((m) => m.machine_id),
-  }));
+  };
+}
+
+/**
+ * Sessions overlapping [startIso, endIso), mapped to the camelCase shape
+ * `summarizeLabor` (src/services/labor-time.ts) expects.
+ */
+export async function listSessionsOverlapping(startIso: string, endIso: string): Promise<LaborSessionInput[]> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("work_sessions")
+    .select(LABOR_SESSION_SELECT)
+    .lt("started_at", endIso)
+    .or(`ended_at.is.null,ended_at.gt.${startIso}`);
+
+  if (error) {
+    throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
+  }
+
+  return ((data ?? []) as unknown as SessionWithMachineIdsRow[]).map(mapLaborSessionRow);
+}
+
+const ID_CHUNK = 100;
+const PAGE_SIZE = 1000;
+
+/**
+ * Todas las sesiones (de toda la vida) que tocaron alguna de estas máquinas,
+ * cada una con TODAS sus máquinas y actividades: así el reparto entre varias
+ * máquinas sale igual que en los tableros por rango.
+ */
+export async function listSessionsForMachines(machineIds: string[]): Promise<LaborSessionInput[]> {
+  const ids = [...new Set(machineIds.filter(Boolean))];
+  if (ids.length === 0) {
+    return [];
+  }
+
+  const supabase = createSupabaseAdminClient();
+  const sessionIds = new Set<string>();
+
+  for (const chunk of chunked(ids, ID_CHUNK)) {
+    for (let from = 0; ; from += PAGE_SIZE) {
+      const { data, error } = await supabase
+        .from("work_session_machines")
+        .select("session_id, machine_id")
+        .in("machine_id", chunk)
+        .order("session_id", { ascending: true })
+        .order("machine_id", { ascending: true })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (error) {
+        throw new Error(`No se pudieron cargar las sesiones de las máquinas: ${error.message}`);
+      }
+      for (const row of data ?? []) sessionIds.add(row.session_id);
+      if ((data ?? []).length < PAGE_SIZE) break;
+    }
+  }
+
+  const sessions: LaborSessionInput[] = [];
+  for (const chunk of chunked([...sessionIds], ID_CHUNK)) {
+    const { data, error } = await supabase.from("work_sessions").select(LABOR_SESSION_SELECT).in("id", chunk);
+    if (error) {
+      throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
+    }
+    sessions.push(...((data ?? []) as unknown as SessionWithMachineIdsRow[]).map(mapLaborSessionRow));
+  }
+
+  return sessions;
+}
+
+/** Inicio del primer cronómetro registrado (ISO) o null si todavía no hay ninguno. */
+export async function getFirstSessionStartedAt(): Promise<string | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("work_sessions")
+    .select("started_at")
+    .order("started_at", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`No se pudo consultar el primer cronómetro: ${error.message}`);
+  }
+
+  return data?.started_at ?? null;
+}
+
+function chunked<T>(items: T[], size: number): T[][] {
+  const chunks: T[][] = [];
+  for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
+  return chunks;
 }
 
 type ActivityMachineRow = Pick<
