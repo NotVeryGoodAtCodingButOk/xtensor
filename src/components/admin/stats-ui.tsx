@@ -109,15 +109,16 @@ export function formatPct(value: number | null | undefined) {
 }
 
 /**
- * % de mano de obra a partir de una fracción (0.35 → "35%", 0.325 → "32,5%").
+ * % de mano de obra a partir de una fracción (0.35 → "35%", 0.3255 → "32,55%").
  * Sin espacio antes del %: así lo pide el contrato para el catálogo y las tablas.
+ * Hasta 2 decimales, la precisión con que se guarda el % del equipo.
  */
 export function formatLaborPct(fraction: number | null | undefined) {
   if (fraction === null || fraction === undefined || !Number.isFinite(fraction)) {
     return "Sin datos";
   }
 
-  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 1 }).format(fraction * 100)}%`;
+  return `${new Intl.NumberFormat("es-CO", { maximumFractionDigits: 2 }).format(fraction * 100)}%`;
 }
 
 /**
@@ -133,9 +134,13 @@ export function ownLaborFactor(value: unknown): number | null {
   return Number.isFinite(parsed) && parsed > 0 && parsed <= 1 ? parsed : null;
 }
 
-/** Valor inicial de un input en % (0.35 → "35", 0.325 → "32.5", null → ""). */
+/**
+ * Valor inicial de un input en % (0.35 → "35", 0.3255 → "32.55", null → "").
+ * Dos decimales, la misma precisión con que se guarda (parseLaborPct: 0,01 %):
+ * así abrir «Editar» y guardar sin tocar no cambia el % ni replanifica la cola.
+ */
 export function laborPctInputValue(fraction: number | null) {
-  return fraction === null ? "" : String(Math.round(fraction * 1000) / 10);
+  return fraction === null ? "" : String(Math.round(fraction * 10000) / 100);
 }
 
 export function formatCop(value: number | null | undefined) {

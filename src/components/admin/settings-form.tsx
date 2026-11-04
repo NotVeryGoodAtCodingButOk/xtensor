@@ -43,14 +43,18 @@ function normalizeInitialBreaks(value: unknown): ShiftBreak[] {
     }));
 }
 
-/** settings.labor_factor se guarda como fracción (0.30); en pantalla se edita en % (30). */
+/**
+ * settings.labor_factor se guarda como fracción (0.30); en pantalla se edita en
+ * % (30) con dos decimales (0,01 %), para que guardar otros parámetros sin
+ * tocar el % no lo cambie ni replanifique la cola.
+ */
 function toLaborPct(fraction: number) {
-  return String(Math.round(Number(fraction) * 1000) / 10);
+  return String(Math.round(Number(fraction) * 10000) / 100);
 }
 
 function toLaborFraction(pct: string) {
   const value = Number(pct.replace(",", "."));
-  return Number.isFinite(value) ? String(Math.round(value * 10) / 1000) : "";
+  return Number.isFinite(value) ? String(Math.round(value * 100) / 10000) : "";
 }
 
 export function SettingsForm({ settings, savedOk }: { settings: Settings; savedOk?: boolean }) {
@@ -91,7 +95,7 @@ export function SettingsForm({ settings, savedOk }: { settings: Settings; savedO
               <span className="inline-flex items-center gap-1 text-sm text-[var(--xt-steel)]">
                 <Input
                   type="number"
-                  step="0.1"
+                  step="0.01"
                   min="1"
                   max="100"
                   value={laborPct}
