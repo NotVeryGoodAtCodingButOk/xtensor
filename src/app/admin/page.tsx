@@ -28,6 +28,7 @@ export default async function AdminDashboardPage() {
   const machines = await attachMachineLabor(
     await listCalculatedMachines({ settings, holidays, status: "in_production" }),
     settings,
+    { holidays },
   );
 
   return (

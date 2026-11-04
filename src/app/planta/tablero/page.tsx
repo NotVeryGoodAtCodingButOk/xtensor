@@ -43,7 +43,7 @@ export default async function FactoryBoardPage() {
     status: FACTORY_BOARD_STATUSES,
   });
   // Horas llevadas vs. máximas por máquina (columna «Horas»). Se actualizan con el poll de 30 s.
-  const withLabor = (await attachMachineLabor(machines, settings)).map((machine) => ({
+  const withLabor = (await attachMachineLabor(machines, settings, { holidays })).map((machine) => ({
     ...machine,
     labor: boardLabor(machine),
   }));

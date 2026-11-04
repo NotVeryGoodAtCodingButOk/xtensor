@@ -30,6 +30,7 @@ export default async function ShippedPage() {
       shippedRetentionDays: settings.shippedRetentionDays,
     }),
     settings,
+    { holidays },
   );
 
   return (
