@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveLaborRange } from "@/services/labor-dashboard";
+import { resolveLaborGranularity, resolveLaborRange } from "@/services/labor-dashboard";
 
 // 2026-06-01 is a Monday, 2026-06-05 is a Friday, 2026-06-06/07 is the
 // weekend (matches the fixture dates already used in
@@ -64,5 +64,33 @@ describe("resolveLaborRange", () => {
     expect(range.label).toBe("Últimos 30 días");
     expect(range.startIso).toBe("2026-05-05T05:00:00.000Z");
     expect(range.endIso).toBe("2026-06-04T05:00:00.000Z");
+  });
+
+  it("ultimos-90-dias: a trailing 90-day window including today", () => {
+    const range = resolveLaborRange("ultimos-90-dias", wednesday);
+    expect(range.label).toBe("Últimos 3 meses");
+    expect(range.startIso).toBe("2026-03-06T05:00:00.000Z");
+    expect(range.endIso).toBe("2026-06-04T05:00:00.000Z");
+  });
+
+  it("este-ano: January 1st through next January 1st, in Bogota time", () => {
+    const range = resolveLaborRange("este-ano", wednesday);
+    expect(range.label).toBe("Este año");
+    expect(range.startIso).toBe("2026-01-01T05:00:00.000Z");
+    expect(range.endIso).toBe("2027-01-01T05:00:00.000Z");
+
+    // 31 dic 21:00 en Bogotá ya es 1 ene en UTC, pero sigue siendo 2026.
+    const newYearsEve = resolveLaborRange("este-ano", new Date("2026-12-31T21:00:00-05:00"));
+    expect(newYearsEve.startIso).toBe("2026-01-01T05:00:00.000Z");
+  });
+});
+
+describe("resolveLaborGranularity", () => {
+  it("accepts dia, semana and mes and defaults to dia", () => {
+    expect(resolveLaborGranularity("semana")).toBe("semana");
+    expect(resolveLaborGranularity("mes")).toBe("mes");
+    expect(resolveLaborGranularity("dia")).toBe("dia");
+    expect(resolveLaborGranularity(undefined)).toBe("dia");
+    expect(resolveLaborGranularity("anual")).toBe("dia");
   });
 });

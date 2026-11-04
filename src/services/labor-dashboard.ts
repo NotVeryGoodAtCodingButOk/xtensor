@@ -6,6 +6,7 @@ import { listHolidays, listWorkers } from "@/services/catalog";
 import {
   shiftFromSettings,
   summarizeLabor,
+  summarizeLaborByPeriod,
   type FactoryShift,
   type LaborActivityTypeInput,
   type LaborMachineInput,
@@ -13,10 +14,12 @@ import {
   type LaborSummary,
   type LaborWorkerInput,
 } from "@/services/labor-time";
+import { toLaborFactorOrNull } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 import type { ProductionSettings } from "@/services/calculations";
 import { listDoneMarksWithoutSession, listSessionsOverlapping } from "@/services/work-sessions";
 import type { Database } from "@/types/database";
+import type { LaborGranularity, LaborPeriodRow } from "@/types/labor-report";
 
 // Kept in this module rather than split out (see task notes): the fetching
 // function below imports the admin client, but only *invokes* it inside a
@@ -25,7 +28,14 @@ import type { Database } from "@/types/database";
 // unit tests to import from this file directly.
 const FACTORY_TIME_ZONE = "America/Bogota";
 
-export type LaborRangePreset = "hoy" | "esta-semana" | "este-mes" | "mes-pasado" | "ultimos-30-dias";
+export type LaborRangePreset =
+  | "hoy"
+  | "esta-semana"
+  | "este-mes"
+  | "mes-pasado"
+  | "ultimos-30-dias"
+  | "ultimos-90-dias"
+  | "este-ano";
 
 export type LaborRange = {
   preset: LaborRangePreset;
@@ -40,6 +50,8 @@ const RANGE_LABELS: Record<LaborRangePreset, string> = {
   "este-mes": "Este mes",
   "mes-pasado": "Mes pasado",
   "ultimos-30-dias": "Últimos 30 días",
+  "ultimos-90-dias": "Últimos 3 meses",
+  "este-ano": "Este año",
 };
 
 const DEFAULT_PRESET: LaborRangePreset = "esta-semana";
@@ -87,6 +99,16 @@ export function resolveLaborRange(preset: string | undefined, now: Date = new Da
       endExclusiveDateKey = addDaysToDateKey(todayKey, 1);
       break;
     }
+    case "ultimos-90-dias": {
+      startDateKey = addDaysToDateKey(todayKey, -89);
+      endExclusiveDateKey = addDaysToDateKey(todayKey, 1);
+      break;
+    }
+    case "este-ano": {
+      startDateKey = `${todayKey.slice(0, 4)}-01-01`;
+      endExclusiveDateKey = `${Number(todayKey.slice(0, 4)) + 1}-01-01`;
+      break;
+    }
   }
 
   return {
@@ -98,7 +120,14 @@ export function resolveLaborRange(preset: string | undefined, now: Date = new Da
 }
 
 function isLaborRangePreset(value: string | undefined): value is LaborRangePreset {
-  return value === "hoy" || value === "esta-semana" || value === "este-mes" || value === "mes-pasado" || value === "ultimos-30-dias";
+  return value !== undefined && Object.prototype.hasOwnProperty.call(RANGE_LABELS, value);
+}
+
+const GRANULARITIES: readonly LaborGranularity[] = ["dia", "semana", "mes"];
+
+/** `?vista=dia|semana|mes` → granularidad del desglose por período (defecto "dia"). */
+export function resolveLaborGranularity(value: string | undefined): LaborGranularity {
+  return GRANULARITIES.find((granularity) => granularity === value) ?? "dia";
 }
 
 // ---------------------------------------------------------------------------
@@ -112,18 +141,24 @@ export type LaborDashboard = {
   shift: FactoryShift;
   settings: ProductionSettings;
   summary: LaborSummary;
+  granularity: LaborGranularity;
+  /** Jornada por período (día/semana/mes) de toda la planta, o del operario si se pidió `workerId`. */
+  periods: LaborPeriodRow[];
 };
 
 type LaborMachineRow = Pick<
   Database["public"]["Tables"]["machines"]["Row"],
   "id" | "serial_number" | "sale_price_cop" | "custom_equipment_name"
 > & {
-  equipment_catalog: { name: string } | null;
+  equipment_catalog: { name: string; labor_factor: number | string | null } | null;
   clients: { name: string } | null;
   machine_warranty_events: Array<{ id: string }>;
 };
 
-export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboard> {
+export async function getLaborDashboard(
+  range: LaborRange,
+  options?: { granularity?: LaborGranularity; workerId?: string },
+): Promise<LaborDashboard> {
   const [sessions, doneMarksWithoutSession, settingsRow, holidays, workerRows, activityTypeRows] = await Promise.all([
     listSessionsOverlapping(range.startIso, range.endIso),
     listDoneMarksWithoutSession(range.startIso, range.endIso),
@@ -147,7 +182,7 @@ export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboa
     hourlyCostCop: worker.hourly_cost_cop,
   }));
 
-  const summary = summarizeLabor({
+  const laborInput = {
     sessions,
     workers,
     machines,
@@ -158,9 +193,13 @@ export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboa
     range: { startIso: range.startIso, endIso: range.endIso },
     now: new Date(),
     hourlyCostFallback: settings.hourlyCostPerWorkerCop,
-    estimateHours: (salePriceCop) => estimateTotalHours(salePriceCop, settings),
+    estimateHours: (salePriceCop: number, machine: LaborMachineInput) =>
+      estimateTotalHours(salePriceCop, settings, machine.laborFactor),
     doneMarksWithoutSession,
-  });
+  };
+  const summary = summarizeLabor(laborInput);
+  const granularity = options?.granularity ?? "dia";
+  const periods = summarizeLaborByPeriod(laborInput, granularity, { workerId: options?.workerId });
 
   // Historical sessions of inactive workers still need their names resolved
   // (handled above by passing every worker to summarizeLabor), but an
@@ -175,6 +214,8 @@ export async function getLaborDashboard(range: LaborRange): Promise<LaborDashboa
     shift,
     settings,
     summary: { ...summary, byWorker },
+    granularity,
+    periods,
   };
 }
 
@@ -182,7 +223,9 @@ async function fetchLaborMachines(machineIds: string[]): Promise<LaborMachineInp
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
     .from("machines")
-    .select("id, serial_number, sale_price_cop, custom_equipment_name, equipment_catalog(name), clients(name), machine_warranty_events(id)")
+    .select(
+      "id, serial_number, sale_price_cop, custom_equipment_name, equipment_catalog(name, labor_factor), clients(name), machine_warranty_events(id)",
+    )
     .in("id", machineIds);
 
   if (error) {
@@ -201,6 +244,7 @@ async function fetchLaborMachines(machineIds: string[]): Promise<LaborMachineInp
       label: `${equipmentName} · ${clientName}`,
       salePriceCop: Number(row.sale_price_cop) || 0,
       isWarranty: (row.machine_warranty_events?.length ?? 0) > 0,
+      laborFactor: toLaborFactorOrNull(row.equipment_catalog?.labor_factor),
     };
   });
 }
