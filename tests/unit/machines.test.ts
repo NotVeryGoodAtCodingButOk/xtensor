@@ -6,6 +6,7 @@ import {
   FACTORY_BOARD_STATUSES,
   normalizeMachineStatusFilter,
   planQueueReorder,
+  planQueueReplan,
   shiftReestimatedDates,
 } from "@/services/machines";
 import { DEFAULT_SETTINGS, DEFAULT_STAGES, isBehindReestimate } from "@/services/calculations";
@@ -258,5 +259,48 @@ describe("replanning after a % change", () => {
 
     expect(after.m4 > before.m4).toBe(true);
     expect(Object.keys(shifted)).toEqual(["m4"]);
+  });
+});
+
+describe("planQueueReplan: salidas de la cola", () => {
+  // Misma cola que arriba: 4 máquinas de 140 h desde el lunes 1 jun → 2, 4, 8 y 10 jun.
+  // m3 va 3 días tarde (reestimada 5 jun) y m4 al día (10 jun).
+  const startDate = new Date(2026, 5, 1, 12);
+  const reestimated: Record<string, string> = { m1: "2026-06-02", m2: "2026-06-04", m3: "2026-06-05", m4: "2026-06-10" };
+  const queue = ["m1", "m2", "m3", "m4"].map((id, index) => ({
+    ...queueMachine(id, index + 1),
+    reestimatedDate: reestimated[id],
+  }));
+  const state = (machines: MachineView[]) => ({ queue: machines, settings: DEFAULT_SETTINGS, holidays: [] });
+
+  it("a machine that leaves with hours left moves the reestimada of the ones behind exactly their delta", () => {
+    // m2 pasa a Propias en Espera (o se borra / vuelve a previos) con sus 140 h sin hacer.
+    const plan = planQueueReplan({
+      before: state(queue),
+      after: state(queue.filter((machine) => machine.id !== "m2")),
+      startDate,
+    });
+
+    expect(plan.orderedIds).toEqual(["m1", "m3", "m4"]);
+    // m3: 8 → 4 jun (−4) y conserva sus 3 días de atraso; m4: 10 → 8 jun (−2). m1 no se mueve.
+    expect(plan.reestimatedDates).toEqual({ m3: "2026-06-01", m4: "2026-06-08" });
+    expect(isBehindReestimate({ estimatedDate: "2026-06-04", reestimatedDate: plan.reestimatedDates.m3 })).toBe(true);
+    expect(isBehindReestimate({ estimatedDate: "2026-06-08", reestimatedDate: plan.reestimatedDates.m4 })).toBe(false);
+  });
+
+  it("a finished machine (0 hours left) leaving the queue changes nothing", () => {
+    const done = queue.map((machine) =>
+      machine.id === "m2"
+        ? { ...machine, stages: machine.stages.map((stage) => ({ ...stage, completion: 100 })) }
+        : machine,
+    );
+    const plan = planQueueReplan({
+      before: state(done),
+      after: state(done.filter((machine) => machine.id !== "m2")),
+      startDate,
+    });
+
+    expect(plan.orderedIds).toEqual(["m1", "m3", "m4"]);
+    expect(plan.reestimatedDates).toEqual({});
   });
 });
