@@ -23,6 +23,11 @@ export function RealtimeRefresh({
   pollMs?: number;
 }) {
   const router = useRouter();
+  // Cada router.refresh() trae un arreglo `tables` nuevo (los props se
+  // deserializan otra vez). Con el arreglo como dependencia, el canal se
+  // rehacía en cada refresh y un refresh agrupado pendiente se perdía al
+  // limpiar el efecto: se depende del contenido, no de la identidad.
+  const tablesKey = tables.join(",");
 
   useEffect(() => {
     let supabase;
@@ -52,7 +57,7 @@ export function RealtimeRefresh({
     };
 
     const channel = supabase.channel(channelName);
-    for (const table of tables) {
+    for (const table of tablesKey.split(",").filter(Boolean)) {
       channel.on("postgres_changes", { event: "*", schema: "public", table }, scheduleRefresh);
     }
 
@@ -64,7 +69,7 @@ export function RealtimeRefresh({
       }
       void supabase.removeChannel(channel);
     };
-  }, [channelName, router, tables]);
+  }, [channelName, router, tablesKey]);
 
   // Polling fallback: keep the board fresh even if the realtime socket drops.
   useEffect(() => {
