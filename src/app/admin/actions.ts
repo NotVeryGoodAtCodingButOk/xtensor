@@ -683,11 +683,18 @@ export async function updateSettingsAction(formData: FormData) {
     shift_breaks: shiftBreaks,
   };
 
-  // El % general y el costo hora mueven las horas máximas y las fechas de la
-  // cola: se replanifica y cada reestimada se corre lo mismo que su Actualizada.
+  // El % general, el costo hora y la capacidad (operarios y horas por día)
+  // mueven las horas o las fechas de la cola: es una replanificación, así que
+  // cada reestimada se corre lo mismo que su Actualizada en vez de dejar toda
+  // la cartelera «atrasada».
   if (
     !sameFactor(previous.laborFactor, patch.labor_factor) ||
-    !sameFactor(previous.hourlyCostPerWorkerCop, patch.hourly_cost_per_worker_cop)
+    !sameFactor(previous.hourlyCostPerWorkerCop, patch.hourly_cost_per_worker_cop) ||
+    previous.activeWorkersCount !== patch.active_workers_count ||
+    !sameFactor(previous.dailyHoursMonFri, patch.daily_hours_mon_fri) ||
+    !sameFactor(previous.dailyHoursFri, patch.daily_hours_fri) ||
+    !sameFactor(previous.dailyHoursSat, patch.daily_hours_sat) ||
+    !sameFactor(previous.dailyHoursSun, patch.daily_hours_sun)
   ) {
     await replanProductionQueue(() => updateSettings(patch));
   } else {
@@ -702,7 +709,8 @@ export async function addHolidayAction(formData: FormData) {
   await requireAdmin();
   const date = String(formData.get("date") ?? "").trim();
   const name = String(formData.get("name") ?? "").trim();
-  if (date && name) await createHoliday(date, name);
+  // Un festivo nuevo quita capacidad: replanifica para no marcar falsos atrasos.
+  if (date && name) await replanProductionQueue(() => createHoliday(date, name));
   revalidateFactoryData();
   redirect("/admin/configuracion");
 }
@@ -710,7 +718,7 @@ export async function addHolidayAction(formData: FormData) {
 export async function deleteHolidayAction(formData: FormData) {
   await requireAdmin();
   const date = String(formData.get("date") ?? "").trim();
-  if (date) await deleteHoliday(date);
+  if (date) await replanProductionQueue(() => deleteHoliday(date));
   revalidateFactoryData();
   redirect("/admin/configuracion");
 }
