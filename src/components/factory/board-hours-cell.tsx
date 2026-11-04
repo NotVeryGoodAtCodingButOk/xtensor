@@ -42,10 +42,10 @@ export function BoardHoursCell({ labor }: { labor: MachineLaborSnapshot | undefi
 const hoursWithDecimal = new Intl.NumberFormat("es-CO", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 const wholeHours = new Intl.NumberFormat("es-CO", { maximumFractionDigits: 0 });
 
-/** Horas enteras; menos de 10 h llevan un decimal (8,5). Cero se muestra como «0». */
+/** Horas enteras; menos de 10 h llevan un decimal (8,5). Lo que redondea a cero se muestra como «0», no «0,0». */
 export function formatBoardHours(hours: number): string {
   const value = Number.isFinite(hours) ? Math.max(0, hours) : 0;
-  if (value === 0) return "0";
   const tenths = Math.round(value * 10) / 10;
+  if (tenths === 0) return "0";
   return tenths < 10 ? hoursWithDecimal.format(tenths) : wholeHours.format(value);
 }

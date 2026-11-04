@@ -124,3 +124,60 @@ El código cumple:
   - `grep -o "grid-cols-\[[^]]*\]" src/app/planta/tablero/page.tsx` debe dar dos líneas iguales.
   - `grep -n "grid-template-columns: 4.5rem" src/app/globals.css` debe tener las mismas fracciones.
 - En la TV o el iPad, ya en la fase 2: una máquina en riesgo se ve amarilla, una excedida roja con la marca al final de la barra, y las terminadas dicen «Terminó en N h de M».
+
+---
+
+# Handoff FP — fase 2
+
+Base: `1d72214` (fast-forward desde `d12d6a4`). Dependencias sin cambios.
+
+## Commits
+
+- `90070cb feat(cartelera): conectar las horas llevadas y máximas`
+- `2ad1518 feat(planta): actividades sobre máquinas terminadas y despachadas`
+- `d645512 fix(cartelera): «—» cuando las horas de la máquina están incompletas`
+- (este archivo) `docs(planificacion): handoff FP fase 2`
+
+## Qué cambió
+
+| Archivo | Cambio |
+|---|---|
+| `src/app/planta/tablero/page.tsx` | Sale `const settings = mapSettings(settingsRow)`. Las máquinas pasan por `attachMachineLabor(machines, settings)` y luego por `boardLabor()` (ver abajo). `getFirstSessionStartedAt()` entra en el `Promise.all`. **No se agregó Realtime**: basta el poll de 30 s que ya existía. |
+| `src/app/planta/maquinas/page.tsx` | `listMachinesForActivities()` entra en el `Promise.all`, y `<ActivityPanel machines={activityMachines}>`. La grilla de máquinas, `MachineMultiSelect` y `TaskGrid` siguen usando `shared.machines` (solo `in_production`). |
+| `src/components/factory/activity-panel.tsx` | La prop `machines` es `ActivityPanelMachineOption[]`. Se quitó el tipo local `ActivityPanelMachine`, que nadie más usaba. Cada máquina lleva la etiqueta «En producción», «Terminada» o «Despachada». El texto vacío pasa a «No hay máquinas en producción, terminadas ni despachadas.». |
+| `src/components/factory/board-hours-cell.tsx` | `formatBoardHours`: lo que redondea a 0 se muestra «0», no «0,0». |
+| `src/app/globals.css` | `.xt-activity-machine-status` y sus variantes `-in_production` (negro con texto amarillo), `-finished` (`--line-bio-green` con texto blanco, como `.xt-badge-success`) y `-shipped` (`--xt-cement` con texto `--xt-steel`). Todo sin capa. |
+
+## Desviación: «—» cuando las horas están incompletas (commit aparte `d645512`, fácil de revertir)
+
+Con los datos reales (consulta de solo lectura con `attachMachineLabor`), **las 9 terminadas de la cartelera** decían «Terminó en 0 h de 48», o 0,7 y 2,7 h. Todas entraron a producción el 2026-08-20, y el primer cronómetro es del 2026-09-16.
+
+`MachineLaborSnapshot` no trae `hasPartialData`. Por eso la página aplica `boardLabor()`, con el mismo criterio que `buildMachineLaborRow` de B:
+- `trackingSince === null`, o
+- `productionStartedAt < trackingSince`, o
+- terminada con horas que redondean a 0.
+
+**Si además el estado es «ok», la celda muestra «—».** Si va en riesgo o excedida, se muestra igual, porque las horas reales solo pueden ser más. Las en curso sin horas que entraron *después* de los cronómetros sí muestran `0 / N h`, porque es su estado real.
+
+Resultado hoy (35 máquinas):
+- 18 con horas (casi todas `0 / N h`: los cronómetros se usan poco todavía).
+- 16 con «—»: las 9 terminadas y 7 en curso anteriores a los cronómetros.
+- La 144, excedida: `16 / 4,9 h` (es el cronómetro que quedó abierto, ver §7 de B).
+
+**CAMBIO DE CONTRATO PROPUESTO (D):** agregar `hasPartialData` (o `startedBeforeTracking`) a `MachineLaborSnapshot`, para que `boardLabor()` no repita la regla de B y FA pueda usarla en producción.
+
+## Observaciones
+
+- **Tamaño del selector del panel:** hoy `listMachinesForActivities()` devuelve **103 máquinas**: 26 en producción, 9 terminadas y 68 despachadas dentro de `shipped_retention_days`. La lista tiene scroll propio (13rem) y el orden de B: cola, terminadas y despachadas, de la más reciente a la más antigua. Funciona, pero con 68 despachadas buscar una garantía es largo. Si molesta en planta, hay dos opciones:
+  - mostrar las despachadas solo cuando «Arreglar máquinas» está marcada, o
+  - bajar la retención para el panel.
+
+  No lo hice: es decisión de producto.
+- **Cartelera:** `attachMachineLabor` más `listCalculatedMachines` tardaron ~1,6 s en la consulta de prueba. Es razonable con el poll de 30 s.
+
+## Verificación
+
+- `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build`: verde (22 archivos, 187 tests).
+- **Visual** (maqueta con datos ficticios inyectada en `/planta` con el CSS compilado, a 1024×768): el selector con las tres etiquetas. La etiqueta queda alineada a la derecha y no se encoge, aunque el nombre ocupe tres líneas. La celda «Horas» no cambió de estilo desde la fase 1 (ver las medidas a 1920 y 1366 arriba).
+- **Datos reales:** solo lectura (scripts de scratch con `listCalculatedMachines`, `attachMachineLabor` y `listMachinesForActivities`). No se crearon ni modificaron datos, y no hice push ni deploy.
+- **Pendiente en el iPad real**, tras el deploy: iniciar «Empaque, carga e instalación» sobre una máquina «Terminada» y ver que la cartelera muestra «—» en las terminadas antiguas y «N / M h» en las demás.

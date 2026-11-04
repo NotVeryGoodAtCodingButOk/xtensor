@@ -15,7 +15,7 @@ import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
 import { listActivityTypes } from "@/services/activity-types";
-import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
+import { getOpenSession, listMachinesForActivities, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachinesPage({
   searchParams,
@@ -49,10 +49,12 @@ export default async function FactoryMachinesPage({
     redirect("/planta/operarios?error=operario");
   }
 
-  const [openSession, pausedActivities, activityTypes] = await Promise.all([
+  const [openSession, pausedActivities, activityTypes, activityMachines] = await Promise.all([
     getOpenSession(workerId),
     listPausedActivities(workerId),
     listActivityTypes(true),
+    // Las actividades (carga, instalación, garantías) también van sobre terminadas y despachadas.
+    listMachinesForActivities(),
   ]);
   const machines = shared.machines;
   const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
@@ -90,12 +92,7 @@ export default async function FactoryMachinesPage({
             </Button>
             <ActivityPanel
               activityTypes={activityTypes}
-              machines={orderedMachines.map((machine) => ({
-                id: machine.id,
-                serialNumber: machine.serialNumber,
-                equipmentName: machine.equipmentName,
-                clientName: machine.clientName,
-              }))}
+              machines={activityMachines}
               hasOpenSession={Boolean(openSession)}
               navButtonClass={navButtonClass}
             />
