@@ -640,12 +640,6 @@ export type Database = {
           created_at: string;
         };
       };
-      reorder_in_production_machines: {
-        Args: {
-          ordered_machine_ids: string[];
-        };
-        Returns: void;
-      };
       /** 0031: order_position + reestimated_date en una sola transacción. */
       reorder_production_queue: {
         Args: {

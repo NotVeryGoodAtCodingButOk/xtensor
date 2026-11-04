@@ -57,7 +57,7 @@ The core business logic lives entirely in **`src/services/calculations.ts`** and
 
 The calculation pipeline:
 1. `estimateTotalHours(salePriceCop, settings)` — derives hours from sale price × labor factor ÷ hourly cost
-2. `calculateProgressPct(stageProgress, stages)` — weighted average across 7 stages (each stage has a `completionPercentage` threshold; completion values are discrete: 0/25/50/75/100)
+2. `calculateProgressPct(stageProgress, stages)` — weighted average across 7 stages (each stage has a `completionPercentage` threshold; completion values: the DB allows 0/25/50/75/100, the factory UI only uses 0 and 100)
 3. `calculateQueue(machines, settings)` — sorts by `orderPosition`, accumulates remaining hours into a queue
 4. `estimateDeliveryDate(accumulatedHours, startDate, settings, holidays)` — walks a labor calendar respecting Mon-Fri/Sat/Sun hours and Colombian holidays
 
@@ -72,7 +72,9 @@ Services map from database rows → domain types. UI consumes domain types only.
 
 ### Key domain concepts
 
-- **Machine**: a production order identified by `serial_number` (cotización/quote number). Has `orderPosition` for queue ordering and `status: "in_production" | "shipped"`.
+- **Machine**: a production order identified by `serial_number` (cotización/quote number). Has `orderPosition` for queue ordering and `status: "pending" (previos) | "in_production" | "finished" | "shipped" | "on_hold" (propias en espera)`.
+- **Labor budget**: max hours = sale × labor % of the equipment (catalog, fallback `settings.labor_factor`) ÷ average hourly cost. Spent hours come from `work_sessions` (timers) for the whole life of the machine (`src/services/machine-labor.ts`); real cost uses each worker's `hourly_cost_cop`.
+- **Reestimada**: baseline date compared against the live estimated date to flag delays. Every replan (reorder, queue entry/exit, % or capacity change) shifts it by the same days as the live date (`shiftReestimatedDates` in `machines.ts`), so planned changes don't create false delays but real slippage stays visible.
 - **Stages**: 7 fixed production stages (Material → Armar → Resoldar → Pulir → Pintar → Ensamblar → Empacar). Defined as constants in `calculations.ts` as `DEFAULT_STAGES`, also stored in the `stages` DB table.
 - **Settings**: single-row `settings` table with production parameters (labor factor, worker count, daily hours, etc.) and the factory floor password hash.
 - **Workers**: factory floor operarios, selected per session. Stage updates are attributed to the active worker.
@@ -90,6 +92,12 @@ Services map from database rows → domain types. UI consumes domain types only.
 `supabase/migrations/` — run sequentially on a new Supabase project:
 1. `0001_initial_schema.sql` — all tables, RLS policies, functions
 2. `0002_idempotent_policies_and_seed.sql` — idempotent policy updates
+3. `0003`–`0028` — previos, statuses, reestimated date, work sessions (timers), activity catalog, RPC lock-down
+4. `0029_equipment_labor_factor.sql` — `equipment_catalog.labor_factor` (labor % per equipment; null = `settings.labor_factor`)
+5. `0030_activity_catalog_5s.sql` — non-machine activities: 5S, Empaque/carga/instalación, Arreglar máquinas; `merge_activity_type` RPC
+6. `0031_reorder_production_queue.sql` — atomic queue order + reestimated date RPC; `0032` drops the old reorder RPC
+
+New migrations: add a numbered file AND apply it to the online DB (Management API). Keep them idempotent and compatible with the deployed build until the next deploy.
 
 `supabase/seed.sql` — initial data (stages, equipment catalog, default settings). Reference only — the online database is the source of truth.
 

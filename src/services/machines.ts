@@ -961,7 +961,7 @@ function sortProductionQueue(queue: MachineQueueRow[]) {
  * Guarda el orden de la cola y, en la misma sentencia, la reestimada de las
  * máquinas de `reestimatedDates` (las demás conservan la suya). Usa la RPC
  * atómica reorder_production_queue (0031); la vieja
- * reorder_in_production_machines ya no se llama desde aquí.
+ * reorder_in_production_machines se borró en la 0032.
  */
 async function saveProductionQueue(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
