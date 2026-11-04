@@ -6,12 +6,13 @@ import { Check } from "lucide-react";
 import { startOtherSessionAction } from "@/app/planta/actions";
 import { Button } from "@/components/ui/button";
 import type { ActivityTypeView } from "@/services/activity-types";
+import type { ActivityMachineStatus, ActivityPanelMachineOption } from "@/services/work-sessions";
 
-export type ActivityPanelMachine = {
-  id: string;
-  serialNumber: number;
-  equipmentName: string;
-  clientName: string;
+/** Etiqueta del estado en el selector: carga, instalación y garantías van sobre máquinas ya terminadas o despachadas. */
+const MACHINE_STATUS_LABEL: Record<ActivityMachineStatus, string> = {
+  in_production: "En producción",
+  finished: "Terminada",
+  shipped: "Despachada",
 };
 
 /**
@@ -29,7 +30,8 @@ export function ActivityPanel({
   navButtonClass,
 }: {
   activityTypes: ActivityTypeView[];
-  machines: ActivityPanelMachine[];
+  /** En producción, terminadas y despachadas recientes (listMachinesForActivities). */
+  machines: ActivityPanelMachineOption[];
   hasOpenSession: boolean;
   navButtonClass: string;
 }) {
@@ -148,7 +150,7 @@ export function ActivityPanel({
               <div className="xt-activity-machines">
                 <p className="xt-eyebrow">Máquina (opcional)</p>
                 {machines.length === 0 ? (
-                  <p className="xt-activity-note">No hay máquinas en producción.</p>
+                  <p className="xt-activity-note">No hay máquinas en producción, terminadas ni despachadas.</p>
                 ) : (
                   <ul className="xt-activity-machine-list">
                     {machines.map((machine) => {
@@ -166,6 +168,9 @@ export function ActivityPanel({
                             </span>
                             <span className="xt-activity-option-name">
                               #{machine.serialNumber} · {machine.equipmentName} · {machine.clientName}
+                            </span>
+                            <span className={`xt-activity-machine-status xt-activity-machine-status-${machine.status}`}>
+                              {MACHINE_STATUS_LABEL[machine.status]}
                             </span>
                           </button>
                         </li>

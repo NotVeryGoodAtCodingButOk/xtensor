@@ -1176,6 +1176,39 @@ select {
   line-height: 1.25;
 }
 
+/* Estado de la máquina en el selector de actividades: En producción · Terminada · Despachada. */
+.xt-activity-machine-status {
+  flex-shrink: 0;
+  margin-left: auto;
+  border: 1px solid var(--xt-black);
+  border-radius: 2px;
+  padding: 0.1875rem 0.375rem;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.xt-activity-machine-status-in_production {
+  background: var(--xt-black);
+  color: var(--xt-yellow);
+}
+
+.xt-activity-machine-status-finished {
+  border-color: var(--line-bio-green);
+  background: var(--line-bio-green);
+  color: var(--xt-white);
+}
+
+.xt-activity-machine-status-shipped {
+  border-color: var(--xt-aluminum);
+  background: var(--xt-cement);
+  color: var(--xt-steel);
+}
+
 .xt-activity-machines {
   margin-top: 1.25rem;
   border-top: 1px solid var(--xt-cement);
