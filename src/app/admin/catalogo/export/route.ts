@@ -17,6 +17,7 @@ export async function GET() {
       name: item.name,
       line: item.line,
       default_price_cop: item.default_price_cop,
+      labor_factor: item.labor_factor,
       is_active: item.is_active,
       previos: item.previos,
     })),
