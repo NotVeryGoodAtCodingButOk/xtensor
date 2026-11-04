@@ -190,3 +190,49 @@ aa06c70 fix(catalogo): exportar el % de mano de obra del equipo
 - Los códigos de toast ya coinciden con los de B.
 - La propuesta 2 (despachados) está aplicada.
 - La 3 (Excel de producción) no aplica, porque ese Excel no exporta horas (desviación 7 de B).
+
+---
+
+## Correcciones tras la revisión de R (CONTRATO §9)
+
+- **Base:** `6b5ff7d`, avanzada con `git merge --ff-only main`. Leí §9 del contrato.
+- **Verificación:** `lint`, `typecheck`, `test` (22 archivos, 189 tests) y `build` en verde.
+
+### Commits (`git log --oneline 6b5ff7d..HEAD`)
+
+```
+aed9dc7 fix(produccion): ordenar «H. llevadas» igual que se muestra
+2ec86af fix(tiempo-real): no rehacer el canal en cada refresh
+ffde42e fix(tiempo-real): agrupar eventos antes de refrescar (contrato §9.6)
+375be69 fix(catalogo): el % MO se edita con 2 decimales (contrato §9.4)
+```
+
+(Más el commit de este handoff.)
+
+### Qué cambió
+
+1. **§9.4 (M3), precisión del %.**
+   - `laborPctInputValue` ahora usa `Math.round(f * 10000) / 100`, la misma precisión de 0,01 % que usa `parseLaborPct`.
+   - El input del catálogo ya tenía `step="any"`, así que acepta 0,01.
+   - Comprobé el ida y vuelta, de fracción a input y de input a fracción, con 0.3, 0.35, 0.3255, 0.325, 0.0101, 1, 0.1234 y 0.3333. En todos los casos vuelve el mismo valor: abrir «Editar equipo» y guardar no cambia el % ni replanifica la cola.
+   - **Mismo problema en Configuración.** El «% mano de obra por defecto» también redondeaba a 0,1 %, así que guardar cualquier otro parámetro podía cambiar `labor_factor` y replanificar toda la cola.
+     - Ahora usa 2 decimales, `step="0.01"`, y el input oculto `labor_factor` envía `Math.round(pct * 100) / 10000`.
+   - `formatLaborPct` muestra hasta 2 decimales («32,55%») para no esconder esa precisión.
+2. **§9.6 (B1), debounce en `src/components/realtime-refresh.tsx`.**
+   - Los eventos se agrupan y hay un solo `router.refresh()` cuando dejan de llegar durante 800 ms.
+   - Con un flujo continuo, el refresh sale de todos modos a los 3 s como máximo.
+   - El timer se limpia al desmontar, y `pollMs` sigue igual.
+   - **Arreglo relacionado (commit aparte).** El efecto dependía del arreglo `tables`, que llega con identidad nueva en cada `router.refresh()`.
+     - Por eso el canal se rehacía tras cada refresh.
+     - Con el debounce, un evento que llegaba mientras el refresh anterior estaba en curso (unos 1,6 s en Máquinas) quedaba con su timer pendiente, y la limpieza del efecto lo borraba: se perdía ese refresh.
+     - Ahora el efecto depende de `tablesKey = tables.join(",")`.
+   - Este componente afecta a todas las pantallas que lo usan (admin, planta y portal del cliente): sus refrescos por realtime ahora llegan hasta 800 ms más tarde.
+3. **Cambio del líder en `production-table.tsx`** («—» con tooltip cuando `hasPartialData` y el estado es ok).
+   - No choca con nada mío.
+   - El orden por «H. llevadas» seguía usando las horas de esas filas. Ahora un helper `hidesSpentHours()` decide el «—» de la celda y hace que esas filas se ordenen como vacías (al final), igual que las que no tienen `labor`.
+   - El resto de mis componentes usan `MachineLaborRow.hasPartialData`, que ya existía (badge «Datos parciales»), así que no cambian.
+
+### Nota para B o R
+
+- No agregué un test para el debounce de `RealtimeRefresh`, porque `tests/unit/**` es de B.
+- Si se quiere uno: vitest con timers falsos, mocks de `createSupabaseBrowserClient` y `useRouter`, y comprobar que 26 eventos seguidos dan un solo `refresh` y que el timer se limpia al desmontar.
