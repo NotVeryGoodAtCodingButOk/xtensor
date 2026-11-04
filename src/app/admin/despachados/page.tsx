@@ -6,6 +6,7 @@ import { DespachadosTablePanel } from "@/components/admin/despachados-table-pane
 export const metadata: Metadata = { title: "Despachados XTENSOR" };
 import { hasSupabaseConfig } from "@/lib/env";
 import { listHolidays } from "@/services/catalog";
+import { attachMachineLabor } from "@/services/machine-labor";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 
@@ -20,12 +21,16 @@ export default async function ShippedPage() {
 
   const settings = mapSettings(await getSettings());
   const holidays = await listHolidays();
-  const machines = await listCalculatedMachines({
+  // H. máx con la venta y el % del equipo; H. finales = horas de producción de toda su vida.
+  const machines = await attachMachineLabor(
+    await listCalculatedMachines({
+      settings,
+      holidays,
+      status: "shipped",
+      shippedRetentionDays: settings.shippedRetentionDays,
+    }),
     settings,
-    holidays,
-    status: "shipped",
-    shippedRetentionDays: settings.shippedRetentionDays,
-  });
+  );
 
   return (
     <AdminShell>

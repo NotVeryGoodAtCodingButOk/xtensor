@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { ActionTooltip } from "@/components/ui/tooltip";
 import { hasSupabaseConfig } from "@/lib/env";
 import { listColors, listHolidays } from "@/services/catalog";
+import { attachMachineLabor } from "@/services/machine-labor";
 import { listCalculatedMachines } from "@/services/machines";
 import { getSettings, mapSettings } from "@/services/settings";
 
@@ -24,11 +25,14 @@ export default async function AdminDashboardPage() {
 
   const settings = mapSettings(await getSettings());
   const [holidays, colors] = await Promise.all([listHolidays(), listColors()]);
-  const machines = await listCalculatedMachines({ settings, holidays, status: "in_production" });
+  const machines = await attachMachineLabor(
+    await listCalculatedMachines({ settings, holidays, status: "in_production" }),
+    settings,
+  );
 
   return (
     <AdminShell>
-      <RealtimeRefresh channelName="admin-dashboard" tables={["machines", "machine_stages", "stage_logs", "colors"]} />
+      <RealtimeRefresh channelName="admin-dashboard" tables={["machines", "machine_stages", "stage_logs", "colors", "work_sessions", "work_session_machines"]} />
       <div className="mb-5 flex items-center justify-between gap-4">
         <div>
           <p className="xt-eyebrow">Administración</p>
