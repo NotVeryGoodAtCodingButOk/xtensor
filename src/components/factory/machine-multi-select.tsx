@@ -6,13 +6,18 @@ import { Check } from "lucide-react";
 import { StageStrip } from "@/components/factory/stage-strip";
 import type { StageView } from "@/types/domain";
 
+/**
+ * Solo lo que pinta la tarjeta. Es un componente de cliente: sus props van en
+ * el HTML de la tablet, así que nunca se le pasa un CalculatedMachineView
+ * completo (trae venta y % de mano de obra).
+ */
 export type MultiSelectMachine = {
   id: string;
   serialNumber: number;
   equipmentCode: string | null;
   equipmentName: string;
   clientName: string;
-  stages: StageView[];
+  stages: Pick<StageView, "id" | "name" | "completion">[];
 };
 
 /**
