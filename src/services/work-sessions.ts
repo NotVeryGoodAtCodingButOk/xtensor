@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSettings, mapSettings } from "@/services/settings";
 import { updateStageProgress } from "@/services/stages";
 import type { DoneMarkWithoutSession, LaborSessionInput } from "@/services/labor-time";
 import type { Database } from "@/types/database";
@@ -86,6 +87,27 @@ type OpenSessionSummaryRow = Pick<WorkSessionRow, "worker_id" | "kind" | "note" 
   stages: { name: string } | null;
   work_session_activity_types: Array<{ activity_types: { name: string } | null }>;
   work_session_machines: Array<{ machines: Pick<MachineRow, "serial_number"> | null }>;
+};
+
+/** Estados de máquina a los que se les puede cargar una etapa de producción. */
+const STAGE_MACHINE_STATUSES = ["in_production"] as const;
+
+/**
+ * Estados de máquina a los que se les puede cargar una actividad con máquina
+ * (empaque, carga e instalación; garantías): al terminar «Empacar» la máquina
+ * pasa a terminada, y la carga o instalación llegan después, incluso ya despachada.
+ */
+export const ACTIVITY_MACHINE_STATUSES = ["in_production", "finished", "shipped"] as const;
+
+export type ActivityMachineStatus = (typeof ACTIVITY_MACHINE_STATUSES)[number];
+
+/** Máquina elegible en el panel de actividades de la tablet. */
+export type ActivityPanelMachineOption = {
+  id: string;
+  serialNumber: number;
+  equipmentName: string;
+  clientName: string;
+  status: ActivityMachineStatus;
 };
 
 type SessionWithMachineIdsRow = WorkSessionRow & {
@@ -252,7 +274,7 @@ export async function startStageSession(input: { workerId: string; machineIds: s
 
   await assertNoOpenSession(supabase, input.workerId);
 
-  await assertMachinesInProduction(supabase, machineIds);
+  await assertMachinesInStatus(supabase, machineIds, STAGE_MACHINE_STATUSES, "Todas las máquinas deben estar en producción.");
 
   const isReprocess = await computeSessionIsReprocess(supabase, machineIds, input.stageId);
 
@@ -320,7 +342,12 @@ export async function startOtherSession(input: {
   await assertNoOpenSession(supabase, input.workerId);
 
   if (machineIds.length > 0) {
-    await assertMachinesInProduction(supabase, machineIds);
+    await assertMachinesInStatus(
+      supabase,
+      machineIds,
+      ACTIVITY_MACHINE_STATUSES,
+      "Las máquinas deben estar en producción, terminadas o despachadas.",
+    );
   }
 
   const { data: session, error: insertError } = await supabase
@@ -372,8 +399,10 @@ export async function resumeActivity(input: { workerId: string; activityId: stri
     throw new Error("Esta actividad ya no se puede reanudar.");
   }
 
+  // Solo se reanudan etapas de producción (arriba se descartan las actividades),
+  // así que las máquinas siguen debiendo estar en producción.
   const machineIds = [...new Set(segments[0].work_session_machines.map((entry) => entry.machine_id))];
-  await assertMachinesInProduction(supabase, machineIds);
+  await assertMachinesInStatus(supabase, machineIds, STAGE_MACHINE_STATUSES, "Todas las máquinas deben estar en producción.");
 
   const { data: session, error: insertError } = await supabase
     .from("work_sessions")
@@ -557,6 +586,72 @@ export async function listSessionsOverlapping(startIso: string, endIso: string):
   }));
 }
 
+type ActivityMachineRow = Pick<
+  MachineRow,
+  "id" | "serial_number" | "custom_equipment_name" | "status" | "order_position" | "completed_at" | "shipped_at"
+> & {
+  equipment_catalog: { name: string } | null;
+  clients: { name: string } | null;
+};
+
+/**
+ * Máquinas a las que se les puede asociar una actividad (empaque, carga e
+ * instalación; garantías) en la tablet: en producción, terminadas y
+ * despachadas dentro de settings.shipped_retention_days.
+ */
+export async function listMachinesForActivities(now: Date = new Date()): Promise<ActivityPanelMachineOption[]> {
+  const supabase = createSupabaseAdminClient();
+  const settings = mapSettings(await getSettings());
+  const shippedSince = new Date(now);
+  shippedSince.setDate(shippedSince.getDate() - Math.max(0, settings.shippedRetentionDays));
+
+  const { data, error } = await supabase
+    .from("machines")
+    .select(
+      "id, serial_number, custom_equipment_name, status, order_position, completed_at, shipped_at, equipment_catalog(name), clients(name)",
+    )
+    .or(`status.in.(in_production,finished),and(status.eq.shipped,shipped_at.gte.${shippedSince.toISOString()})`);
+
+  if (error) {
+    throw new Error(`No se pudieron cargar las máquinas: ${error.message}`);
+  }
+
+  return sortActivityMachines((data ?? []) as unknown as ActivityMachineRow[]).map((row) => ({
+    id: row.id,
+    serialNumber: row.serial_number,
+    equipmentName: row.equipment_catalog?.name ?? row.custom_equipment_name ?? "Producto personalizado",
+    clientName: row.clients?.name ?? "Cliente sin nombre",
+    status: row.status as ActivityMachineStatus,
+  }));
+}
+
+/**
+ * Orden del selector: en producción por posición en cola, luego terminadas y
+ * luego despachadas, estas dos de la más reciente a la más antigua.
+ */
+export function sortActivityMachines<
+  T extends {
+    status: string;
+    order_position: number;
+    completed_at: string | null;
+    shipped_at: string | null;
+    serial_number: number;
+  },
+>(rows: T[]): T[] {
+  const rank = (status: string) => ACTIVITY_MACHINE_STATUSES.indexOf(status as ActivityMachineStatus);
+  const time = (value: string | null) => (value ? new Date(value).getTime() : 0);
+
+  return rows
+    .filter((row) => rank(row.status) >= 0)
+    .sort((a, b) => {
+      if (rank(a.status) !== rank(b.status)) return rank(a.status) - rank(b.status);
+      if (a.status === "in_production") return a.order_position - b.order_position;
+      const at = a.status === "finished" ? time(a.completed_at) : time(a.shipped_at);
+      const bt = b.status === "finished" ? time(b.completed_at) : time(b.shipped_at);
+      return bt - at || b.serial_number - a.serial_number;
+    });
+}
+
 /**
  * Stage-completion marks (stage_logs, new_completion=100) in range that
  * aren't covered by any matching work session (same worker/stage/machine,
@@ -626,17 +721,19 @@ export async function listDoneMarksWithoutSession(
     }));
 }
 
-async function assertMachinesInProduction(
+async function assertMachinesInStatus(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   machineIds: string[],
+  allowedStatuses: readonly string[],
+  message: string,
 ) {
   const { data: machines, error } = await supabase.from("machines").select("id, status").in("id", machineIds);
 
   if (error) {
     throw new Error(`No se pudieron verificar las máquinas: ${error.message}`);
   }
-  if ((machines ?? []).length !== machineIds.length || machines.some((machine) => machine.status !== "in_production")) {
-    throw new Error("Todas las máquinas deben estar en producción.");
+  if ((machines ?? []).length !== machineIds.length || machines.some((machine) => !allowedStatuses.includes(machine.status))) {
+    throw new Error(message);
   }
 }
 
