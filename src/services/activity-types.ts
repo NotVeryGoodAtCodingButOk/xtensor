@@ -15,6 +15,15 @@ export type ActivityTypeView = {
 };
 
 const NAME_MAX_LENGTH = 60;
+export const DESCRIPTION_MAX_LENGTH = 120;
+
+/** La actividad tiene horas registradas y no se dijo a cuál moverlas. */
+export class ActivityTypeHasHoursError extends Error {
+  constructor() {
+    super("Esta actividad tiene horas registradas. Elige a qué actividad moverlas.");
+    this.name = "ActivityTypeHasHoursError";
+  }
+}
 
 export function mapActivityType(row: ActivityTypeRow): ActivityTypeView {
   return {
@@ -49,8 +58,9 @@ export async function listActivityTypes(activeOnly = false): Promise<ActivityTyp
   return (data ?? []).map(mapActivityType);
 }
 
-export async function createActivityType(input: { name: string; allowsMachine: boolean }) {
+export async function createActivityType(input: { name: string; allowsMachine: boolean; description?: string | null }) {
   const name = normalizeName(input.name);
+  const description = normalizeDescription(input.description);
   const supabase = createSupabaseAdminClient();
 
   // Nueva actividad al final de la lista de planta.
@@ -67,7 +77,7 @@ export async function createActivityType(input: { name: string; allowsMachine: b
 
   const { data, error } = await supabase
     .from("activity_types")
-    .insert({ name, allows_machine: input.allowsMachine, sort_order: (last?.sort_order ?? 0) + 1 })
+    .insert({ name, description, allows_machine: input.allowsMachine, sort_order: (last?.sort_order ?? 0) + 1 })
     .select("*")
     .single();
 
@@ -80,7 +90,7 @@ export async function createActivityType(input: { name: string; allowsMachine: b
 
 export async function updateActivityType(
   id: string,
-  input: { name?: string; allowsMachine?: boolean; isActive?: boolean },
+  input: { name?: string; allowsMachine?: boolean; isActive?: boolean; description?: string | null },
 ) {
   const supabase = createSupabaseAdminClient();
   const patch: Database["public"]["Tables"]["activity_types"]["Update"] = {};
@@ -88,6 +98,7 @@ export async function updateActivityType(
   if (input.name !== undefined) patch.name = normalizeName(input.name);
   if (input.allowsMachine !== undefined) patch.allows_machine = input.allowsMachine;
   if (input.isActive !== undefined) patch.is_active = input.isActive;
+  if (input.description !== undefined) patch.description = normalizeDescription(input.description);
 
   const { data, error } = await supabase.from("activity_types").update(patch).eq("id", id).select("*").single();
 
@@ -98,16 +109,74 @@ export async function updateActivityType(
   return mapActivityType(data);
 }
 
-export async function deleteActivityType(id: string) {
+/** activity_type_id → nº de sesiones vinculadas (las que no tienen uso no aparecen). */
+export async function listActivityTypeUsage(): Promise<Record<string, number>> {
   const supabase = createSupabaseAdminClient();
+  const PAGE = 1000;
+  const usage: Record<string, number> = {};
+
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from("work_session_activity_types")
+      .select("session_id, activity_type_id")
+      .order("session_id", { ascending: true })
+      .order("activity_type_id", { ascending: true })
+      .range(from, from + PAGE - 1);
+
+    if (error) {
+      throw new Error(`No se pudo consultar el uso de las actividades: ${error.message}`);
+    }
+    for (const row of data ?? []) {
+      usage[row.activity_type_id] = (usage[row.activity_type_id] ?? 0) + 1;
+    }
+    if ((data ?? []).length < PAGE) break;
+  }
+
+  return usage;
+}
+
+/**
+ * Borra una actividad del catálogo. Sin horas registradas se borra directo;
+ * con horas hay que decir a cuál moverlas (`moveToId`) y se hace en una sola
+ * transacción con la RPC merge_activity_type. Sin `moveToId` lanza
+ * ActivityTypeHasHoursError.
+ */
+export async function deleteActivityType(id: string, moveToId?: string | null): Promise<"deleted" | "moved"> {
+  const supabase = createSupabaseAdminClient();
+  const { count, error: usageError } = await supabase
+    .from("work_session_activity_types")
+    .select("session_id", { count: "exact", head: true })
+    .eq("activity_type_id", id);
+
+  if (usageError) {
+    throw new Error(`No se pudo consultar el uso de la actividad: ${usageError.message}`);
+  }
+
+  if ((count ?? 0) > 0) {
+    if (!moveToId) {
+      throw new ActivityTypeHasHoursError();
+    }
+
+    const { error: mergeError } = await supabase.rpc("merge_activity_type", {
+      source_activity_type_id: id,
+      target_activity_type_id: moveToId,
+    });
+    if (mergeError) {
+      throw new Error(`No se pudieron mover las horas: ${mergeError.message}`);
+    }
+    return "moved";
+  }
+
   const { error } = await supabase.from("activity_types").delete().eq("id", id);
 
   if (error) {
     if (error.code === "23503") {
-      throw new Error("Esta actividad ya tiene horas registradas. Desactívala en vez de eliminarla.");
+      // Alguien registró horas entre la consulta y el borrado.
+      throw new ActivityTypeHasHoursError();
     }
     throw new Error(`No se pudo eliminar la actividad: ${error.message}`);
   }
+  return "deleted";
 }
 
 function normalizeName(value: string): string {
@@ -119,6 +188,18 @@ function normalizeName(value: string): string {
     throw new Error(`El nombre debe tener máximo ${NAME_MAX_LENGTH} caracteres.`);
   }
   return name;
+}
+
+/** Texto corto bajo el nombre en la tablet; vacío = null. */
+export function normalizeDescription(value: string | null | undefined): string | null {
+  const description = (value ?? "").trim().replace(/\s+/g, " ");
+  if (!description) {
+    return null;
+  }
+  if (description.length > DESCRIPTION_MAX_LENGTH) {
+    throw new Error(`La descripción debe tener máximo ${DESCRIPTION_MAX_LENGTH} caracteres.`);
+  }
+  return description;
 }
 
 function friendlyActivityTypeError(error: { code?: string; message: string }, prefix: string): string {
