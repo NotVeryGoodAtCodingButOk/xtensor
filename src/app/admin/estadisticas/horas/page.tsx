@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, BarChart3, Clock, Coins, PauseCircle, PieChart, RefreshCcw, Users, Wrench } from "lucide-react";
+import { AlertTriangle, BarChart3, CalendarDays, Clock, Coins, PauseCircle, PieChart, RefreshCcw, Users, Wrench } from "lucide-react";
 
 export const metadata: Metadata = { title: "Horas-hombre XTENSOR" };
+import { LaborGranularitySelector, LaborPeriodTable } from "@/components/admin/labor-period-table";
 import { StatisticsTabs } from "@/components/admin/statistics-tabs";
 import { formatCop, formatDateTime, formatHoursDecimal, formatPct, MetricCard, StatsTable } from "@/components/admin/stats-ui";
 import { buildTimeSplit, TimeSplitBar } from "@/components/admin/time-split-bar";
@@ -13,7 +14,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasSupabaseConfig } from "@/lib/env";
-import { getLaborDashboard, resolveLaborRange, type LaborRangePreset } from "@/services/labor-dashboard";
+import {
+  getLaborDashboard,
+  resolveLaborGranularity,
+  resolveLaborRange,
+  type LaborRangePreset,
+} from "@/services/labor-dashboard";
+import type { LaborGranularity } from "@/types/labor-report";
 
 const rangeOptions: Array<{ preset: LaborRangePreset; label: string }> = [
   { preset: "hoy", label: "Hoy" },
@@ -21,12 +28,18 @@ const rangeOptions: Array<{ preset: LaborRangePreset; label: string }> = [
   { preset: "este-mes", label: "Este mes" },
   { preset: "mes-pasado", label: "Mes pasado" },
   { preset: "ultimos-30-dias", label: "Últimos 30 días" },
+  { preset: "ultimos-90-dias", label: "Últimos 3 meses" },
+  { preset: "este-ano", label: "Este año" },
 ];
+
+function laborHref(preset: LaborRangePreset, granularity: LaborGranularity) {
+  return `/admin/estadisticas/horas?rango=${preset}&vista=${granularity}`;
+}
 
 export default async function LaborStatisticsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ rango?: string }>;
+  searchParams: Promise<{ rango?: string; vista?: string }>;
 }) {
   if (!hasSupabaseConfig()) {
     return (
@@ -38,8 +51,10 @@ export default async function LaborStatisticsPage({
 
   const query = await searchParams;
   const range = resolveLaborRange(query.rango);
-  const dashboard = await getLaborDashboard(range);
+  const granularity = resolveLaborGranularity(query.vista);
+  const dashboard = await getLaborDashboard(range, { granularity });
   const { summary, stages, settings } = dashboard;
+  const activityNames = Object.fromEntries(dashboard.activityTypes.map((type) => [type.id, type.name]));
   const hasRecords = summary.totals.registeredMinutes > 0;
 
   const splitSegments = buildTimeSplit({
@@ -54,7 +69,7 @@ export default async function LaborStatisticsPage({
     .map((worker) => [
       <Link
         key="name"
-        href={`/admin/estadisticas/horas/operario/${worker.workerId}?rango=${range.preset}`}
+        href={`/admin/estadisticas/horas/operario/${worker.workerId}?rango=${range.preset}&vista=${granularity}`}
         className="font-semibold underline decoration-[var(--xt-yellow-deep)] decoration-2 underline-offset-4"
       >
         {worker.fullName}
@@ -129,17 +144,23 @@ export default async function LaborStatisticsPage({
             Tiempo real de planta capturado por los operarios, recortado al horario y las pausas de la fábrica.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {rangeOptions.map((option) => (
-            <Button
-              key={option.preset}
-              asChild
-              variant={range.preset === option.preset ? "default" : "outline"}
-              size="sm"
-            >
-              <Link href={`/admin/estadisticas/horas?rango=${option.preset}`}>{option.label}</Link>
-            </Button>
-          ))}
+        <div className="grid justify-items-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            {rangeOptions.map((option) => (
+              <Button
+                key={option.preset}
+                asChild
+                variant={range.preset === option.preset ? "default" : "outline"}
+                size="sm"
+              >
+                <Link href={laborHref(option.preset, granularity)}>{option.label}</Link>
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="xt-eyebrow">Ver por</span>
+            <LaborGranularitySelector active={granularity} hrefFor={(value) => laborHref(range.preset, value)} />
+          </div>
         </div>
       </div>
 
@@ -201,7 +222,7 @@ export default async function LaborStatisticsPage({
             eyebrow="Fuera de etapas"
             title="Horas en actividades"
             value={formatHoursDecimal(summary.totals.otherMinutes)}
-            detail="Aseo, orden, mejoras, arreglos e instalaciones."
+            detail="5S, empaque, carga, instalación y arreglos."
             formula="totals.otherMinutes"
           />
           <MetricCard
@@ -229,6 +250,25 @@ export default async function LaborStatisticsPage({
             formula="Σ horas de sesión × costo hora del operario"
           />
         </div>
+      </section>
+
+      {/* Jornada por período */}
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Jornada por período
+            </CardTitle>
+            <CardDescription>
+              De la jornada pagada, cuánto quedó asignado a máquinas y cuánto no, por {granularityNoun(granularity)}. Toda la
+              planta.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LaborPeriodTable rows={dashboard.periods} granularity={granularity} activityNames={activityNames} />
+          </CardContent>
+        </Card>
       </section>
 
       {/* En qué se va el tiempo */}
@@ -397,6 +437,10 @@ export default async function LaborStatisticsPage({
       </p>
     </AdminShell>
   );
+}
+
+function granularityNoun(granularity: LaborGranularity) {
+  return granularity === "mes" ? "mes" : granularity === "semana" ? "semana" : "día";
 }
 
 function QualityStat({ label, value, detail }: { label: string; value: number; detail: string }) {

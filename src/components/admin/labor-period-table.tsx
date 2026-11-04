@@ -204,12 +204,16 @@ export function LaborPeriodTable({
   rows,
   granularity,
   activityNames,
+  showWorkers = true,
 }: {
   rows: LaborPeriodRow[];
   granularity: LaborGranularity;
   /** activity_type_id → nombre. */
   activityNames: Record<string, string>;
+  /** Columna «Operarios»; en la ficha de un operario sobra. */
+  showWorkers?: boolean;
 }) {
+  const workersCell = (value: string) => (showWorkers ? [value] : []);
   const tableRows = rows.map((row) => {
     const base = splitBase(row);
     return [
@@ -217,7 +221,7 @@ export function LaborPeriodTable({
         {row.label}
       </span>,
       <PeriodBar key="bar" row={row} />,
-      String(row.workersWithRecords),
+      ...workersCell(String(row.workersWithRecords)),
       formatHoursDecimal(row.availableMinutes),
       hoursAndPct(row.assignedMinutes, base),
       hoursAndPct(row.unassignedMinutes, base),
@@ -231,7 +235,7 @@ export function LaborPeriodTable({
     tableRows.push([
       <strong key="label">Total</strong>,
       <PeriodBar key="bar" row={totals} />,
-      "—",
+      ...workersCell("—"),
       <strong key="available">{formatHoursDecimal(totals.availableMinutes)}</strong>,
       <strong key="assigned">{hoursAndPct(totals.assignedMinutes, base)}</strong>,
       <strong key="unassigned">{hoursAndPct(totals.unassignedMinutes, base)}</strong>,
@@ -247,7 +251,7 @@ export function LaborPeriodTable({
         headers={[
           PERIOD_COLUMN[granularity],
           "Reparto",
-          "Operarios",
+          ...(showWorkers ? ["Operarios"] : []),
           "Jornada",
           "Asignado a máquinas",
           "No asignado",
