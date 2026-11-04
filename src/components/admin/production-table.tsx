@@ -35,10 +35,20 @@ function budgetHoursOf(machine: CalculatedMachineView) {
   return machine.labor?.budgetHours ?? machine.totalHours;
 }
 
+/**
+ * La celda «H. llevadas» muestra «—» sin snapshot o con datos parciales sin
+ * alarma (las horas registradas no son representativas).
+ */
+function hidesSpentHours(machine: CalculatedMachineView) {
+  const labor = machine.labor;
+  return !labor || (labor.hasPartialData && labor.status === "ok");
+}
+
 /** Valor por el que se ordena una columna (lo usan los paneles de producción y despachados). */
 export function machineSortValue(machine: CalculatedMachineView, key: SortKey): unknown {
   if (key === "laborBudgetHours") return budgetHoursOf(machine);
-  if (key === "laborSpentHours") return machine.labor?.spentHours ?? null;
+  // Las filas con «—» van al final, como cualquier valor vacío.
+  if (key === "laborSpentHours") return hidesSpentHours(machine) ? null : (machine.labor?.spentHours ?? null);
   return machine[key];
 }
 
@@ -70,7 +80,7 @@ function SpentHoursCell({ machine }: { machine: CalculatedMachineView }) {
     labor.hasPartialData ? "Datos parciales: entró a producción antes de los cronómetros o terminó sin horas registradas" : null,
   ].filter(Boolean);
 
-  if (labor.hasPartialData && labor.status === "ok") {
+  if (hidesSpentHours(machine)) {
     return (
       <span className="text-[var(--xt-aluminum)]" title={parts.join(" · ")}>
         —

@@ -4,6 +4,14 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
+/**
+ * Los cambios llegan en ráfagas (reordenar la cola emite un evento por
+ * máquina): se agrupan y se hace un solo refresh cuando paran ~800 ms. Con un
+ * flujo continuo, el refresh igual sale a los 3 s como máximo.
+ */
+const REFRESH_DEBOUNCE_MS = 800;
+const REFRESH_MAX_WAIT_MS = 3000;
+
 export function RealtimeRefresh({
   channelName,
   tables,
@@ -15,6 +23,11 @@ export function RealtimeRefresh({
   pollMs?: number;
 }) {
   const router = useRouter();
+  // Cada router.refresh() trae un arreglo `tables` nuevo (los props se
+  // deserializan otra vez). Con el arreglo como dependencia, el canal se
+  // rehacía en cada refresh y un refresh agrupado pendiente se perdía al
+  // limpiar el efecto: se depende del contenido, no de la identidad.
+  const tablesKey = tables.join(",");
 
   useEffect(() => {
     let supabase;
@@ -24,23 +37,39 @@ export function RealtimeRefresh({
       return;
     }
 
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let firstPendingAt: number | null = null;
+
+    const flush = () => {
+      timer = null;
+      firstPendingAt = null;
+      router.refresh();
+    };
+
+    const scheduleRefresh = () => {
+      const now = Date.now();
+      firstPendingAt ??= now;
+      if (timer) {
+        clearTimeout(timer);
+      }
+      const remainingMaxWait = REFRESH_MAX_WAIT_MS - (now - firstPendingAt);
+      timer = setTimeout(flush, Math.max(0, Math.min(REFRESH_DEBOUNCE_MS, remainingMaxWait)));
+    };
+
     const channel = supabase.channel(channelName);
-    for (const table of tables) {
-      channel.on(
-        "postgres_changes",
-        { event: "*", schema: "public", table },
-        () => {
-          router.refresh();
-        },
-      );
+    for (const table of tablesKey.split(",").filter(Boolean)) {
+      channel.on("postgres_changes", { event: "*", schema: "public", table }, scheduleRefresh);
     }
 
     channel.subscribe();
 
     return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
       void supabase.removeChannel(channel);
     };
-  }, [channelName, router, tables]);
+  }, [channelName, router, tablesKey]);
 
   // Polling fallback: keep the board fresh even if the realtime socket drops.
   useEffect(() => {
