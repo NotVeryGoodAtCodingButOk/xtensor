@@ -326,13 +326,25 @@ export async function updateMachine(id: string, patch: MachineUpdate) {
 
 export async function deleteMachine(id: string) {
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("machines").delete().eq("id", id);
-
-  if (error) {
-    throw new Error(`No se pudo eliminar la máquina: ${error.message}`);
+  const { data: current, error: currentError } = await supabase.from("machines").select("status").eq("id", id).maybeSingle();
+  if (currentError) {
+    throw new Error(`No se pudo cargar la máquina: ${currentError.message}`);
   }
 
-  await normalizeProductionQueue();
+  const remove = async () => {
+    const { error } = await supabase.from("machines").delete().eq("id", id);
+    if (error) {
+      throw new Error(`No se pudo eliminar la máquina: ${error.message}`);
+    }
+  };
+
+  // Borrar una máquina de la cola es una salida: las de detrás se adelantan y su
+  // reestimada se corre lo mismo. Las de previos o despachadas no tocan la cola.
+  if (current?.status === "in_production") {
+    await replanQueue({ mutate: remove });
+  } else {
+    await remove();
+  }
 }
 
 export async function reorderMachines(orderedIds: string[]) {
@@ -475,21 +487,24 @@ function ymdToUtcMs(ymd: string): number {
 }
 
 export async function markMachineFinished(id: string) {
-  const machine = await updateMachine(id, {
-    status: "finished",
-    completed_at: new Date().toISOString(),
+  // Salida de la cola: si sale con 0 horas faltantes nadie se mueve (delta 0).
+  await leaveQueue(async () => {
+    await updateMachine(id, {
+      status: "finished",
+      completed_at: new Date().toISOString(),
+    });
   });
-  await normalizeProductionQueue();
-  return machine;
+  return getMachine(id);
 }
 
 export async function markMachineShipped(id: string) {
-  const machine = await updateMachine(id, {
-    status: "shipped",
-    shipped_at: new Date().toISOString(),
+  await leaveQueue(async () => {
+    await updateMachine(id, {
+      status: "shipped",
+      shipped_at: new Date().toISOString(),
+    });
   });
-  await normalizeProductionQueue();
-  return machine;
+  return getMachine(id);
 }
 
 export async function unmarkMachineShipped(id: string) {
@@ -503,12 +518,13 @@ export async function unmarkMachineShipped(id: string) {
 }
 
 export async function sendMachineToPrevios(id: string) {
-  const machine = await updateMachine(id, {
-    status: "pending",
-    shipped_at: null,
+  await leaveQueue(async () => {
+    await updateMachine(id, {
+      status: "pending",
+      shipped_at: null,
+    });
   });
-  await normalizeProductionQueue();
-  return machine;
+  return getMachine(id);
 }
 
 export async function sendMachineToProduction(id: string) {
@@ -537,26 +553,20 @@ export async function sendMachineToProduction(id: string) {
 // production queue and board but keeps all its stage progress and previos, so
 // it can be reactivated later. Only in-production machines can be parked.
 export async function sendMachineToHold(id: string) {
-  const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("machines")
-    .update({ status: "on_hold" })
-    .eq("id", id)
-    .eq("status", "in_production");
-  if (error) throw new Error(`No se pudo enviar a Propias en Espera: ${error.message}`);
-  await normalizeProductionQueue(supabase);
+  await bulkSendToHold([id]);
 }
 
 export async function bulkSendToHold(ids: string[]) {
   if (ids.length === 0) return;
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("machines")
-    .update({ status: "on_hold" })
-    .in("id", ids)
-    .eq("status", "in_production");
-  if (error) throw new Error(`No se pudo enviar a Propias en Espera: ${error.message}`);
-  await normalizeProductionQueue(supabase);
+  await leaveQueue(async () => {
+    const { error } = await supabase
+      .from("machines")
+      .update({ status: "on_hold" })
+      .in("id", ids)
+      .eq("status", "in_production");
+    if (error) throw new Error(`No se pudo enviar a Propias en Espera: ${error.message}`);
+  });
 }
 
 // Reactivate a parked machine: it re-enters the current production queue at the
@@ -682,26 +692,28 @@ export async function bulkSendToProduction(ids: string[]) {
 
 export async function bulkMarkFinished(ids: string[]) {
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("machines")
-    .update({ status: "finished", completed_at: new Date().toISOString() })
-    .in("id", ids)
-    .eq("status", "in_production");
-  if (error) throw new Error(`No se pudo mover a terminados: ${error.message}`);
-
-  await normalizeProductionQueue(supabase);
+  await leaveQueue(async () => {
+    const { error } = await supabase
+      .from("machines")
+      .update({ status: "finished", completed_at: new Date().toISOString() })
+      .in("id", ids)
+      .eq("status", "in_production");
+    if (error) throw new Error(`No se pudo mover a terminados: ${error.message}`);
+  });
 }
 
 export async function bulkMarkShipped(ids: string[]) {
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase
-    .from("machines")
-    .update({ status: "shipped", shipped_at: new Date().toISOString() })
-    .in("id", ids)
-    .eq("status", "finished");
-  if (error) throw new Error(`No se pudo despachar: ${error.message}`);
-
-  await normalizeProductionQueue(supabase);
+  // Despacha terminadas (ya fuera de la cola): se replanifica igual por si
+  // alguna seguía en cola; si no, nadie se mueve.
+  await leaveQueue(async () => {
+    const { error } = await supabase
+      .from("machines")
+      .update({ status: "shipped", shipped_at: new Date().toISOString() })
+      .in("id", ids)
+      .eq("status", "finished");
+    if (error) throw new Error(`No se pudo despachar: ${error.message}`);
+  });
 }
 
 export async function sendFinishedToProduction(id: string) {
@@ -817,40 +829,67 @@ async function replanQueue(
   const supabase = createSupabaseAdminClient();
   const startDate = new Date();
   const before = await loadQueueContext(supabase);
-
-  if (!options.mutate) {
-    const currentIds = before.queue.map((machine) => machine.id);
-    const plan = planQueueReorder({
-      queue: before.queue,
-      orderedIds: options.reorder ? options.reorder(currentIds) : currentIds,
-      settings: before.settings,
-      holidays: before.holidays,
-      startDate,
-    });
-    await saveProductionQueue(supabase, plan.orderedIds, plan.reestimatedDates);
-    return;
+  if (options.mutate) {
+    await options.mutate();
   }
+  const after = options.mutate ? await loadQueueContext(supabase) : before;
 
-  const beforeDates = estimateQueueDates(
-    before.queue,
-    before.queue.map((machine) => machine.id),
-    before.settings,
-    before.holidays,
+  const plan = planQueueReplan({
+    before,
+    after,
+    orderedIds: options.reorder ? options.reorder(after.queue.map((machine) => machine.id)) : undefined,
     startDate,
-  );
-
-  await options.mutate();
-
-  const after = await loadQueueContext(supabase);
-  const currentIds = after.queue.map((machine) => machine.id);
-  const orderedIds = completeQueueOrder(currentIds, options.reorder ? options.reorder(currentIds) : currentIds);
-  const reestimatedDates = shiftReestimatedDates({
-    before: beforeDates,
-    after: estimateQueueDates(after.queue, orderedIds, after.settings, after.holidays, startDate),
-    current: currentReestimatedDates(after.queue),
   });
+  await saveProductionQueue(supabase, plan.orderedIds, plan.reestimatedDates);
+}
 
-  await saveProductionQueue(supabase, orderedIds, reestimatedDates);
+/**
+ * Salida de la cola (terminar, despachar, Propias en Espera, volver a previos,
+ * borrar): las de detrás se adelantan y su reestimada se corre lo mismo, para
+ * que no ganen un colchón que esconda atrasos reales.
+ */
+async function leaveQueue(mutate: () => Promise<void>) {
+  await replanQueue({ mutate });
+}
+
+export type QueueState = { queue: MachineView[]; settings: ProductionSettings; holidays: Holiday[] };
+
+/**
+ * Cálculo puro de una replanificación: Actualizada con la cola de antes,
+ * Actualizada con la de después (en `orderedIds` o en su orden actual) y
+ * reestimadas desplazadas con shiftReestimatedDates. Sirve para entradas,
+ * salidas, reordenamientos y cambios de horas (venta, equipo, %, costo hora).
+ */
+export function planQueueReplan(input: {
+  before: QueueState;
+  after: QueueState;
+  orderedIds?: string[];
+  startDate?: Date;
+}): { orderedIds: string[]; reestimatedDates: Record<string, string> } {
+  const byPosition = (queue: MachineView[]) =>
+    queue
+      .filter((machine) => machine.status === "in_production")
+      // Array.prototype.sort es estable: con posiciones repetidas se respeta el orden de llegada.
+      .sort((a, b) => a.orderPosition - b.orderPosition);
+  const beforeQueue = byPosition(input.before.queue);
+  const afterQueue = byPosition(input.after.queue);
+  const currentIds = afterQueue.map((machine) => machine.id);
+  const orderedIds = completeQueueOrder(currentIds, input.orderedIds ?? currentIds);
+
+  return {
+    orderedIds,
+    reestimatedDates: shiftReestimatedDates({
+      before: estimateQueueDates(
+        beforeQueue,
+        beforeQueue.map((machine) => machine.id),
+        input.before.settings,
+        input.before.holidays,
+        input.startDate,
+      ),
+      after: estimateQueueDates(afterQueue, orderedIds, input.after.settings, input.after.holidays, input.startDate),
+      current: currentReestimatedDates(afterQueue),
+    }),
+  };
 }
 
 /**
@@ -906,24 +945,6 @@ async function loadQueueContext(supabase: ReturnType<typeof createSupabaseAdminC
   return { queue, settings: mapSettings(settingsRow), holidays };
 }
 
-async function listProductionQueue(supabase = createSupabaseAdminClient()) {
-  const { data, error } = await supabase
-    .from("machines")
-    .select("id, order_position, status, created_at")
-    .eq("status", "in_production")
-    .order("order_position", { ascending: true })
-    .order("created_at", { ascending: true });
-
-  if (error) {
-    throw new Error(`No se pudo cargar la cola de producción: ${error.message}`);
-  }
-
-  return (data as unknown as MachineQueueRow[]).map((machine) => ({
-    ...machine,
-    order_position: machine.order_position ?? 0,
-  }));
-}
-
 function sortProductionQueue(queue: MachineQueueRow[]) {
   return [...queue].sort((a, b) => {
     if (a.order_position !== b.order_position) {
@@ -961,17 +982,6 @@ async function saveProductionQueue(
   if (error) {
     throw new Error(`No se pudo reordenar la cola: ${error.message}`);
   }
-}
-
-// Recompacts the in-production queue to a gapless 1..N sequence, preserving the
-// current relative order. Run after any machine leaves production so the "#"
-// column never shows gaps (e.g. starting at 10 after shipping) or duplicate
-// positions. The machines behind move up (earlier dates): their reestimada is
-// kept, so a real gain never hides a later slip.
-async function normalizeProductionQueue(supabase = createSupabaseAdminClient()) {
-  const queue = await listProductionQueue(supabase);
-  const orderedIds = sortProductionQueue(queue).map((machine) => machine.id);
-  await saveProductionQueue(supabase, orderedIds);
 }
 
 /** labor_factor llega como numeric (string o number) desde PostgREST; null/undefined si no hay % propio. */
