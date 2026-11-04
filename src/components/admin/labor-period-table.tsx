@@ -41,6 +41,7 @@ export const LABOR_GRANULARITY_OPTIONS: Array<{ value: LaborGranularity; label: 
 const PERIOD_COLUMN: Record<LaborGranularity, string> = { dia: "Día", semana: "Semana", mes: "Mes" };
 
 const UNCLASSIFIED_ACTIVITY_ID = "sin-clasificar";
+const MIN_ACTIVITY_DETAIL_MINUTES = 3;
 
 /** Segmentos para un TimeSplitBar de totales (p. ej. el resumen del rango). */
 export function buildLaborPeriodSplit(minutes: SplitMinutes): TimeSplitSegment[] {
@@ -132,8 +133,9 @@ function ActivityDetail({
   minutesByActivityType: Record<string, number>;
   activityNames: Record<string, string>;
 }) {
+  // Menos de 3 min se vería como «0,0 h»: es ruido (p. ej. cronómetros de segundos).
   const entries = Object.entries(minutesByActivityType)
-    .filter(([, minutes]) => minutes > 0)
+    .filter(([, minutes]) => minutes >= MIN_ACTIVITY_DETAIL_MINUTES)
     .sort((a, b) => b[1] - a[1]);
 
   if (entries.length === 0) {
@@ -204,12 +206,16 @@ export function LaborPeriodTable({
   rows,
   granularity,
   activityNames,
+  showWorkers = true,
 }: {
   rows: LaborPeriodRow[];
   granularity: LaborGranularity;
   /** activity_type_id → nombre. */
   activityNames: Record<string, string>;
+  /** Columna «Operarios»; en la ficha de un operario sobra. */
+  showWorkers?: boolean;
 }) {
+  const workersCell = (value: string) => (showWorkers ? [value] : []);
   const tableRows = rows.map((row) => {
     const base = splitBase(row);
     return [
@@ -217,7 +223,7 @@ export function LaborPeriodTable({
         {row.label}
       </span>,
       <PeriodBar key="bar" row={row} />,
-      String(row.workersWithRecords),
+      ...workersCell(String(row.workersWithRecords)),
       formatHoursDecimal(row.availableMinutes),
       hoursAndPct(row.assignedMinutes, base),
       hoursAndPct(row.unassignedMinutes, base),
@@ -231,7 +237,7 @@ export function LaborPeriodTable({
     tableRows.push([
       <strong key="label">Total</strong>,
       <PeriodBar key="bar" row={totals} />,
-      "—",
+      ...workersCell("—"),
       <strong key="available">{formatHoursDecimal(totals.availableMinutes)}</strong>,
       <strong key="assigned">{hoursAndPct(totals.assignedMinutes, base)}</strong>,
       <strong key="unassigned">{hoursAndPct(totals.unassignedMinutes, base)}</strong>,
@@ -247,7 +253,7 @@ export function LaborPeriodTable({
         headers={[
           PERIOD_COLUMN[granularity],
           "Reparto",
-          "Operarios",
+          ...(showWorkers ? ["Operarios"] : []),
           "Jornada",
           "Asignado a máquinas",
           "No asignado",

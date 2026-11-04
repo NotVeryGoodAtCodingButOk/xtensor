@@ -1,4 +1,4 @@
-# Handoff FA (frontend admin): fase 1
+# Handoff FA (frontend admin)
 
 - **Rama:** `worktree-agent-aed6bf502b75396c2`
 - **Worktree:** `/Users/simonb/xtensor/.claude/worktrees/agent-aed6bf502b75396c2`
@@ -6,7 +6,9 @@
 - **Verificación:** `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test` en verde (17 archivos, 152 tests). `corepack pnpm build` también en verde.
 - En la fase 1 no importé ningún servicio que todavía no existe: `machine-labor.ts`, `summarizeLaborByPeriod`, `listActivityTypeUsage` ni `resolveLaborGranularity`.
 
-## Commits (`git log --oneline b39340f..HEAD`)
+## Fase 1
+
+### Commits (`git log --oneline b39340f..HEAD`, fase 1)
 
 ```
 4964a10 feat(calculadora): usar el % MO del equipo elegido
@@ -116,3 +118,75 @@ Después de rebasar sobre `main` y leer `handoff-B.md`:
 - `/admin/calculadora`: al elegir un equipo con % propio cambian las horas y la fecha; sin equipo se usa el general.
 
 Nota: la primera vez que corrí `pnpm build` se interrumpió (el líder me detuvo por un límite de uso). La volví a correr cuando él lo pidió y pasó.
+
+---
+
+## Fase 2
+
+- **Base:** `1d72214` (`main` con B y FP integrados). Hice `git merge --ff-only main`; el lockfile no cambió.
+- Leí `handoff-B.md` y `handoff-FP.md`. Usé las firmas finales de B: `getLaborDashboard(range, { granularity, workerId })`, `resolveLaborGranularity`, `attachMachineLabor`, `resolveMachineLaborFilters`, `getMachineLaborReport`, `getMachineLaborDetail` y `listActivityTypeUsage`.
+- **Verificación:** `lint`, `typecheck`, `test` (22 archivos, 187 tests) y `build` en verde.
+
+### Commits (`git log --oneline 1d72214..HEAD`)
+
+```
+a6b9e06 fix(estadisticas): no listar actividades de segundos en «Jornada por período»
+4bd0309 feat(estadisticas): ficha de máquina con presupuesto, etapas y bitácora
+3ae05af feat(estadisticas): página Máquinas con horas por cotización y por tipo
+42678c5 feat(estadisticas): «Jornada por período» en Horas-hombre y en la ficha de operario
+34ee558 feat(produccion): horas llevadas y finales en Producción y Despachados
+99447a8 feat(configuracion): uso real de cada actividad al eliminar
+d6ce105 feat(catalogo): toast «labor-pct-invalido» al guardar un equipo
+aa06c70 fix(catalogo): exportar el % de mano de obra del equipo
+```
+
+(Más el commit de este handoff.)
+
+### Qué quedó conectado
+
+| Ruta / archivo | Cambio |
+|---|---|
+| `src/app/admin/estadisticas/maquinas/page.tsx` (nueva) | `resolveMachineLaborFilters(searchParams)` y `getMachineLaborReport`. Muestra filtros GET `?estado=&linea=&equipo=` (las opciones de equipo salen de `listCatalog()`, incluidos los inactivos), KPIs, la tabla por cotización, la tabla «Por tipo de máquina» y la nota «Los cronómetros existen desde …». `RealtimeRefresh`: `machines`, `machine_stages`, `work_sessions`, `work_session_machines`. |
+| `src/app/admin/estadisticas/maquinas/[id]/page.tsx` (nueva) | `getMachineLaborDetail(id)`; si devuelve null, `notFound()`. Muestra el encabezado y `BudgetMeter` (con `isFinal` en terminadas y despachadas), etapas esperado vs. real, operarios, actividades asociadas y bitácora. Tiene enlaces «← Máquinas» y «Editar máquina». Usa el mismo `RealtimeRefresh`. |
+| `src/app/admin/estadisticas/horas/page.tsx` | `?vista=` con `resolveLaborGranularity`. Selector Día/Semana/Mes («Ver por») bajo los rangos. Todos los enlaces conservan `?rango=` y `?vista=`, también el enlace a la ficha de operario. Sección «Jornada por período» de toda la planta. Rangos nuevos «Últimos 3 meses» y «Este año». |
+| `src/app/admin/estadisticas/horas/operario/[workerId]/page.tsx` | Lo mismo con `workerId`. La tabla va sin la columna «Operarios» (prop nueva `showWorkers={false}`). |
+| `src/app/admin/configuracion/page.tsx` | `usageById = listActivityTypeUsage()`. |
+| `src/components/admin/activity-types-manager.tsx` | Siguiendo la nota de B: si la actividad que se elimina se asocia a máquinas, «Mover sus horas a…» solo ofrece destinos que también se asocian a máquinas. |
+| `src/app/admin/page.tsx` | `attachMachineLabor(machines, settings)`. `RealtimeRefresh` suma `work_sessions` y `work_session_machines`. |
+| `src/app/admin/despachados/page.tsx` | `attachMachineLabor` (propuesta 2, aprobada): «H. finales» y «H. máx» con el % del equipo. |
+| `src/components/admin/admin-flash-toast.tsx` | Case `labor-pct-invalido`: «No se guardó el equipo» / «El % de mano de obra debe estar entre 1 y 100.». Los 4 códigos de actividades coinciden exactamente con los de `deleteActivityTypeAction`. |
+| `src/app/admin/catalogo/export/route.ts` | Pasa `labor_factor: item.labor_factor`, así que la columna «% mano de obra» del Excel ya no sale vacía. |
+| `src/components/admin/labor-period-table.tsx` | Prop `showWorkers` (por defecto true). El detalle por actividad omite entradas de menos de 3 min, que se veían como «Sin clasificar 0,0 h» con datos reales. |
+
+### Verificación con datos reales (solo lectura)
+
+- **Navegador:** no tengo credenciales de admin. `corepack pnpm dev -p 3102` levantó bien y `/admin/estadisticas/maquinas`, `/maquinas/[id]`, `/horas?vista=semana` y `/admin/despachados` responden 307 a `/admin/login`: el middleware protege y las rutas compilan.
+- **Script de solo lectura:** no escribe nada y lo dejé fuera del repo, en `/private/tmp/claude-504/-Users-simonb-xtensor/91594932-67f3-40aa-842c-bf49fdaa007d/scratchpad/render-check.tsx`. Llama a los servicios con la base online y renderiza los componentes con `renderToStaticMarkup`. Ninguno falló. Resultados:
+  - **Reporte:**
+    - 155 máquinas y 101 tipos, en unos 2 s.
+    - Totales: 1 excedida, 0 en riesgo, % MO esperado 30 % y real ≈ 0,7 %. Coincide con lo que reportó B.
+    - `trackingSince` = 16 de septiembre de 2026.
+    - Con el filtro `en-produccion` + `musculacion` quedan 8 máquinas.
+  - **Ficha de la máquina 144:** el medidor dice «H. llevadas 15,8 h · H. máx 4,9 h · % consumido: 323,2 % · Excedida · 10,9 h por encima del máximo».
+  - `getMachineLaborDetail("no-es-uuid")` → null, así que la página llama `notFound()`.
+  - **Jornada por período, últimos 3 meses:** 26 días, 8 semanas y 3 meses. Las etiquetas son «mar 3 nov», «Semana del 2 nov» y «Noviembre 2026», y el Total suma bien. La versión de un solo operario también renderiza.
+  - **Cola:** 26 máquinas con `labor` (25 ok, 1 excedida).
+  - **Despachados:** 68 máquinas. En ellas `totalHours` vale 0, pero `labor.budgetHours` > 0, y por eso se ve la H. máx correcta.
+  - `listActivityTypeUsage()` → `{}`: hoy ninguna actividad tiene sesiones, así que todavía no se ve el selector «Mover sus horas a…».
+- No modifiqué datos: no reordené la cola, no cambié porcentajes y no borré actividades.
+
+### Para R (revisión)
+
+- Recorrer con sesión de admin:
+  - `/admin/estadisticas/maquinas`, con y sin filtros, y la ficha de la 144 (excedida).
+  - `/admin/estadisticas/horas?vista=dia|semana|mes` con «Este año», y la ficha de un operario.
+  - `/admin` y `/admin/despachados`: columnas «% MO», «H. máx» y «H. llevadas» / «H. finales».
+  - `/admin/catalogo`: columna «% MO» y el Excel exportado.
+  - `/admin/configuracion#actividades`.
+- La tabla por cotización tiene 12 columnas: en pantallas angostas hace scroll horizontal dentro de su borde, igual que las demás `StatsTable`.
+
+### Sin cambios de contrato pendientes
+
+- Los códigos de toast ya coinciden con los de B.
+- La propuesta 2 (despachados) está aplicada.
+- La 3 (Excel de producción) no aplica, porque ese Excel no exporta horas (desviación 7 de B).

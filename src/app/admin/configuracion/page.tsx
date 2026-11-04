@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { hasSupabaseConfig } from "@/lib/env";
-import { listActivityTypes } from "@/services/activity-types";
+import { listActivityTypes, listActivityTypeUsage } from "@/services/activity-types";
 import { listColors, listHolidays } from "@/services/catalog";
 import { getSettings } from "@/services/settings";
 
@@ -36,11 +36,12 @@ export default async function SettingsPage({
     );
   }
 
-  const [settings, holidays, colors, activityTypes, params] = await Promise.all([
+  const [settings, holidays, colors, activityTypes, activityUsage, params] = await Promise.all([
     getSettings(),
     listHolidays(),
     listColors(),
     listActivityTypes(),
+    listActivityTypeUsage(),
     searchParams,
   ]);
 
@@ -122,8 +123,7 @@ export default async function SettingsPage({
             <CardTitle>Actividades de planta</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Fase 2: usageById = await listActivityTypeUsage() (servicio de B). */}
-            <ActivityTypesManager activityTypes={activityTypes} usageById={{}} />
+            <ActivityTypesManager activityTypes={activityTypes} usageById={activityUsage} />
           </CardContent>
         </Card>
         <Card className="lg:col-span-2">

@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, BarChart3, Clock, Coins, PauseCircle, Wrench } from "lucide-react";
+import { ArrowLeft, BarChart3, CalendarDays, Clock, Coins, PauseCircle, Wrench } from "lucide-react";
 
 export const metadata: Metadata = { title: "Operario · Horas-hombre XTENSOR" };
+import { LaborGranularitySelector, LaborPeriodTable } from "@/components/admin/labor-period-table";
 import { formatCop, formatDateTime, formatHoursDecimal, formatPct, MetricCard, StatsTable } from "@/components/admin/stats-ui";
 import { StatisticsTabs } from "@/components/admin/statistics-tabs";
 import { buildTimeSplit, TimeSplitBar } from "@/components/admin/time-split-bar";
@@ -13,8 +14,14 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { hasSupabaseConfig } from "@/lib/env";
-import { getLaborDashboard, resolveLaborRange, type LaborRangePreset } from "@/services/labor-dashboard";
+import {
+  getLaborDashboard,
+  resolveLaborGranularity,
+  resolveLaborRange,
+  type LaborRangePreset,
+} from "@/services/labor-dashboard";
 import type { LaborSessionDetail } from "@/services/labor-time";
+import type { LaborGranularity } from "@/types/labor-report";
 
 const rangeOptions: Array<{ preset: LaborRangePreset; label: string }> = [
   { preset: "hoy", label: "Hoy" },
@@ -22,6 +29,8 @@ const rangeOptions: Array<{ preset: LaborRangePreset; label: string }> = [
   { preset: "este-mes", label: "Este mes" },
   { preset: "mes-pasado", label: "Mes pasado" },
   { preset: "ultimos-30-dias", label: "Últimos 30 días" },
+  { preset: "ultimos-90-dias", label: "Últimos 3 meses" },
+  { preset: "este-ano", label: "Este año" },
 ];
 
 export default async function WorkerLaborPage({
@@ -29,7 +38,7 @@ export default async function WorkerLaborPage({
   searchParams,
 }: {
   params: Promise<{ workerId: string }>;
-  searchParams: Promise<{ rango?: string }>;
+  searchParams: Promise<{ rango?: string; vista?: string }>;
 }) {
   if (!hasSupabaseConfig()) {
     return (
@@ -41,7 +50,11 @@ export default async function WorkerLaborPage({
 
   const [{ workerId }, query] = await Promise.all([params, searchParams]);
   const range = resolveLaborRange(query.rango);
-  const { summary } = await getLaborDashboard(range);
+  const granularity = resolveLaborGranularity(query.vista);
+  const { summary, periods, activityTypes } = await getLaborDashboard(range, { granularity, workerId });
+  const activityNames = Object.fromEntries(activityTypes.map((type) => [type.id, type.name]));
+  const workerHref = (preset: LaborRangePreset, vista: LaborGranularity) =>
+    `/admin/estadisticas/horas/operario/${workerId}?rango=${preset}&vista=${vista}`;
 
   const worker = summary.byWorker.find((entry) => entry.workerId === workerId);
   if (!worker) {
@@ -92,7 +105,7 @@ export default async function WorkerLaborPage({
       <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
         <div>
           <Link
-            href={`/admin/estadisticas/horas?rango=${range.preset}`}
+            href={`/admin/estadisticas/horas?rango=${range.preset}&vista=${granularity}`}
             className="xt-eyebrow inline-flex items-center gap-1 text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
@@ -103,17 +116,23 @@ export default async function WorkerLaborPage({
             {range.label} · {worker.daysWithRecords} {worker.daysWithRecords === 1 ? "día" : "días"} con registro
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          {rangeOptions.map((option) => (
-            <Button
-              key={option.preset}
-              asChild
-              variant={range.preset === option.preset ? "default" : "outline"}
-              size="sm"
-            >
-              <Link href={`/admin/estadisticas/horas/operario/${workerId}?rango=${option.preset}`}>{option.label}</Link>
-            </Button>
-          ))}
+        <div className="grid justify-items-end gap-2">
+          <div className="flex flex-wrap justify-end gap-2">
+            {rangeOptions.map((option) => (
+              <Button
+                key={option.preset}
+                asChild
+                variant={range.preset === option.preset ? "default" : "outline"}
+                size="sm"
+              >
+                <Link href={workerHref(option.preset, granularity)}>{option.label}</Link>
+              </Button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="xt-eyebrow">Ver por</span>
+            <LaborGranularitySelector active={granularity} hrefFor={(value) => workerHref(range.preset, value)} />
+          </div>
         </div>
       </div>
 
@@ -140,7 +159,7 @@ export default async function WorkerLaborPage({
           eyebrow="Fuera de etapas"
           title="Horas en actividades"
           value={formatHoursDecimal(worker.otherMinutes)}
-          detail="Aseo, orden, mejoras, arreglos e instalaciones."
+          detail="5S, empaque, carga, instalación y arreglos."
           formula="byWorker.otherMinutes"
         />
         <MetricCard
@@ -159,6 +178,28 @@ export default async function WorkerLaborPage({
           detail="Horas registradas × su costo hora."
           formula="Σ horas de sesión × costo hora del operario"
         />
+      </section>
+
+      <section className="mb-5">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CalendarDays className="h-5 w-5" />
+              Jornada por período
+            </CardTitle>
+            <CardDescription>
+              De su jornada, cuánto quedó asignado a máquinas y cuánto no. Solo cuentan los días en que registró algo.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <LaborPeriodTable
+              rows={periods}
+              granularity={granularity}
+              activityNames={activityNames}
+              showWorkers={false}
+            />
+          </CardContent>
+        </Card>
       </section>
 
       <section className="mb-5">

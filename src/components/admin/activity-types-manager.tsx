@@ -139,7 +139,7 @@ export function ActivityTypesManager({
                 key={type.id}
                 type={type}
                 usage={usage}
-                targets={activityTypes.filter((candidate) => candidate.id !== type.id)}
+                targets={mergeTargets(activityTypes, type)}
                 onCancel={() => setDeletingId(null)}
               />
             );
@@ -202,6 +202,17 @@ export function ActivityTypesManager({
   );
 }
 
+/**
+ * Destinos posibles para las horas de una actividad que se elimina. Si la
+ * actividad se asocia a máquinas, sus sesiones conservan esas máquinas: solo
+ * se ofrecen destinos que también se asocian a máquinas.
+ */
+function mergeTargets(activityTypes: ActivityTypeView[], source: ActivityTypeView) {
+  return activityTypes.filter(
+    (candidate) => candidate.id !== source.id && (!source.allowsMachine || candidate.allowsMachine),
+  );
+}
+
 function DeleteButton({ type = "button", onClick }: { type?: "button" | "submit"; onClick?: () => void }) {
   return (
     <button
@@ -249,7 +260,11 @@ function MoveHoursAndDeleteForm({
       </p>
       {targets.length === 0 ? (
         <div className="flex flex-wrap items-center gap-2">
-          <p className="text-[var(--xt-steel)]">No hay otra actividad a donde moverlas. Agrega una primero.</p>
+          <p className="text-[var(--xt-steel)]">
+            {type.allowsMachine
+              ? "No hay otra actividad con máquina a donde moverlas. Agrega una primero."
+              : "No hay otra actividad a donde moverlas. Agrega una primero."}
+          </p>
           <Button type="button" size="sm" variant="ghost" onClick={onCancel}>
             <X className="h-4 w-4" />
           </Button>

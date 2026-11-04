@@ -42,6 +42,12 @@ function buildAdminToast(toastCode: string | null, count: number) {
       return {
         message: plural ? `${total} máquinas eliminadas` : "Máquina eliminada",
       };
+    // Catálogo: addCatalogItemAction / updateCatalogItemAction con un labor_pct fuera de 1–100.
+    case "labor-pct-invalido":
+      return {
+        message: "No se guardó el equipo",
+        description: "El % de mano de obra debe estar entre 1 y 100.",
+      };
     // Configuración → Actividades (deleteActivityTypeAction redirige con ?toast=…#actividades).
     case "actividad-eliminada":
       return { message: "Actividad eliminada" };
