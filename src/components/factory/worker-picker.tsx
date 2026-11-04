@@ -6,6 +6,7 @@ import { useEffect } from "react";
 import { describeOpenSession } from "@/lib/work-session-ui";
 import type { OpenSessionSummary } from "@/services/work-sessions";
 
+/** Solo lo que pinta la tarjeta: las filas de workers traen hourly_cost_cop (salario) y no deben llegar a la tablet. */
 type WorkerCard = {
   id: string;
   full_name: string;

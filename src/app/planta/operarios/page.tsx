@@ -29,7 +29,16 @@ export default async function FactoryWorkersPage() {
         <div className="xt-hazard h-2" />
       </header>
       <section className="xt-planta-section p-6">
-        <WorkerPicker workers={workers} openSessions={openSessions} />
+        {/* Solo los campos de la tarjeta: las filas de workers traen hourly_cost_cop (salario). */}
+        <WorkerPicker
+          workers={workers.map((worker) => ({
+            id: worker.id,
+            full_name: worker.full_name,
+            role: worker.role,
+            display_color: worker.display_color,
+          }))}
+          openSessions={openSessions}
+        />
       </section>
     </main>
   );
