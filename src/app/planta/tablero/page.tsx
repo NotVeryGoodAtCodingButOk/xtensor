@@ -10,6 +10,7 @@ import { resolveMachineColorHex } from "@/lib/machine-colors";
 import { cn, formatPercent } from "@/lib/utils";
 import { isBehindReestimate } from "@/services/calculations";
 import { listHolidays } from "@/services/catalog";
+import { attachMachineLabor } from "@/services/machine-labor";
 import { FACTORY_BOARD_STATUSES, listCalculatedMachines } from "@/services/machines";
 import { formatDateEsNoYear } from "@/services/schedule";
 import { getSettings, mapSettings } from "@/services/settings";
@@ -34,12 +35,14 @@ export default async function FactoryBoardPage() {
   }
 
   const [settingsRow, holidays] = await Promise.all([getSettings(), listHolidays()]);
+  const settings = mapSettings(settingsRow);
   const machines = await listCalculatedMachines({
-    settings: mapSettings(settingsRow),
+    settings,
     holidays,
     status: FACTORY_BOARD_STATUSES,
   });
-  const orderedMachines = orderBoardMachines(machines);
+  // Horas llevadas vs. máximas por máquina (columna «Horas»). Se actualizan con el poll de 30 s.
+  const orderedMachines = orderBoardMachines(await attachMachineLabor(machines, settings));
 
   const lateCount = orderedMachines.filter((m) => getRowStatus(m) === "late").length;
 
