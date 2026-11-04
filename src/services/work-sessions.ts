@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { chunked, fetchAllPages } from "@/services/batching";
 import { getSettings, mapSettings } from "@/services/settings";
 import { updateStageProgress } from "@/services/stages";
 import type { DoneMarkWithoutSession, LaborSessionInput } from "@/services/labor-time";
@@ -578,21 +579,19 @@ function mapLaborSessionRow(row: SessionWithMachineIdsRow): LaborSessionInput {
  */
 export async function listSessionsOverlapping(startIso: string, endIso: string): Promise<LaborSessionInput[]> {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("work_sessions")
-    .select(LABOR_SESSION_SELECT)
-    .lt("started_at", endIso)
-    .or(`ended_at.is.null,ended_at.gt.${startIso}`);
+  const rows = await fetchAllPages<SessionWithMachineIdsRow>("No se pudieron cargar las sesiones", (from, to) =>
+    supabase
+      .from("work_sessions")
+      .select(LABOR_SESSION_SELECT)
+      .lt("started_at", endIso)
+      .or(`ended_at.is.null,ended_at.gt.${startIso}`)
+      .order("started_at", { ascending: true })
+      .order("id", { ascending: true })
+      .range(from, to),
+  );
 
-  if (error) {
-    throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
-  }
-
-  return ((data ?? []) as unknown as SessionWithMachineIdsRow[]).map(mapLaborSessionRow);
+  return rows.map(mapLaborSessionRow);
 }
-
-const ID_CHUNK = 100;
-const PAGE_SIZE = 1000;
 
 /**
  * Todas las sesiones (de toda la vida) que tocaron alguna de estas máquinas,
@@ -608,26 +607,21 @@ export async function listSessionsForMachines(machineIds: string[]): Promise<Lab
   const supabase = createSupabaseAdminClient();
   const sessionIds = new Set<string>();
 
-  for (const chunk of chunked(ids, ID_CHUNK)) {
-    for (let from = 0; ; from += PAGE_SIZE) {
-      const { data, error } = await supabase
+  for (const chunk of chunked(ids)) {
+    const links = await fetchAllPages<{ session_id: string }>("No se pudieron cargar las sesiones de las máquinas", (from, to) =>
+      supabase
         .from("work_session_machines")
         .select("session_id, machine_id")
         .in("machine_id", chunk)
         .order("session_id", { ascending: true })
         .order("machine_id", { ascending: true })
-        .range(from, from + PAGE_SIZE - 1);
-
-      if (error) {
-        throw new Error(`No se pudieron cargar las sesiones de las máquinas: ${error.message}`);
-      }
-      for (const row of data ?? []) sessionIds.add(row.session_id);
-      if ((data ?? []).length < PAGE_SIZE) break;
-    }
+        .range(from, to),
+    );
+    for (const link of links) sessionIds.add(link.session_id);
   }
 
   const sessions: LaborSessionInput[] = [];
-  for (const chunk of chunked([...sessionIds], ID_CHUNK)) {
+  for (const chunk of chunked([...sessionIds])) {
     const { data, error } = await supabase.from("work_sessions").select(LABOR_SESSION_SELECT).in("id", chunk);
     if (error) {
       throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
@@ -655,11 +649,6 @@ export async function getFirstSessionStartedAt(): Promise<string | null> {
   return data?.started_at ?? null;
 }
 
-function chunked<T>(items: T[], size: number): T[][] {
-  const chunks: T[][] = [];
-  for (let index = 0; index < items.length; index += size) chunks.push(items.slice(index, index + size));
-  return chunks;
-}
 
 type ActivityMachineRow = Pick<
   MachineRow,
@@ -740,33 +729,36 @@ export async function listDoneMarksWithoutSession(
   const supabase = createSupabaseAdminClient();
   const GRACE_MS = 2 * 60_000;
 
-  const [logsResult, sessionsResult] = await Promise.all([
-    supabase
-      .from("stage_logs")
-      .select("machine_id, stage_id, worker_id, created_at")
-      .eq("new_completion", 100)
-      .eq("is_undone", false)
-      .gte("created_at", startIso)
-      .lt("created_at", endIso),
-    supabase
-      .from("work_sessions")
-      .select("worker_id, stage_id, started_at, ended_at, work_session_machines(machine_id)")
-      .eq("kind", "stage")
-      .lt("started_at", endIso)
-      .or(`ended_at.is.null,ended_at.gt.${startIso}`),
-  ]);
-
-  if (logsResult.error) {
-    throw new Error(`No se pudieron cargar las marcas de avance: ${logsResult.error.message}`);
-  }
-  if (sessionsResult.error) {
-    throw new Error(`No se pudieron cargar las sesiones: ${sessionsResult.error.message}`);
-  }
-
+  type DoneMarkLogRow = { machine_id: string; stage_id: number; worker_id: string; created_at: string };
   type DoneMarkSessionRow = Pick<WorkSessionRow, "worker_id" | "stage_id" | "started_at" | "ended_at"> & {
     work_session_machines: Array<{ machine_id: string }>;
   };
-  const sessionRows = (sessionsResult.data ?? []) as unknown as DoneMarkSessionRow[];
+
+  const [logRows, sessionRows] = await Promise.all([
+    fetchAllPages<DoneMarkLogRow>("No se pudieron cargar las marcas de avance", (from, to) =>
+      supabase
+        .from("stage_logs")
+        .select("machine_id, stage_id, worker_id, created_at")
+        .eq("new_completion", 100)
+        .eq("is_undone", false)
+        .gte("created_at", startIso)
+        .lt("created_at", endIso)
+        .order("created_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+    fetchAllPages<DoneMarkSessionRow>("No se pudieron cargar las sesiones", (from, to) =>
+      supabase
+        .from("work_sessions")
+        .select("worker_id, stage_id, started_at, ended_at, work_session_machines(machine_id)")
+        .eq("kind", "stage")
+        .lt("started_at", endIso)
+        .or(`ended_at.is.null,ended_at.gt.${startIso}`)
+        .order("started_at", { ascending: true })
+        .order("id", { ascending: true })
+        .range(from, to),
+    ),
+  ]);
 
   const sessions = sessionRows.map((row) => ({
     workerId: row.worker_id,
@@ -776,7 +768,7 @@ export async function listDoneMarksWithoutSession(
     machineIds: new Set(row.work_session_machines.map((m) => m.machine_id)),
   }));
 
-  return (logsResult.data ?? [])
+  return logRows
     .filter((log) => {
       const logMs = new Date(log.created_at).getTime();
       return !sessions.some(

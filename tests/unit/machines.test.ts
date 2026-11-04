@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   buildMovedQueueOrder,
+  calculateMachines,
   changedQueueIds,
   FACTORY_BOARD_STATUSES,
   normalizeMachineStatusFilter,
   planQueueReorder,
+  shiftReestimatedDates,
 } from "@/services/machines";
-import { DEFAULT_SETTINGS, DEFAULT_STAGES } from "@/services/calculations";
+import { DEFAULT_SETTINGS, DEFAULT_STAGES, isBehindReestimate } from "@/services/calculations";
 import type { MachineView } from "@/types/domain";
 
 describe("factory board visibility", () => {
@@ -116,39 +118,58 @@ function queueMachine(id: string, orderPosition: number): MachineView {
 
 describe("planQueueReorder", () => {
   // Planta: 9 operarios × 8,25 h = 74,25 h/día (viernes 51,75 h). Cada máquina pide 140 h.
-  // Lunes 1 jun: acumulado 140 → mar 2, 280 → jue 4, 420 → lun 8, 560 → mié 10.
-  const queue = ["m1", "m2", "m3", "m4"].map((id, index) => queueMachine(id, index + 1));
+  // Lunes 1 jun: acumulado 140 → mar 2, 280 → jue 4, 420 → lun 8, 560 → mié 10, 700 → lun 15.
+  // Reestimadas con atraso real: m1 va 4 días tarde (29 may) y m3 3 días tarde (5 jun).
+  const reestimated: Record<string, string> = { m1: "2026-05-29", m2: "2026-06-04", m3: "2026-06-05", m4: "2026-06-10" };
+  const queue = ["m1", "m2", "m3", "m4"].map((id, index) => ({
+    ...queueMachine(id, index + 1),
+    reestimatedDate: reestimated[id],
+  }));
   const base = { queue, settings: DEFAULT_SETTINGS, holidays: [], startDate: new Date(2026, 5, 1, 12) };
 
-  it("moving the last machine first re-dates every machine whose index changed", () => {
+  it("moving the last machine first shifts each reestimada exactly its delta and keeps the real delay", () => {
     const plan = planQueueReorder({ ...base, orderedIds: ["m4", "m1", "m2", "m3"] });
 
     expect(plan.orderedIds).toEqual(["m4", "m1", "m2", "m3"]);
+    // Actualizada: m4 10 → 2 jun (−8), m1 2 → 4 (+2), m2 4 → 8 (+4), m3 8 → 10 (+2).
     expect(plan.reestimatedDates).toEqual({
       m4: "2026-06-02",
-      m1: "2026-06-04",
+      m1: "2026-05-31",
       m2: "2026-06-08",
-      m3: "2026-06-10",
+      m3: "2026-06-07",
     });
+
+    // El atraso (Actualizada − Reestimada) sigue igual: m1 4 días, m3 3 días, m2 y m4 al día.
+    const after: Record<string, string> = { m4: "2026-06-02", m1: "2026-06-04", m2: "2026-06-08", m3: "2026-06-10" };
+    for (const id of ["m1", "m2", "m3", "m4"]) {
+      expect(isBehindReestimate({ estimatedDate: after[id], reestimatedDate: plan.reestimatedDates[id] })).toBe(
+        id === "m1" || id === "m3",
+      );
+    }
   });
 
-  it("only returns dates for the ids whose index changed", () => {
+  it("only returns dates for the machines whose Actualizada moved", () => {
+    // m1, m3, m2, m4: m3 8 → 4 jun (−4), m2 4 → 8 (+4); m1 y m4 no se mueven.
     const plan = planQueueReorder({ ...base, orderedIds: ["m1", "m3", "m2", "m4"] });
 
-    expect(plan.reestimatedDates).toEqual({ m3: "2026-06-04", m2: "2026-06-08" });
+    expect(plan.reestimatedDates).toEqual({ m3: "2026-06-01", m2: "2026-06-08" });
   });
 
   it("drops unknown ids, appends the missing ones in their current order, and is a no-op when nothing moves", () => {
     const plan = planQueueReorder({ ...base, orderedIds: ["x9", "m2", "m2"] });
 
     expect(plan.orderedIds).toEqual(["m2", "m1", "m3", "m4"]);
-    expect(Object.keys(plan.reestimatedDates).sort()).toEqual(["m1", "m2"]);
+    expect(plan.reestimatedDates).toEqual({ m2: "2026-06-02", m1: "2026-05-31" });
     expect(planQueueReorder({ ...base, orderedIds: [] }).reestimatedDates).toEqual({});
   });
 
-  it("counts machines that just entered as changed, plus the ones they displaced", () => {
-    // m5 entra en la posición 2: antes la cola era m1, m2, m3, m4.
-    const entering = [...queue.slice(0, 1), queueMachine("m5", 2), ...queue.slice(1).map((m, i) => ({ ...m, orderPosition: i + 3 }))];
+  it("gives a machine that enters a fresh baseline and shifts the ones it displaces", () => {
+    // m5 entra en la posición 2 (con una reestimada vieja de cuando estuvo antes en cola).
+    const entering = [
+      queue[0],
+      { ...queueMachine("m5", 2), reestimatedDate: "2026-01-15" },
+      ...queue.slice(1).map((machine, index) => ({ ...machine, orderPosition: index + 3 })),
+    ];
     const plan = planQueueReorder({
       ...base,
       queue: entering,
@@ -156,7 +177,86 @@ describe("planQueueReorder", () => {
       previousIds: ["m1", "m2", "m3", "m4"],
     });
 
-    expect(Object.keys(plan.reestimatedDates)).toEqual(["m5", "m2", "m3", "m4"]);
-    expect(plan.reestimatedDates.m5).toBe("2026-06-04");
+    expect(plan.reestimatedDates).toEqual({
+      m5: "2026-06-04", // línea base nueva = su Actualizada
+      m2: "2026-06-08", // 4 → 8 (+4)
+      m3: "2026-06-07", // 8 → 10 (+2), conserva sus 3 días de atraso
+      m4: "2026-06-15", // 10 → 15 (+5)
+    });
+  });
+
+  it("gives a machine without reestimada its Actualizada even if it did not move", () => {
+    const withNull = queue.map((machine) => (machine.id === "m2" ? { ...machine, reestimatedDate: null } : machine));
+    const plan = planQueueReorder({ ...base, queue: withNull, orderedIds: ["m1", "m2", "m3", "m4"] });
+
+    expect(plan.reestimatedDates).toEqual({ m2: "2026-06-04" });
+  });
+});
+
+describe("shiftReestimatedDates", () => {
+  it("leaves alone the machines whose Actualizada did not change (e.g. after a % change)", () => {
+    const shifted = shiftReestimatedDates({
+      before: { a: "2026-06-02", b: "2026-06-04", c: "2026-06-08" },
+      after: { a: "2026-06-02", b: "2026-06-06", c: "2026-06-05" },
+      current: { a: "2026-05-30", b: "2026-06-01", c: "2026-06-08" },
+    });
+
+    expect(shifted).toEqual({ b: "2026-06-03", c: "2026-06-05" });
+  });
+
+  it("shifts across month and year boundaries in calendar days", () => {
+    expect(
+      shiftReestimatedDates({
+        before: { a: "2026-12-28" },
+        after: { a: "2027-01-04" },
+        current: { a: "2026-12-30" },
+      }),
+    ).toEqual({ a: "2027-01-06" });
+  });
+
+  it("gives a fresh baseline to new machines and to machines without reestimada", () => {
+    const shifted = shiftReestimatedDates({
+      before: { a: "2026-06-02", b: "2026-06-04" },
+      after: { a: "2026-06-02", b: "2026-06-04", c: "2026-06-09" },
+      current: { a: null, b: "2026-06-04", c: "2026-03-01" },
+    });
+
+    expect(shifted).toEqual({ a: "2026-06-02", c: "2026-06-09" });
+  });
+
+  it("ignores machines that left the queue and baselines already equal to the Actualizada", () => {
+    expect(
+      shiftReestimatedDates({
+        before: { gone: "2026-06-02", d: "2026-06-04" },
+        after: { d: "2026-06-04", e: "2026-06-05" },
+        current: { gone: "2026-06-01", d: "2026-06-03", e: "2026-06-05" },
+      }),
+    ).toEqual({});
+  });
+});
+
+describe("replanning after a % change", () => {
+  it("only shifts the machines whose Actualizada moved", () => {
+    const startDate = new Date(2026, 5, 1, 12);
+    const queue = ["m1", "m2", "m3", "m4"].map((id, index) => ({
+      ...queueMachine(id, index + 1),
+      reestimatedDate: "2026-06-01",
+    }));
+    const datesOf = (machines: MachineView[]) =>
+      Object.fromEntries(
+        calculateMachines(machines, DEFAULT_SETTINGS, [], startDate).map((machine) => [machine.id, machine.estimatedDate]),
+      );
+
+    // El equipo de la última máquina pasa de 30% (general) a 45%: solo su Actualizada se mueve.
+    const before = datesOf(queue);
+    const after = datesOf(queue.map((machine) => (machine.id === "m4" ? { ...machine, equipmentLaborFactor: 0.45 } : machine)));
+    const shifted = shiftReestimatedDates({
+      before,
+      after,
+      current: Object.fromEntries(queue.map((machine) => [machine.id, machine.reestimatedDate])),
+    });
+
+    expect(after.m4 > before.m4).toBe(true);
+    expect(Object.keys(shifted)).toEqual(["m4"]);
   });
 });

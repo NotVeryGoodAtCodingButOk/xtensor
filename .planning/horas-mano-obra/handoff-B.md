@@ -2,8 +2,8 @@
 
 - **Rama:** `worktree-agent-a8823bacd93bd3cc5`
 - **Worktree:** `/Users/simonb/xtensor/.claude/worktrees/agent-a8823bacd93bd3cc5`
-- **Base:** `b39340f` (hice fast-forward desde `953ddd3` al empezar).
-- **Verificación:** `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build` en verde: 22 archivos y 187 tests. Los tests de paridad con Excel de `calculations.test.ts` pasan sin cambios.
+- **Base:** `b39340f` (hice fast-forward desde `953ddd3` al empezar). Las correcciones de la §9 van sobre `6b5ff7d` (`main`, con fast-forward): ver §9 de este handoff.
+- **Verificación:** `corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build` en verde: 23 archivos y 202 tests. Los tests de paridad con Excel de `calculations.test.ts` pasan sin cambios.
 - No hice push ni deploy.
 
 ---
@@ -34,10 +34,15 @@ Corrí `corepack pnpm tsx scripts/check-reestimated.ts` el 2026-11-03 a las 18:2
 
 **Lectura de negocio.** Las Reestimadas de las posiciones 1–12 tienen una semana, y la Actualizada se ha corrido unos 4 o 5 días hábiles. Eso es **atraso real** contra el modelo de capacidad (6 operarios × 9,25 h = 55,5 h/día), y es justo lo que la Reestimada debe mostrar. Con «horas máximas vs. llevadas» el dueño podrá ver si el modelo de capacidad está bien.
 
-**Arreglo (commit `b06fb93`):**
+**Arreglo (commits `b06fb93` y `ac15174`, este último por la §9.1 del contrato):**
 - El orden y la Reestimada se guardan en una sola RPC (`reorder_production_queue`).
-- Todas las entradas a la cola (enviar a producción, en lote o una sola, reproceso, garantía, crear) también toman la Reestimada de las máquinas que desplazan.
-- Cambiar un % o el costo hora vuelve a tomar la Reestimada de toda la cola.
+- **Regla única al replanificar:** la Reestimada se mueve los mismos días (calendario) que se movió la Actualizada. Así un atraso real se conserva. La primera versión la reiniciaba igual a la Actualizada y borraba los 21 atrasos.
+- Las máquinas que entran a la cola, o que no tienen Reestimada, toman línea base nueva (= Actualizada).
+- Se aplica a:
+  - reordenar;
+  - todas las entradas a la cola (crear en producción, enviar a producción una o en lote, reproceso, garantía, reactivar propias, desmarcar despachada);
+  - cambiar la venta o el equipo de una máquina en cola;
+  - cambiar el % de un equipo, el % general o el costo hora.
 
 **Hallazgo aparte, sin arreglar porque está fuera de alcance:**
 - `estimateDeliveryDate` usa la hora local del servidor. En Vercel es UTC.
@@ -111,25 +116,34 @@ export function summarizeLaborByPeriod(input: SummarizeLaborInput, granularity: 
 export function planQueueReorder(input: {
   queue: MachineView[]; orderedIds: string[]; settings: ProductionSettings; holidays: Holiday[];
   startDate?: Date; previousIds?: string[];
-}): { orderedIds: string[]; reestimatedDates: Record<string, string> };
-export async function snapshotWholeQueueReestimatedDates(): Promise<void>;
-export async function snapshotReestimatedDates(machineIds: string[]): Promise<void>; // ver desviaciones
+}): { orderedIds: string[]; reestimatedDates: Record<string, string> };   // reestimadas desplazadas (§9.1)
+export function shiftReestimatedDates(input: {
+  before: Record<string, string>; after: Record<string, string>; current: Record<string, string | null>;
+}): Record<string, string>;                                                  // solo los ids que cambian
+export async function replanProductionQueue(mutate: () => Promise<unknown>): Promise<void>;
 export async function equipmentHasMachinesInQueue(equipmentId: string): Promise<boolean>;
 export function toLaborFactorOrNull(value: unknown): number | null; // ahora exportada
 ```
-- `reorderProductionQueue`, `reorderMachines` y todas las entradas a la cola hacen **una sola** llamada a `reorder_production_queue`.
+- `snapshotWholeQueueReestimatedDates` y `snapshotReestimatedDates` **ya no existen**. Los reemplaza el helper interno `replanQueue({ mutate?, reorder? })`, y desde afuera se usa `replanProductionQueue(mutate)`.
+- Pasos de `replanQueue`: Actualizada antes → mutación → Actualizada después → `shiftReestimatedDates` → orden y reestimadas en **una sola** llamada a `reorder_production_queue`.
+- `updateMachine` replanifica sola cuando la máquina queda en cola y cambia la posición, entra a la cola o cambia la venta o el equipo. Por eso las funciones de entrada (`sendMachineToProduction`, `sendFinishedToProduction`, `unmarkMachineShipped`, `sendHoldMachineToProduction`) ya no llaman nada aparte.
+- `createMachine` (en producción), `sendMachineToWarranty` y `bulkSendToProduction` hacen su cambio dentro del `mutate` de `replanQueue`.
+- `reorderMachines` y todas las entradas a la cola hacen **una sola** llamada a `reorder_production_queue`.
 - `normalizeProductionQueue` (cuando una máquina sale de la cola) también usa la RPC nueva, con `{}`.
 - **Desde esta rama nada llama ya a `reorder_in_production_machines`**: la 0032 la puede borrar después del deploy.
 
 ### `src/services/machine-labor.ts` (nuevo)
 ```ts
 export async function getMachineLaborTotals(machineIds: string[]): Promise<Map<string, MachineLaborTotals>>;
-export async function attachMachineLabor<T extends CalculatedMachineView>(machines: T[], settings: ProductionSettings): Promise<Array<T & { labor: MachineLaborSnapshot }>>;
+export async function attachMachineLabor<T extends CalculatedMachineView>(
+  machines: T[], settings: ProductionSettings, options?: { holidays?: HolidaySet },
+): Promise<Array<T & { labor: MachineLaborSnapshot }>>;   // garantía en cola: desde la última garantía y «ok» (§9.3)
 export function resolveMachineLaborFilters(params: { estado?: string; linea?: string; equipo?: string }): MachineLaborFilters;
 export async function getMachineLaborReport(filters: MachineLaborFilters): Promise<MachineLaborReport>;
 export async function getMachineLaborDetail(machineId: string): Promise<MachineLaborDetail | null>;
-// Puras (con tests): buildMachineLaborSnapshot, buildMachineLaborRow, countsForAverages,
-// buildEquipmentLaborRows, summarizeMachineLaborRows, buildMachineLaborDetail; type MachineLaborSource.
+// Puras (con tests): buildMachineLaborSnapshot, buildAttachedLaborSnapshots, buildMachineLaborRow,
+// hasPartialLaborData (del líder), countsForAverages, buildEquipmentLaborRows, summarizeMachineLaborRows,
+// buildMachineLaborDetail; type MachineLaborSource.
 ```
 
 ### `src/services/work-sessions.ts`
@@ -186,8 +200,8 @@ export function normalizeDescription(value): string | null; export const DESCRIP
 | Acción | Comportamiento |
 |---|---|
 | `addCatalogItemAction` | `labor_pct` con `parseLaborPct`. Si es inválido, hace redirect a `/admin/catalogo?toast=labor-pct-invalido`. |
-| `updateCatalogItemAction` | Igual que la anterior. **Si el campo `labor_pct` no viene en el formulario, no toca el %** (compatibilidad). Si el % cambia y el equipo tiene máquinas en cola, llama `snapshotWholeQueueReestimatedDates()`, `revalidateFactoryData()` y `revalidatePath("/admin")`. |
-| `updateSettingsAction` | Lee la configuración antes de guardar. Si cambia `labor_factor` o `hourly_cost_per_worker_cop`, llama `snapshotWholeQueueReestimatedDates()`. |
+| `updateCatalogItemAction` | Igual que la anterior. **Si el campo `labor_pct` no viene en el formulario, no toca el %** (compatibilidad). Si el % cambia y el equipo tiene máquinas en cola, guarda dentro de `replanProductionQueue(...)` (las reestimadas se desplazan) y luego llama `revalidateFactoryData()` y `revalidatePath("/admin")`. |
+| `updateSettingsAction` | Lee la configuración antes de guardar. Si cambia `labor_factor` o `hourly_cost_per_worker_cop`, guarda dentro de `replanProductionQueue(...)`; si no, guarda directo. |
 | `addActivityTypeAction`, `updateActivityTypeAction` | `description` (opcional, máx. 120). Si el campo no viene, no se toca. |
 | `deleteActivityTypeAction` | `move_to_id` opcional. **Nunca lanza.** Redirige a `/admin/configuracion?toast=<código>#actividades` con `actividad-eliminada`, `actividad-movida`, `actividad-con-horas` o `actividad-error` (este último además hace `console.error`). Estos códigos no chocan con los que ya existen (`sent-*`, `shipped`, `finished`, `reproceso`, `deleted`). |
 | `importQuoteAction` | La fecha prometida usa `estimateTotalHours(precio, settings, labor_factor del equipo)`. Los productos personalizados nuevos usan el % general. |
@@ -197,14 +211,8 @@ export function normalizeDescription(value): string | null; export const DESCRIP
 ## 4. Desviaciones del contrato
 
 1. **0030 adaptada a los nombres en vivo.** Ver §2.
-2. **`planQueueReorder` gana un `previousIds?` opcional.**
-   - Es el orden de antes cuando la cola ya cambió en la base. Los ids que no estaban cuentan como cambiados.
-   - Sin él, reactivar una máquina desde Propias en Espera (que conserva su `order_position` viejo) habría «desplazado» de forma ficticia a las máquinas de detrás y les habría borrado su atraso real.
-   - Es compatible con la firma del contrato.
-3. **`snapshotReestimatedDates(ids)` cambia de semántica.**
-   - Ahora recompacta la cola y toma, en la misma RPC, la Reestimada de `ids` (las que entran) y de las que esa entrada desplazó.
-   - Todos sus llamadores (crear, enviar a producción una o en lote, reproceso, garantía) son entradas a la cola.
-   - Quité los `normalizeProductionQueue` que la precedían, porque ya no hacen falta.
+2. **`planQueueReorder` gana un `previousIds?` opcional.** Es el orden de antes cuando la cola ya cambió en la base; los ids que no estaban reciben línea base nueva. Es compatible con la firma del contrato. Desde la §9.1, las entradas a la cola usan `replanQueue` (Actualizada antes y después, leídas de la base), y `previousIds` queda solo para uso en memoria y en los tests.
+3. **`snapshotReestimatedDates` y `snapshotWholeQueueReestimatedDates` se retiraron** (§9.1). Ver `replanQueue` y `replanProductionQueue` en §3.
 4. **`LaborMachineInput.laborFactor` es opcional**, y `estimateHours` recibe la máquina como **segundo** argumento. Así los tests existentes de `summarizeLabor` pasan sin tocarlos.
 5. **`EquipmentLaborRow`:**
    - Salen todos los grupos presentes en el filtro. Los que no tienen terminadas o despachadas con datos completos quedan con `machineCount = 0` y promedios en null.
@@ -265,13 +273,14 @@ export function normalizeDescription(value): string | null; export const DESCRIP
 
 ```bash
 corepack pnpm lint && corepack pnpm typecheck && corepack pnpm test && corepack pnpm build
-corepack pnpm tsx scripts/check-reestimated.ts   # solo lectura; después de reordenar, las movidas deben decir «sí»
+corepack pnpm tsx scripts/check-reestimated.ts   # solo lectura; el conteo de atrasadas no debe cambiar al reordenar
 ```
 
 - **Tests nuevos:**
   - `labor-period.test.ts`: reparto, reproceso, actividades con y sin máquina, recorte a la jornada y las pausas, sesión abierta, día, semana y mes en Bogotá, regla de ausencia.
-  - `machines.test.ts`: `planQueueReorder`.
-  - `machine-labor.test.ts`.
+  - `machines.test.ts`: `planQueueReorder`, `shiftReestimatedDates` y la replanificación tras un cambio de %.
+  - `machine-labor.test.ts`, incluida la garantía en cola (`buildAttachedLaborSnapshots`).
+  - `batching.test.ts`: lotes de 100 y paginación sin el tope de 1000.
   - `activity-machines.test.ts`.
   - `activity-types.test.ts`.
   - `labor-pct.test.ts`.
@@ -279,7 +288,77 @@ corepack pnpm tsx scripts/check-reestimated.ts   # solo lectura; después de reo
   - `labor-range.test.ts`: los rangos nuevos y la granularidad.
 - **Base:** las consultas de §2. `has_function_privilege('anon', 'public.reorder_production_queue(uuid[],jsonb)', 'execute')` debe dar false.
 - **En la app, después del merge** (no reordené la cola real ni modifiqué máquinas):
-  - Mover la última máquina a la posición 1: todas las movidas deben quedar con Reestimada = Actualizada.
-  - Cambiar el % de un equipo con máquinas en cola: cambian H. máx y la Actualizada, toda la cola toma la Reestimada nueva y no aparecen atrasos nuevos.
+  - Mover la última máquina a la posición 1: cada Reestimada se corre lo mismo que su Actualizada. El número de atrasadas y los días de atraso de cada una no cambian.
+  - Cambiar el % de un equipo con máquinas en cola: cambian H. máx y la Actualizada, y las reestimadas se corren lo mismo. Las máquinas cuya Actualizada no cambió no se tocan. No aparecen atrasos nuevos ni se borran los que había.
   - Borrar una actividad con horas: sin destino aparece el toast «con horas»; con destino, «movida».
   - En la tablet, iniciar «Empaque, carga e instalación» sobre una máquina terminada.
+
+---
+
+## 9. Correcciones tras la revisión de R (§9 del contrato, base `6b5ff7d`)
+
+Commits (`git log --oneline 6b5ff7d..HEAD`):
+```
+c842955 fix(horas): garantías en cola cuentan desde la última garantía y sin alarma
+ac15174 fix(fechas): al replanificar, la reestimada se desplaza en vez de reiniciarse
+d9be464 fix(tiempos): consultas sin el tope silencioso de 1000 filas
+```
+Este handoff va en un commit aparte (`docs(planificacion): …`).
+
+### 9.1 Reestimada: desplazar en vez de reiniciar (A1, M1, B2)
+- **Regla:**
+  - `shiftReestimatedDates` (pura): Reestimada nueva = actual + (Actualizada después − Actualizada antes), en días calendario.
+  - Las máquinas que entran a la cola, o que tienen la Reestimada en null, toman línea base = Actualizada.
+  - Si el delta es 0, la máquina no se toca.
+  - Solo devuelve los ids que cambian.
+- **`replanQueue`** (interno) y **`replanProductionQueue(mutate)`** (exportado):
+  - Pasos: Actualizada antes → mutación → Actualizada después → desplazar → orden y reestimadas en una sola RPC.
+  - Antes y después usan el mismo `startDate`.
+- **Dónde se aplica:**
+  - reordenar;
+  - crear en producción;
+  - enviar a producción (una o en lote);
+  - reproceso;
+  - garantía;
+  - reactivar propias;
+  - desmarcar despachada (antes no tomaba Reestimada);
+  - venta o equipo de una máquina en cola, en `updateMachine`;
+  - % de un equipo;
+  - % general o costo hora.
+- **No cambié dónde entra una máquina:** sigue entrando con su `order_position` viejo. Con la regla nueva eso ya no borra atrasos: las que desplaza se corren lo mismo.
+- **Validación con la base real, en memoria y sin escribir:**
+  - Hoy hay 21 atrasadas de 26.
+  - Simulando «última → primera», se mueven 17 reestimadas, siguen 21 atrasadas y **0 máquinas cambian sus días de atraso**.
+  - `check-reestimated.ts` (solo lectura) sigue mostrando 21 atrasadas.
+- **Tests:**
+  - última → primera desplaza cada Reestimada exactamente su delta y conserva el atraso;
+  - una máquina que entra recibe línea base nueva y las desplazadas se corren;
+  - un cambio de % solo toca las máquinas cuya Actualizada cambió;
+  - un null recibe la Actualizada;
+  - cruce de mes y de año;
+  - las máquinas que salen de la cola se ignoran.
+- **Pregunta abierta para el líder.** Cuando una máquina **sale** de la cola (terminar, despachar, Propias en Espera, borrar), las de detrás se adelantan y su Reestimada no se mueve, como antes. Siguen saliendo «adelantadas» y no hay falsas alarmas. El contrato no incluye ese caso. Si se quiere aplicar la misma regla (correr la Reestimada hacia antes), basta con envolver `normalizeProductionQueue` en `replanQueue`. Ojo: eso haría visible antes un atraso posterior.
+
+### 9.2 Paginación (M2)
+- `src/services/batching.ts`:
+  - `chunked(items, 100)`.
+  - `fetchAllPages(errorPrefix, (from, to) => query.range(from, to))`: pide páginas de 1000 hasta que llega una incompleta. Necesita un orden estable.
+- Paginadas:
+  - `listSessionsOverlapping` (orden `started_at, id`);
+  - `listDoneMarksWithoutSession`, en sus dos consultas (`created_at, id` y `started_at, id`);
+  - los vínculos de `listSessionsForMachines`;
+  - `listActivityTypeUsage`.
+- `labor-dashboard.ts` pide las máquinas en lotes de 100.
+- Con la base real dan los mismos números: 208 sesiones con 208 ids únicos.
+
+### 9.3 Garantías en cola (M4)
+- `attachMachineLabor`: si una máquina está en producción con garantía (`isWarranty`), solo cuenta las sesiones que **empezaron** desde su último `machine_warranty_events.created_at`.
+- Su estado queda en `ok`. «Datos parciales» se mide desde la garantía.
+- La pestaña Máquinas (`getMachineLaborReport` y `getMachineLaborDetail`) no cambia.
+- La lógica está en la función pura `buildAttachedLaborSnapshots`, con tests: sin la regla, el caso del test saldría «excedida».
+- Hoy no hay ninguna máquina en garantía en la cola: las 35 de la cartelera dan 34 «ok» y 1 «excedida» (la 144).
+
+### B1 (opcional, hecho)
+- `attachMachineLabor(machines, settings, options?: { holidays?: HolidaySet })` ya no vuelve a pedir la configuración: usa la que recibe.
+- Si la página pasa `{ holidays }`, tampoco vuelve a pedir los festivos. Solo pide los operarios.
+- **Para FA/FP (opcional):** en `/admin`, `/admin/despachados` y `/planta/tablero` ya tienen `holidays` a mano y pueden pasar `attachMachineLabor(machines, settings, { holidays })`. Con la base real medí ≈1 s para 35 máquinas.

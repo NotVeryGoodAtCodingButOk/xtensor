@@ -1,4 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { fetchAllPages } from "@/services/batching";
 import type { Database } from "@/types/database";
 
 export type ActivityTypeRow = Database["public"]["Tables"]["activity_types"]["Row"];
@@ -112,24 +113,18 @@ export async function updateActivityType(
 /** activity_type_id → nº de sesiones vinculadas (las que no tienen uso no aparecen). */
 export async function listActivityTypeUsage(): Promise<Record<string, number>> {
   const supabase = createSupabaseAdminClient();
-  const PAGE = 1000;
-  const usage: Record<string, number> = {};
-
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
+  const rows = await fetchAllPages<{ activity_type_id: string }>("No se pudo consultar el uso de las actividades", (from, to) =>
+    supabase
       .from("work_session_activity_types")
       .select("session_id, activity_type_id")
       .order("session_id", { ascending: true })
       .order("activity_type_id", { ascending: true })
-      .range(from, from + PAGE - 1);
+      .range(from, to),
+  );
 
-    if (error) {
-      throw new Error(`No se pudo consultar el uso de las actividades: ${error.message}`);
-    }
-    for (const row of data ?? []) {
-      usage[row.activity_type_id] = (usage[row.activity_type_id] ?? 0) + 1;
-    }
-    if ((data ?? []).length < PAGE) break;
+  const usage: Record<string, number> = {};
+  for (const row of rows) {
+    usage[row.activity_type_id] = (usage[row.activity_type_id] ?? 0) + 1;
   }
 
   return usage;

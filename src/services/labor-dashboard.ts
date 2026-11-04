@@ -1,5 +1,6 @@
 import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { chunked } from "@/services/batching";
 import { listActivityTypes } from "@/services/activity-types";
 import { DEFAULT_STAGES, estimateTotalHours } from "@/services/calculations";
 import { listHolidays, listWorkers } from "@/services/catalog";
@@ -221,18 +222,24 @@ export async function getLaborDashboard(
 
 async function fetchLaborMachines(machineIds: string[]): Promise<LaborMachineInput[]> {
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase
-    .from("machines")
-    .select(
-      "id, serial_number, sale_price_cop, custom_equipment_name, equipment_catalog(name, labor_factor), clients(name), machine_warranty_events(id)",
-    )
-    .in("id", machineIds);
+  // Lotes de 100: un rango largo puede tocar cientos de máquinas y la URL de `.in()` tiene tope.
+  const pages = await Promise.all(
+    chunked(machineIds).map(async (chunk) => {
+      const { data, error } = await supabase
+        .from("machines")
+        .select(
+          "id, serial_number, sale_price_cop, custom_equipment_name, equipment_catalog(name, labor_factor), clients(name), machine_warranty_events(id)",
+        )
+        .in("id", chunk);
 
-  if (error) {
-    throw new Error(`No se pudieron cargar las máquinas: ${error.message}`);
-  }
+      if (error) {
+        throw new Error(`No se pudieron cargar las máquinas: ${error.message}`);
+      }
+      return (data ?? []) as unknown as LaborMachineRow[];
+    }),
+  );
 
-  const rows = (data ?? []) as unknown as LaborMachineRow[];
+  const rows = pages.flat();
 
   return rows.map((row) => {
     const equipmentName = row.equipment_catalog?.name ?? row.custom_equipment_name ?? "Producto personalizado";

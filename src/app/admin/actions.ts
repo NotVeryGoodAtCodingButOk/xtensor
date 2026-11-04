@@ -51,7 +51,7 @@ import {
   sendMachineToPrevios,
   sendMachineToProduction,
   sendMachineToWarranty,
-  snapshotWholeQueueReestimatedDates,
+  replanProductionQueue,
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
@@ -564,22 +564,27 @@ export async function updateCatalogItemAction(formData: FormData) {
 
   if (id) {
     const previousLaborFactor = hasLaborPct ? await getCatalogItemLaborFactor(id) : null;
-    await updateCatalogItem(id, {
-      code,
-      name,
-      line,
-      default_price_cop,
-      is_active,
-      ...(hasLaborPct ? { labor_factor: laborPct.laborFactor } : {}),
-    });
+    const laborFactorChanged = hasLaborPct && !sameFactor(previousLaborFactor, laborPct.laborFactor);
+    const save = () =>
+      updateCatalogItem(id, {
+        code,
+        name,
+        line,
+        default_price_cop,
+        is_active,
+        ...(hasLaborPct ? { labor_factor: laborPct.laborFactor } : {}),
+      });
 
     // El % del equipo mueve las horas máximas y las fechas de sus máquinas en
-    // cola: se vuelve a tomar la reestimada de toda la cola (replanificación
-    // deliberada) para que el cambio no aparezca como atraso.
-    if (hasLaborPct && !sameFactor(previousLaborFactor, laborPct.laborFactor)) {
-      if (await equipmentHasMachinesInQueue(id)) {
-        await snapshotWholeQueueReestimatedDates();
-      }
+    // cola: se replanifica y cada reestimada se corre lo mismo que su
+    // Actualizada, así el cambio no aparece como atraso ni borra los reales.
+    if (laborFactorChanged && (await equipmentHasMachinesInQueue(id))) {
+      await replanProductionQueue(save);
+    } else {
+      await save();
+    }
+
+    if (laborFactorChanged) {
       revalidateFactoryData();
       revalidatePath("/admin");
     }
@@ -661,8 +666,7 @@ export async function updateSettingsAction(formData: FormData) {
   }
   const shiftBreaks = sanitizeShiftBreaks(shiftBreaksRaw);
   const previous = mapSettings(await getSettings());
-
-  const updated = await updateSettings({
+  const patch = {
     hourly_cost_per_worker_cop: Number(formData.get("hourly_cost_per_worker_cop")),
     labor_factor: Number(formData.get("labor_factor")),
     active_workers_count: Number(formData.get("active_workers_count")),
@@ -677,16 +681,17 @@ export async function updateSettingsAction(formData: FormData) {
     shift_end_fri: shiftEndFri,
     shift_end_sat: shiftEndSat,
     shift_breaks: shiftBreaks,
-  });
+  };
 
   // El % general y el costo hora mueven las horas máximas y las fechas de la
-  // cola: replanificación deliberada, se vuelve a tomar la reestimada.
-  const next = mapSettings(updated);
+  // cola: se replanifica y cada reestimada se corre lo mismo que su Actualizada.
   if (
-    !sameFactor(previous.laborFactor, next.laborFactor) ||
-    !sameFactor(previous.hourlyCostPerWorkerCop, next.hourlyCostPerWorkerCop)
+    !sameFactor(previous.laborFactor, patch.labor_factor) ||
+    !sameFactor(previous.hourlyCostPerWorkerCop, patch.hourly_cost_per_worker_cop)
   ) {
-    await snapshotWholeQueueReestimatedDates();
+    await replanProductionQueue(() => updateSettings(patch));
+  } else {
+    await updateSettings(patch);
   }
 
   revalidateFactoryData();
