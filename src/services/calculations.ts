@@ -116,6 +116,34 @@ export function resolveLaborFactor(
   return { laborFactor: settings.laborFactor, source: "general" };
 }
 
+export const LABOR_PCT_ERROR = "El % de mano de obra debe estar entre 1 y 100.";
+
+/**
+ * % de mano de obra escrito por una persona (formulario o Excel), en %:
+ * "30", "32,5", "32.5", "35 %". Vacío = null (el equipo usa el % general).
+ * Devuelve la fracción (0.325) o un error si no está entre 1 y 100.
+ */
+export function parseLaborPct(
+  value: string | number | null | undefined,
+): { ok: true; laborFactor: number | null } | { ok: false; error: string } {
+  if (value === null || value === undefined) {
+    return { ok: true, laborFactor: null };
+  }
+
+  const text = String(value).replace(/%/g, "").replace(/\s+/g, "").replace(",", ".");
+  if (!text) {
+    return { ok: true, laborFactor: null };
+  }
+
+  const pct = /^\d+(\.\d+)?$/.test(text) ? Number(text) : Number.NaN;
+  if (!Number.isFinite(pct) || pct < 1 || pct > 100) {
+    return { ok: false, error: LABOR_PCT_ERROR };
+  }
+
+  // Redondeo a 4 decimales de fracción (0,01 %) para no guardar ruido de coma flotante.
+  return { ok: true, laborFactor: Math.round(pct * 100) / 10_000 };
+}
+
 /** Margen (en fracción de avance) antes de marcar una máquina "en riesgo". */
 export const BUDGET_RISK_MARGIN = 0.1;
 

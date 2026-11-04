@@ -2,6 +2,7 @@ import "server-only";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeMachineLine } from "@/lib/machine-lines";
+import { resolveLaborFactor } from "@/services/calculations";
 import { listCatalog } from "@/services/catalog";
 import { createPrevioCatalogItem, listPrevioCatalog, normalizePrevioName } from "@/services/previos";
 import type { ParsedCatalogRow } from "@/services/excel";
@@ -22,6 +23,8 @@ export type CatalogImportNewRow = {
   name: string;
   line: string | null;
   priceCop: number | null;
+  /** «% mano de obra» como fracción; null = el equipo usa el % general. */
+  laborFactor: number | null;
   isActive: boolean;
   previos: string[];
 };
@@ -101,6 +104,11 @@ export async function classifyCatalogImport(parsedRows: ParsedCatalogRow[]): Pro
       continue;
     }
 
+    if (row.laborPctError) {
+      invalidRows.push({ rowIndex: row.rowIndex, code, name, reason: row.laborPctError });
+      continue;
+    }
+
     if (seenNewCodes.has(code)) {
       duplicateCodes.push(code);
       continue;
@@ -112,6 +120,7 @@ export async function classifyCatalogImport(parsedRows: ParsedCatalogRow[]): Pro
       name,
       line: row.line,
       priceCop: row.priceCop,
+      laborFactor: row.laborFactor,
       isActive: row.isActive,
       previos: row.previos,
     });
@@ -191,6 +200,8 @@ export async function applyCatalogImport(newRows: CatalogImportNewRow[]): Promis
         name,
         line: row.line ? normalizeMachineLine(row.line) : null,
         default_price_cop: row.priceCop,
+        // Viene del navegador: solo se acepta una fracción válida (0 < f ≤ 1).
+        labor_factor: resolveLaborFactor(row.laborFactor, { laborFactor: 0 }).source === "catalogo" ? row.laborFactor : null,
         is_active: row.isActive,
         is_custom: false,
       })

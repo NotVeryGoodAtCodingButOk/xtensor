@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import ExcelJS from "exceljs";
 
-import { parseQuoteWorkbook, parseCatalogWorkbook } from "@/services/excel";
+import { buildCatalogWorkbook, parseQuoteWorkbook, parseCatalogWorkbook } from "@/services/excel";
 
 /** Builds a workbook mirroring the XTENSOR cotización layout. */
 async function buildQuoteFixture(options: { includeReference?: boolean } = {}): Promise<ArrayBuffer> {
@@ -208,6 +208,57 @@ describe("parseCatalogWorkbook", () => {
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ code: "XB001", name: "Equipo X", isActive: true });
     expect(rows[0].previos).toEqual(["Cadena"]);
+  });
+
+  it("reads «% mano de obra» in % (dot, comma or a percent-formatted cell) and flags invalid values", async () => {
+    const workbook = new ExcelJS.Workbook();
+    const sheet = workbook.addWorksheet("Catálogo");
+    ["Código", "Equipo", "% mano de obra"].forEach((value, index) => {
+      sheet.getCell(1, index + 1).value = value;
+    });
+    const rows: Array<[string, string, string | number | null]> = [
+      ["XB001", "Bicicleta", 20],
+      ["XM120", "Flexo", "32,5"],
+      ["XM121", "Prensa", null],
+      ["XM122", "Polea", 0.35],
+      ["XM123", "Jaula", "150"],
+    ];
+    rows.forEach(([code, name, pct], offset) => {
+      sheet.getCell(2 + offset, 1).value = code;
+      sheet.getCell(2 + offset, 2).value = name;
+      sheet.getCell(2 + offset, 3).value = pct;
+    });
+    // 0,35 con formato de porcentaje = 35 % en Excel.
+    sheet.getCell(5, 3).numFmt = "0%";
+
+    const parsed = await parseCatalogWorkbook((await workbook.xlsx.writeBuffer()) as ArrayBuffer);
+
+    expect(parsed.map((row) => [row.code, row.laborFactor, row.laborPctError])).toEqual([
+      ["XB001", 0.2, null],
+      ["XM120", 0.325, null],
+      ["XM121", null, null],
+      ["XM122", 0.35, null],
+      ["XM123", null, "El % de mano de obra debe estar entre 1 y 100."],
+    ]);
+  });
+
+  it("round-trips «% mano de obra» through the exported catalog", async () => {
+    const buffer = await buildCatalogWorkbook([
+      { code: "XB001", name: "Bicicleta", line: "bioparques", default_price_cop: 1_000_000, labor_factor: 0.2, is_active: true, previos: [] },
+      { code: "XM120", name: "Flexo", line: "musculacion", default_price_cop: 4_748_100, labor_factor: null, is_active: true, previos: [] },
+      { code: "XM121", name: "Prensa", line: "musculacion", default_price_cop: null, labor_factor: "0.325", is_active: false, previos: [] },
+    ]);
+
+    const exported = new ExcelJS.Workbook();
+    await exported.xlsx.load(buffer as unknown as Parameters<typeof exported.xlsx.load>[0]);
+    expect(exported.worksheets[0].getRow(1).getCell(5).value).toBe("% mano de obra");
+
+    const parsed = await parseCatalogWorkbook(buffer);
+    expect(parsed.map((row) => [row.code, row.laborFactor, row.isActive])).toEqual([
+      ["XB001", 0.2, true],
+      ["XM120", null, true],
+      ["XM121", 0.325, false],
+    ]);
   });
 
   it("throws when there is no Código header", async () => {

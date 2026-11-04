@@ -161,6 +161,8 @@ export async function createCatalogItem(input: {
   name: string;
   line: string | null;
   default_price_cop: number | null;
+  /** % MO del equipo (fracción); null = usa el % general de Configuración. */
+  labor_factor?: number | null;
 }) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase
@@ -174,12 +176,29 @@ export async function createCatalogItem(input: {
 
 export async function updateCatalogItem(
   id: string,
-  input: { code?: string; name?: string; line?: string | null; default_price_cop?: number | null; is_active?: boolean },
+  input: {
+    code?: string;
+    name?: string;
+    line?: string | null;
+    default_price_cop?: number | null;
+    is_active?: boolean;
+    /** % MO del equipo (fracción); null = usa el % general de Configuración. */
+    labor_factor?: number | null;
+  },
 ) {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("equipment_catalog").update(input).eq("id", id).select("*").single();
   if (error) throw new Error(`No se pudo actualizar el equipo: ${error.message}`);
   return data;
+}
+
+/** % MO actual de un equipo (fracción o null), para saber si un cambio obliga a replanificar la cola. */
+export async function getCatalogItemLaborFactor(id: string): Promise<number | null> {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase.from("equipment_catalog").select("labor_factor").eq("id", id).maybeSingle();
+  if (error) throw new Error(`No se pudo cargar el equipo: ${error.message}`);
+  const value = data?.labor_factor;
+  return value === null || value === undefined ? null : Number(value);
 }
 
 export async function deleteCatalogItem(id: string) {

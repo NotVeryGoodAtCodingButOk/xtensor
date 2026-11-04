@@ -2,6 +2,7 @@ import "server-only";
 import ExcelJS from "exceljs";
 
 import type { CalculatedMachineView } from "@/types/domain";
+import { parseLaborPct } from "@/services/calculations";
 import { formatDateEs } from "@/services/schedule";
 import { normalizePrevioName } from "@/services/previos";
 
@@ -40,7 +41,7 @@ export type ParsedQuote = {
 /**
  * One data row parsed from the exported "Catálogo" workbook (see
  * {@link buildCatalogWorkbook}). Mirrors the export columns: Código, Equipo,
- * Línea, Precio COP, Estado, Previos.
+ * Línea, Precio COP, % mano de obra, Estado, Previos.
  */
 export type ParsedCatalogRow = {
   /** 1-based source row, used as a stable key in the UI. */
@@ -49,6 +50,10 @@ export type ParsedCatalogRow = {
   name: string;
   line: string | null;
   priceCop: number | null;
+  /** «% mano de obra» como fracción (30 → 0.3); null si la celda está vacía. */
+  laborFactor: number | null;
+  /** Error de la celda «% mano de obra» (fuera de 1–100 o no numérica); null si está bien. */
+  laborPctError: string | null;
   isActive: boolean;
   /** Deduped previo names referenced in the "Previos" cell. */
   previos: string[];
@@ -246,6 +251,7 @@ type CatalogColumns = {
   name: number | null;
   line: number | null;
   price: number | null;
+  laborPct: number | null;
   status: number | null;
   previos: number | null;
 };
@@ -257,6 +263,7 @@ function resolveCatalogColumns(row: ExcelJS.Row): CatalogColumns {
     name: null,
     line: null,
     price: null,
+    laborPct: null,
     status: null,
     previos: null,
   };
@@ -269,11 +276,23 @@ function resolveCatalogColumns(row: ExcelJS.Row): CatalogColumns {
     else if (label === "equipo" || label === "nombre") columns.name = colNumber;
     else if (label === "linea") columns.line = colNumber;
     else if (label === "precio" || label === "precio cop") columns.price = colNumber;
+    else if (label.includes("mano de obra") || label === "% mo" || label === "mo %") columns.laborPct = colNumber;
     else if (label === "estado") columns.status = colNumber;
     else if (label === "previos") columns.previos = colNumber;
   });
 
   return columns;
+}
+
+/**
+ * «% mano de obra» se escribe en % (30). Si la celda tiene formato de
+ * porcentaje, Excel guarda 0,3: se pasa a 30 antes de validar.
+ */
+function parseLaborPctCell(cell: ExcelJS.Cell) {
+  const raw = cellString(cell.value);
+  const isPercentFormat = typeof cell.value === "number" && typeof cell.numFmt === "string" && cell.numFmt.includes("%");
+  const value = isPercentFormat ? Math.round((cell.value as number) * 100 * 100) / 100 : raw;
+  return { raw, parsed: parseLaborPct(value) };
 }
 
 /** Estado cell → active flag. Empty defaults to active. */
@@ -327,7 +346,7 @@ export async function parseCatalogWorkbook(
 
   if (!headerRow || !resolvedColumns) {
     throw new Error(
-      'No se encontró la columna "Código". Usa el formato del catálogo descargado (columnas: Código, Equipo, Línea, Precio COP, Estado, Previos).',
+      'No se encontró la columna "Código". Usa el formato del catálogo descargado (columnas: Código, Equipo, Línea, Precio COP, % mano de obra, Estado, Previos).',
     );
   }
 
@@ -342,11 +361,12 @@ export async function parseCatalogWorkbook(
     const name = columns.name != null ? cellString(row.getCell(columns.name).value) : "";
     const line = columns.line != null ? cellString(row.getCell(columns.line).value) : "";
     const priceCell = columns.price != null ? row.getCell(columns.price).value : null;
+    const laborPct = columns.laborPct != null ? parseLaborPctCell(row.getCell(columns.laborPct)) : null;
     const statusText = columns.status != null ? cellString(row.getCell(columns.status).value) : "";
     const previosText = columns.previos != null ? cellString(row.getCell(columns.previos).value) : "";
 
     // Skip fully-empty rows.
-    if (!code && !name && !line && !statusText && !previosText && !cellString(priceCell)) continue;
+    if (!code && !name && !line && !statusText && !previosText && !cellString(priceCell) && !laborPct?.raw) continue;
 
     rows.push({
       rowIndex: rowNumber,
@@ -354,6 +374,8 @@ export async function parseCatalogWorkbook(
       name,
       line: line || null,
       priceCop: cellOptionalNumber(priceCell),
+      laborFactor: laborPct?.parsed.ok ? laborPct.parsed.laborFactor : null,
+      laborPctError: laborPct && !laborPct.parsed.ok ? laborPct.parsed.error : null,
       isActive: parseCatalogActive(statusText),
       previos: parseCatalogPrevios(previosText),
     });
@@ -430,6 +452,8 @@ type CatalogWorkbookItem = {
   name: string;
   line: string | null;
   default_price_cop: number | null;
+  /** % MO del equipo (fracción) o null si usa el general. */
+  labor_factor?: number | string | null;
   is_active: boolean;
   previos: { name: string }[];
 };
@@ -446,6 +470,7 @@ export async function buildCatalogWorkbook(items: CatalogWorkbookItem[]): Promis
     { header: "Equipo", key: "name", width: 34 },
     { header: "Línea", key: "line", width: 18 },
     { header: "Precio COP", key: "price", width: 16 },
+    { header: "% mano de obra", key: "laborPct", width: 16 },
     { header: "Estado", key: "status", width: 12 },
     { header: "Previos", key: "previos", width: 48 },
   ];
@@ -465,6 +490,7 @@ export async function buildCatalogWorkbook(items: CatalogWorkbookItem[]): Promis
       name: item.name,
       line: item.line ?? "",
       price,
+      laborPct: laborPctForExport(item.labor_factor),
       status: item.is_active ? "Activo" : "Inactivo",
       previos: item.previos.map((p) => p.name).join(" | "),
     });
@@ -475,6 +501,13 @@ export async function buildCatalogWorkbook(items: CatalogWorkbookItem[]): Promis
 
   const buffer = await workbook.xlsx.writeBuffer();
   return Buffer.from(buffer);
+}
+
+/** 0.325 → 32.5 (en %, como se escribe en el catálogo); vacío si el equipo usa el % general. */
+function laborPctForExport(value: number | string | null | undefined): number | "" {
+  if (value === null || value === undefined || value === "") return "";
+  const factor = Number(value);
+  return Number.isFinite(factor) && factor > 0 ? Math.round(factor * 100 * 100) / 100 : "";
 }
 
 export async function buildShippedWorkbook(machines: CalculatedMachineView[]): Promise<Buffer> {
