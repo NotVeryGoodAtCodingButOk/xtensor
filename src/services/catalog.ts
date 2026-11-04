@@ -194,11 +194,24 @@ export async function updateCatalogItem(
 
 /** % MO actual de un equipo (fracción o null), para saber si un cambio obliga a replanificar la cola. */
 export async function getCatalogItemLaborFactor(id: string): Promise<number | null> {
+  return (await getCatalogLaborFactors([id])).get(id) ?? null;
+}
+
+/** equipment_catalog.id → % MO propio (fracción) o null si usa el general. */
+export async function getCatalogLaborFactors(ids: string[]): Promise<Map<string, number | null>> {
+  const unique = [...new Set(ids.filter(Boolean))];
+  const result = new Map<string, number | null>();
+  if (unique.length === 0) return result;
+
   const supabase = createSupabaseAdminClient();
-  const { data, error } = await supabase.from("equipment_catalog").select("labor_factor").eq("id", id).maybeSingle();
-  if (error) throw new Error(`No se pudo cargar el equipo: ${error.message}`);
-  const value = data?.labor_factor;
-  return value === null || value === undefined ? null : Number(value);
+  const { data, error } = await supabase.from("equipment_catalog").select("id, labor_factor").in("id", unique);
+  if (error) throw new Error(`No se pudo cargar el % de mano de obra de los equipos: ${error.message}`);
+
+  for (const row of data ?? []) {
+    const value = row.labor_factor as number | string | null;
+    result.set(row.id, value === null || value === undefined || value === "" ? null : Number(value));
+  }
+  return result;
 }
 
 export async function deleteCatalogItem(id: string) {

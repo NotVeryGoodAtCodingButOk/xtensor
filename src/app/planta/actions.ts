@@ -184,7 +184,7 @@ export async function startStageSessionAction(input: {
   return { ok: true };
 }
 
-/** Starts a timed session on one or several catalogued activities (aseo, orden…). */
+/** Starts a timed session on one or several catalogued activities (5S, empaque/carga/instalación, garantías…). */
 export async function startOtherSessionAction(input: {
   activityTypeIds: string[];
   machineIds?: string[];

@@ -7,7 +7,12 @@ import { roundToFractionDigits } from "@/lib/utils";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { requireAdmin, getAdminOrAuthError } from "@/lib/admin-auth";
 import { normalizeMachineLine } from "@/lib/machine-lines";
-import { createActivityType, deleteActivityType, updateActivityType } from "@/services/activity-types";
+import {
+  ActivityTypeHasHoursError,
+  createActivityType,
+  deleteActivityType,
+  updateActivityType,
+} from "@/services/activity-types";
 import {
   createCustomEquipment,
   createColor,
@@ -21,6 +26,8 @@ import {
   deleteCatalogItem,
   createHoliday,
   deleteHoliday,
+  getCatalogItemLaborFactor,
+  getCatalogLaborFactors,
   listCatalog,
   listHolidays,
 } from "@/services/catalog";
@@ -32,6 +39,7 @@ import {
   bulkSendToProduction,
   createMachine,
   deleteMachine,
+  equipmentHasMachinesInQueue,
   getMaxOrderPosition,
   markMachineFinished,
   markMachineShipped,
@@ -43,10 +51,11 @@ import {
   sendMachineToPrevios,
   sendMachineToProduction,
   sendMachineToWarranty,
+  snapshotWholeQueueReestimatedDates,
   updateMachine,
   unmarkMachineShipped,
 } from "@/services/machines";
-import { estimateTotalHours } from "@/services/calculations";
+import { estimateTotalHours, parseLaborPct } from "@/services/calculations";
 import { estimateDeliveryDate } from "@/services/schedule";
 import { parseQuoteWorkbook, parseCatalogWorkbook } from "@/services/excel";
 import {
@@ -369,7 +378,13 @@ export async function deleteColorAction(formData: FormData) {
 export async function addActivityTypeAction(formData: FormData) {
   await requireAdmin();
   const name = String(formData.get("name") ?? "").trim();
-  if (name) await createActivityType({ name, allowsMachine: formData.get("allowsMachine") === "1" });
+  if (name) {
+    await createActivityType({
+      name,
+      allowsMachine: formData.get("allowsMachine") === "1",
+      description: optionalFormText(formData, "description"),
+    });
+  }
   revalidateFactoryData();
   redirect("/admin/configuracion#actividades");
 }
@@ -383,18 +398,40 @@ export async function updateActivityTypeAction(formData: FormData) {
       name,
       allowsMachine: formData.get("allowsMachine") === "1",
       isActive: formData.get("isActive") === "1",
+      // Sin el campo en el formulario (versión anterior) no se toca la descripción.
+      description: optionalFormText(formData, "description"),
     });
   }
   revalidateFactoryData();
   redirect("/admin/configuracion#actividades");
 }
 
+/**
+ * Borra una actividad. Con horas registradas exige `move_to_id` y las mueve
+ * ahí antes de borrar. Nunca lanza: el resultado vuelve como ?toast=
+ * (actividad-eliminada | actividad-movida | actividad-con-horas | actividad-error).
+ */
 export async function deleteActivityTypeAction(formData: FormData) {
   await requireAdmin();
-  const id = String(formData.get("id") ?? "");
-  if (id) await deleteActivityType(id);
+  const id = String(formData.get("id") ?? "").trim();
+  const moveToId = String(formData.get("move_to_id") ?? "").trim() || null;
+  let toast = "actividad-error";
+
+  if (id) {
+    try {
+      const outcome = await deleteActivityType(id, moveToId);
+      toast = outcome === "moved" ? "actividad-movida" : "actividad-eliminada";
+    } catch (error) {
+      if (error instanceof ActivityTypeHasHoursError) {
+        toast = "actividad-con-horas";
+      } else {
+        console.error("No se pudo eliminar la actividad", error);
+      }
+    }
+  }
+
   revalidateFactoryData();
-  redirect("/admin/configuracion#actividades");
+  redirect(`/admin/configuracion?toast=${toast}#actividades`);
 }
 
 export async function addWorkerAction(formData: FormData) {
@@ -438,7 +475,11 @@ export async function addCatalogItemAction(formData: FormData) {
   const name = String(formData.get("name") ?? "").trim();
   const line = normalizeMachineLine(formData.get("line"));
   const default_price_cop = Number(formData.get("default_price_cop")) || null;
-  if (code && name) await createCatalogItem({ code, name, line, default_price_cop });
+  const laborPct = parseLaborPct(formData.get("labor_pct")?.toString());
+  if (!laborPct.ok) {
+    redirect(`/admin/catalogo?toast=${LABOR_PCT_INVALID_TOAST}`);
+  }
+  if (code && name) await createCatalogItem({ code, name, line, default_price_cop, labor_factor: laborPct.laborFactor });
   redirect("/admin/catalogo");
 }
 
@@ -514,7 +555,35 @@ export async function updateCatalogItemAction(formData: FormData) {
   const line = normalizeMachineLine(formData.get("line"));
   const default_price_cop = Number(formData.get("default_price_cop")) || null;
   const is_active = formData.get("is_active") !== "false";
-  if (id) await updateCatalogItem(id, { code, name, line, default_price_cop, is_active });
+  // Sin el campo en el formulario (versión anterior) el % del equipo no se toca.
+  const hasLaborPct = formData.has("labor_pct");
+  const laborPct = parseLaborPct(formData.get("labor_pct")?.toString());
+  if (!laborPct.ok) {
+    redirect(`/admin/catalogo?toast=${LABOR_PCT_INVALID_TOAST}`);
+  }
+
+  if (id) {
+    const previousLaborFactor = hasLaborPct ? await getCatalogItemLaborFactor(id) : null;
+    await updateCatalogItem(id, {
+      code,
+      name,
+      line,
+      default_price_cop,
+      is_active,
+      ...(hasLaborPct ? { labor_factor: laborPct.laborFactor } : {}),
+    });
+
+    // El % del equipo mueve las horas máximas y las fechas de sus máquinas en
+    // cola: se vuelve a tomar la reestimada de toda la cola (replanificación
+    // deliberada) para que el cambio no aparezca como atraso.
+    if (hasLaborPct && !sameFactor(previousLaborFactor, laborPct.laborFactor)) {
+      if (await equipmentHasMachinesInQueue(id)) {
+        await snapshotWholeQueueReestimatedDates();
+      }
+      revalidateFactoryData();
+      revalidatePath("/admin");
+    }
+  }
   redirect("/admin/catalogo");
 }
 
@@ -591,8 +660,9 @@ export async function updateSettingsAction(formData: FormData) {
     throw new Error("El formato de las pausas es inválido.");
   }
   const shiftBreaks = sanitizeShiftBreaks(shiftBreaksRaw);
+  const previous = mapSettings(await getSettings());
 
-  await updateSettings({
+  const updated = await updateSettings({
     hourly_cost_per_worker_cop: Number(formData.get("hourly_cost_per_worker_cop")),
     labor_factor: Number(formData.get("labor_factor")),
     active_workers_count: Number(formData.get("active_workers_count")),
@@ -608,6 +678,17 @@ export async function updateSettingsAction(formData: FormData) {
     shift_end_sat: shiftEndSat,
     shift_breaks: shiftBreaks,
   });
+
+  // El % general y el costo hora mueven las horas máximas y las fechas de la
+  // cola: replanificación deliberada, se vuelve a tomar la reestimada.
+  const next = mapSettings(updated);
+  if (
+    !sameFactor(previous.laborFactor, next.laborFactor) ||
+    !sameFactor(previous.hourlyCostPerWorkerCop, next.hourlyCostPerWorkerCop)
+  ) {
+    await snapshotWholeQueueReestimatedDates();
+  }
+
   revalidateFactoryData();
   redirect("/admin/configuracion?settings=ok");
 }
@@ -715,6 +796,9 @@ export async function importQuoteAction(input: {
   const settings = mapSettings(await getSettings());
   const holidays = await listHolidays();
   const currentQueue = await listCalculatedMachines({ settings, holidays, status: "in_production" });
+  const laborFactorByEquipment = await getCatalogLaborFactors(
+    importable.filter((line) => line.resolution === "catalog" && line.catalogId).map((line) => line.catalogId as string),
+  );
   const scheduleStart = new Date();
   let accumulatedHours = currentQueue.reduce((sum, machine) => sum + machine.remainingHours, 0);
 
@@ -743,7 +827,8 @@ export async function importQuoteAction(input: {
       position += 1;
       const serialNumber = normalizeSerialNumber(line.serialNumbers[i]);
       if (!serialNumber) throw new Error(`La SERIAL de "${line.producto}" es inválida.`);
-      accumulatedHours += estimateTotalHours(salePriceCop, settings);
+      // % MO del equipo del catálogo (los productos personalizados nuevos usan el general).
+      accumulatedHours += estimateTotalHours(salePriceCop, settings, laborFactorByEquipment.get(equipmentId ?? "") ?? null);
       const promisedDate = estimateDeliveryDate(accumulatedHours, scheduleStart, settings, holidays);
       await createMachine({
         serial_number: serialNumber,
@@ -922,4 +1007,17 @@ export async function warrantyMachineAction(formData: FormData) {
 
 async function requireActorProfileId() {
   return (await requireAdmin()).id;
+}
+
+/** Código ?toast= cuando el % de mano de obra del catálogo no está entre 1 y 100. */
+const LABOR_PCT_INVALID_TOAST = "labor-pct-invalido";
+
+/** Texto opcional de un formulario: undefined si el campo no viene (no tocar), string si viene. */
+function optionalFormText(formData: FormData, field: string): string | undefined {
+  return formData.has(field) ? String(formData.get(field) ?? "") : undefined;
+}
+
+function sameFactor(a: number | null, b: number | null): boolean {
+  if (a === null || b === null) return a === b;
+  return Math.abs(a - b) < 1e-9;
 }
