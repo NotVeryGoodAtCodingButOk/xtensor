@@ -725,6 +725,7 @@ export function ProductionTable({
                     {!shipped && (
                       <ActionTooltip text="Abre el detalle de esta máquina para editarla." align="right">
                         <Link
+                          prefetch={false}
                           href={`/admin/maquinas/${machine.id}`}
                           title="Editar"
                           className="inline-flex h-6 w-6 items-center justify-center rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-white)] text-[var(--xt-black)] hover:bg-[var(--xt-yellow-soft)]"

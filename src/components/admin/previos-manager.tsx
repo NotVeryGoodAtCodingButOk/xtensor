@@ -492,6 +492,7 @@ export function PreviosManager({
                       <div className="flex items-center gap-1">
                         <InlineSerialEdit machineId={machine.machineId} serialNumber={machine.serialNumber} />
                         <Link
+                          prefetch={false}
                           href={`/admin/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
                           title="Ver máquina"
@@ -604,6 +605,7 @@ export function PreviosManager({
                       <div className="flex items-center gap-1">
                         <InlineSerialEdit machineId={machine.machineId} serialNumber={machine.serialNumber} />
                         <Link
+                          prefetch={false}
                           href={`/admin/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
                           title="Ver máquina"

@@ -186,6 +186,7 @@ function MachineCard({ machine }: { machine: OnHoldMachineCard }) {
                   <span className="line-clamp-1 text-sm font-semibold leading-tight">{machine.equipmentName}</span>
                 </CellTooltip>
                 <Link
+                  prefetch={false}
                   href={`/admin/maquinas/${machine.id}`}
                   className="inline-flex h-6 w-6 shrink-0 items-center justify-center text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
                   title="Ver máquina"
