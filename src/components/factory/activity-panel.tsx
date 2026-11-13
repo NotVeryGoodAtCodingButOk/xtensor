@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import { Check } from "lucide-react";
 import { startOtherSessionAction } from "@/app/planta/actions";
 import { Button } from "@/components/ui/button";
@@ -35,7 +34,6 @@ export function ActivityPanel({
   hasOpenSession: boolean;
   navButtonClass: string;
 }) {
-  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [selectedMachineIds, setSelectedMachineIds] = useState<string[]>([]);
@@ -88,7 +86,6 @@ export function ActivityPanel({
         return;
       }
       close();
-      router.refresh();
     });
   }
 

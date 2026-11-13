@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { resumeActivityAction } from "@/app/planta/actions";
 import { formatElapsedTime, formatMachineList } from "@/lib/work-session-ui";
 import type { PausedActivityView } from "@/services/work-sessions";
@@ -19,7 +18,6 @@ export function PausedActivitiesBar({
   activities: PausedActivityView[];
   hasOpenSession: boolean;
 }) {
-  const router = useRouter();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,7 +34,6 @@ export function PausedActivitiesBar({
       setError(result.error ?? "No se pudo reanudar la actividad.");
       return;
     }
-    router.refresh();
   }
 
   return (

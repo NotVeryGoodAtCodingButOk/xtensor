@@ -2,7 +2,6 @@
 
 import type { MouseEvent } from "react";
 import { useEffect, useOptimistic, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 import {
   finishPausedActivityAction,
   finishSessionAction,
@@ -57,7 +56,6 @@ export function TaskGrid({
   pausedActivities?: TaskGridPausedActivity[];
   continueHref: string;
 }) {
-  const router = useRouter();
   const [optimisticMachines, applyOptimisticCompletion] = useOptimistic(
     machines,
     (current: TaskGridMachine[], update: CompletionUpdate) =>
@@ -121,7 +119,6 @@ export function TaskGrid({
         return;
       }
       setShowReturnBar(true);
-      router.refresh();
     });
   }
 
@@ -137,7 +134,6 @@ export function TaskGrid({
       }
       setShowReturnBar(true);
       notifyFinishedMachines(result.finishedMachineIds?.length ?? 0);
-      router.refresh();
     });
   }
 
@@ -152,7 +148,6 @@ export function TaskGrid({
         return;
       }
       setShowReturnBar(true);
-      router.refresh();
     });
   }
 
@@ -166,7 +161,6 @@ export function TaskGrid({
         return;
       }
       setShowReturnBar(true);
-      router.refresh();
     });
   }
 
@@ -181,7 +175,6 @@ export function TaskGrid({
       }
       setShowReturnBar(true);
       notifyFinishedMachines(result.finishedMachineIds?.length ?? 0);
-      router.refresh();
     });
   }
 
@@ -211,7 +204,6 @@ export function TaskGrid({
       } else if (result.revert === "reprocess") {
         notify("Reproceso registrado");
       }
-      router.refresh();
     });
   }
 
@@ -231,7 +223,6 @@ export function TaskGrid({
       if (result.finished) {
         notify("Máquina terminada", "Todas las etapas quedaron hechas.");
       }
-      router.refresh();
     });
   }
 

@@ -2,7 +2,6 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { revalidateFactoryData } from "@/lib/factory-cache";
 import {
   clearActiveWorker,
   clearFactorySession,
@@ -89,7 +88,6 @@ export async function logStageAction(input: {
     completion,
     workerId,
   });
-  revalidateFactoryData();
 
   let finished = false;
   if (completion === 100) {
@@ -154,6 +152,10 @@ function sessionErrorMessage(error: unknown, fallback: string) {
  * Revalidates the machine-list route plus every detail/group route (using the
  * dynamic-path pattern so a single call covers every machine, without needing
  * to know which ones were affected).
+ *
+ * Any revalidation inside a server action makes Next send the freshly rendered
+ * current page back in the action response, so the client must NOT call
+ * router.refresh() afterwards (that would render the page a second time).
  */
 function revalidatePlantaRoutes() {
   revalidatePath("/planta/maquinas");
@@ -177,7 +179,6 @@ export async function startStageSessionAction(input: {
     return { ok: false, error: sessionErrorMessage(error, "No se pudo iniciar la actividad.") };
   }
 
-  revalidateFactoryData();
   revalidatePlantaRoutes();
 
   return { ok: true };
@@ -199,7 +200,6 @@ export async function startOtherSessionAction(input: {
     return { ok: false, error: sessionErrorMessage(error, "No se pudo iniciar la actividad.") };
   }
 
-  revalidateFactoryData();
   revalidatePlantaRoutes();
 
   return { ok: true };
@@ -220,7 +220,6 @@ export async function finishSessionAction(input: { sessionId: string }): Promise
     return { ok: false, error: sessionErrorMessage(error, "No se pudo terminar la actividad.") };
   }
 
-  revalidateFactoryData();
   revalidatePlantaRoutes();
 
   return { ok: true, finishedMachineIds };
@@ -242,7 +241,6 @@ export async function pauseSessionAction(input: { sessionId: string }): Promise<
     return { ok: false, error: sessionErrorMessage(error, "No se pudo pausar la actividad.") };
   }
 
-  revalidateFactoryData();
   revalidatePlantaRoutes();
 
   return { ok: true };
@@ -261,7 +259,6 @@ export async function resumeActivityAction(input: { activityId: string }): Promi
     return { ok: false, error: sessionErrorMessage(error, "No se pudo reanudar la actividad.") };
   }
 
-  revalidateFactoryData();
   revalidatePlantaRoutes();
 
   return { ok: true };
@@ -282,7 +279,6 @@ export async function finishPausedActivityAction(input: { activityId: string }):
     return { ok: false, error: sessionErrorMessage(error, "No se pudo terminar la actividad.") };
   }
 
-  revalidateFactoryData();
   revalidatePlantaRoutes();
 
   return { ok: true, finishedMachineIds };

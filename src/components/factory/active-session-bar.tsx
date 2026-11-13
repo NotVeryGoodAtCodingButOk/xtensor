@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { finishSessionAction, pauseSessionAction } from "@/app/planta/actions";
 import { formatElapsedTime, formatMachineList, isStartedBeforeToday, totalElapsedMs } from "@/lib/work-session-ui";
 import type { OpenSessionView } from "@/services/work-sessions";
@@ -12,7 +11,6 @@ import type { OpenSessionView } from "@/services/work-sessions";
  * without hunting for the matching stage card.
  */
 export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
-  const router = useRouter();
   const [now, setNow] = useState(() => Date.now());
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,7 +40,6 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
       setError(result.error ?? "No se pudo completar la acción.");
       return;
     }
-    router.refresh();
   }
 
   return (
