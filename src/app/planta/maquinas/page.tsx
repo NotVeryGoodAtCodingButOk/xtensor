@@ -19,7 +19,7 @@ import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 export default async function FactoryMachinesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ modo?: string }>;
+  searchParams: Promise<{ modo?: string; workerId?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -34,8 +34,14 @@ export default async function FactoryMachinesPage({
   }
 
   // La cookie (firmada) es la única fuente del operario: la fija selectWorkerAction antes de llegar aquí.
-  const [{ modo }, workerId] = await Promise.all([searchParams, getActiveWorkerId()]);
+  const [{ modo, workerId: legacyWorkerId }, workerId] = await Promise.all([searchParams, getActiveWorkerId()]);
   if (!workerId) {
+    redirect("/planta/operarios");
+  }
+  // Compatibilidad con pestañas abiertas antes del cambio: el selector viejo
+  // navegaba a ?workerId=… sin fijar la cookie a tiempo. Si no coincide con la
+  // cookie, se vuelve al selector nuevo en vez de mostrar a otro operario.
+  if (legacyWorkerId && legacyWorkerId !== workerId) {
     redirect("/planta/operarios");
   }
 
