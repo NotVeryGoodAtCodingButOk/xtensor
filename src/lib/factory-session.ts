@@ -4,7 +4,8 @@ import { requireEnv } from "@/lib/env";
 
 const FACTORY_COOKIE = "xt_factory";
 const WORKER_COOKIE = "xt_worker";
-const ONE_DAY_SECONDS = 60 * 60 * 24;
+/** La clave de planta dura un mes en cada dispositivo. */
+const FACTORY_SESSION_SECONDS = 60 * 60 * 24 * 30;
 /** El operario se fija con path "/planta": para borrarlo hay que repetir el mismo path. */
 const WORKER_COOKIE_PATH = "/planta";
 const TWELVE_HOURS_SECONDS = 60 * 60 * 12;
@@ -16,7 +17,7 @@ export async function setFactoryUnlocked() {
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    maxAge: ONE_DAY_SECONDS,
+    maxAge: FACTORY_SESSION_SECONDS,
   });
 }
 
