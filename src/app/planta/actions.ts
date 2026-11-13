@@ -18,9 +18,11 @@ import { verifyFactoryPassword } from "@/services/settings";
 import {
   finishPausedActivity,
   finishSession,
+  listMachinesForActivities,
   resumeActivity,
   startOtherSession,
   startStageSession,
+  type ActivityPanelMachineOption,
 } from "@/services/work-sessions";
 
 export async function unlockFactoryAction(formData: FormData) {
@@ -128,6 +130,17 @@ export async function toggleMachinePrevioFactoryAction(formData: FormData) {
   }
 
   revalidatePath("/planta/almacen");
+}
+
+/**
+ * Lectura para el panel de Actividades: se pide solo al abrirlo. No revalida
+ * nada, así que no vuelve a pintar la página.
+ */
+export async function listActivityMachinesAction(): Promise<ActivityPanelMachineOption[]> {
+  if (!(await isFactoryUnlocked())) {
+    return [];
+  }
+  return listMachinesForActivities();
 }
 
 export type SessionActionResult = {

@@ -2,7 +2,7 @@
 
 import { useMemo, useState, useTransition } from "react";
 import { Check } from "lucide-react";
-import { startOtherSessionAction } from "@/app/planta/actions";
+import { listActivityMachinesAction, startOtherSessionAction } from "@/app/planta/actions";
 import { Button } from "@/components/ui/button";
 import type { ActivityTypeView } from "@/services/activity-types";
 import type { ActivityMachineStatus, ActivityPanelMachineOption } from "@/services/work-sessions";
@@ -24,17 +24,21 @@ const MACHINE_STATUS_LABEL: Record<ActivityMachineStatus, string> = {
  */
 export function ActivityPanel({
   activityTypes,
-  machines,
   hasOpenSession,
   navButtonClass,
 }: {
   activityTypes: ActivityTypeView[];
-  /** En producción, terminadas y despachadas recientes (listMachinesForActivities). */
-  machines: ActivityPanelMachineOption[];
   hasOpenSession: boolean;
   navButtonClass: string;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  /**
+   * En producción, terminadas y despachadas recientes (~130). Se piden al abrir
+   * el panel y no en cada render de la página: así no viajan ni se procesan en
+   * el iPad cada vez que se pinta la lista de máquinas.
+   */
+  const [machines, setMachines] = useState<ActivityPanelMachineOption[] | null>(null);
+  const [machinesError, setMachinesError] = useState(false);
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [selectedMachineIds, setSelectedMachineIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -45,8 +49,20 @@ export function ActivityPanel({
     [activityTypes, selectedTypeIds],
   );
 
+  function open() {
+    setIsOpen(true);
+    if (machines === null) {
+      setMachinesError(false);
+      listActivityMachinesAction()
+        .then(setMachines)
+        .catch(() => setMachinesError(true));
+    }
+  }
+
   function close() {
     setIsOpen(false);
+    // La lista se vuelve a pedir la próxima vez (puede haber cambiado de estado alguna máquina).
+    setMachines(null);
     setSelectedTypeIds([]);
     setSelectedMachineIds([]);
     setError(null);
@@ -96,7 +112,7 @@ export function ActivityPanel({
         variant="ghost"
         size="sm"
         className={`xt-planta-nav-button ${navButtonClass}`}
-        onClick={() => setIsOpen(true)}
+        onClick={open}
       >
         Actividades
       </Button>
@@ -146,7 +162,11 @@ export function ActivityPanel({
             {allowsMachine ? (
               <div className="xt-activity-machines">
                 <p className="xt-eyebrow">Máquina (opcional)</p>
-                {machines.length === 0 ? (
+                {machinesError ? (
+                  <p className="xt-activity-error">No se pudieron cargar las máquinas. Cierra y abre de nuevo.</p>
+                ) : machines === null ? (
+                  <p className="xt-activity-note">Cargando máquinas…</p>
+                ) : machines.length === 0 ? (
                   <p className="xt-activity-note">No hay máquinas en producción, terminadas ni despachadas.</p>
                 ) : (
                   <ul className="xt-activity-machine-list">

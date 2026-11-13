@@ -16,7 +16,7 @@ import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
 import { listActivityTypes } from "@/services/activity-types";
 import { getActiveWorker } from "@/services/catalog";
 import { listMachines } from "@/services/machines";
-import { getOpenSession, listMachinesForActivities, listPausedActivities } from "@/services/work-sessions";
+import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachinesPage({
   searchParams,
@@ -42,14 +42,12 @@ export default async function FactoryMachinesPage({
   }
 
   // Una sola ola en paralelo: la planta no usa fechas ni la cola calculada, solo etapas y datos de la tarjeta.
-  const [worker, machines, openSession, pausedActivities, activityTypes, activityMachines] = await Promise.all([
+  const [worker, machines, openSession, pausedActivities, activityTypes] = await Promise.all([
     getActiveWorker(workerId),
     listMachines("in_production"),
     getOpenSession(workerId),
     listPausedActivities(workerId),
     listActivityTypes(true),
-    // Las actividades (carga, instalación, garantías) también van sobre terminadas y despachadas.
-    listMachinesForActivities(),
   ]);
   if (!worker) {
     redirect("/planta/operarios?error=operario");
@@ -88,7 +86,6 @@ export default async function FactoryMachinesPage({
             </Button>
             <ActivityPanel
               activityTypes={activityTypes}
-              machines={activityMachines}
               hasOpenSession={Boolean(openSession)}
               navButtonClass={navButtonClass}
             />
