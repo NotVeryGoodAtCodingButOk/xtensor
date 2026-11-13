@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { ConfigWarning } from "@/components/config-warning";
 import { BoardHoursCell } from "@/components/factory/board-hours-cell";
 import { PlantaNav } from "@/components/factory/planta-nav";
-import { RealtimeRefresh } from "@/components/realtime-refresh";
+import { PollRefresh } from "@/components/poll-refresh";
 import { Progress } from "@/components/ui/progress";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
@@ -53,11 +53,7 @@ export default async function FactoryBoardPage() {
 
   return (
     <main className="xt-planta xt-board flex min-h-screen flex-col bg-[var(--xt-black)] text-[var(--xt-white)]">
-      <RealtimeRefresh
-        channelName="factory-board"
-        tables={["machines", "machine_stages", "settings", "colors"]}
-        pollMs={30_000}
-      />
+      <PollRefresh pollMs={30_000} />
 
       <header className="xt-board-header border-b border-[var(--xt-steel)] bg-[var(--xt-black)]">
         <PlantaNav active="tablero" />

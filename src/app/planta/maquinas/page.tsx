@@ -8,7 +8,6 @@ import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { ActivityPanel } from "@/components/factory/activity-panel";
 import { MachineMultiSelect } from "@/components/factory/machine-multi-select";
 import { PausedActivitiesBar } from "@/components/factory/paused-activities-bar";
-import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
 import { hasFactoryConfig } from "@/lib/env";
@@ -64,7 +63,6 @@ export default async function FactoryMachinesPage({
 
   return (
     <main className="xt-planta xt-planta-page min-h-screen bg-[var(--xt-paper)]">
-      <RealtimeRefresh channelName="factory-list" tables={["machines", "machine_stages", "colors", "work_sessions"]} />
       <header className="xt-planta-worker-header sticky top-0 z-10 border-b border-[var(--xt-graphite)]">
         <div
           className="xt-planta-worker-bar flex flex-wrap items-center justify-between gap-3 px-5 py-3 text-[var(--xt-white)]"

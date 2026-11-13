@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { AlmacenManager } from "@/components/factory/almacen-manager";
 import { PlantaNav } from "@/components/factory/planta-nav";
 import { ConfigWarning } from "@/components/config-warning";
-import { RealtimeRefresh } from "@/components/realtime-refresh";
+import { PollRefresh } from "@/components/poll-refresh";
 import { hasFactoryConfig } from "@/lib/env";
 import { isFactoryUnlocked } from "@/lib/factory-session";
 import { listMachinePrevioRows } from "@/services/previos";
@@ -27,11 +27,7 @@ export default async function FactoryAlmacenPage() {
 
   return (
     <main className="xt-planta xt-planta-page min-h-screen bg-[var(--xt-paper)]">
-      <RealtimeRefresh
-        channelName="factory-almacen"
-        tables={["machine_previos", "machine_previo_events", "machines"]}
-        pollMs={30_000}
-      />
+      <PollRefresh pollMs={30_000} />
       <header className="xt-planta-topbar border-b border-[var(--xt-graphite)] bg-[var(--xt-black)]">
         <PlantaNav active="almacen" />
         <div className="xt-hazard h-2" />

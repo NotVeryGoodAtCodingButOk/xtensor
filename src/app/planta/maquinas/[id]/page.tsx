@@ -4,7 +4,6 @@ import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
 import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { TaskGrid } from "@/components/factory/task-grid";
-import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
@@ -49,10 +48,6 @@ export default async function FactoryMachineDetailPage({
 
   return (
     <main className="xt-planta xt-planta-page xt-machine-detail min-h-screen bg-[var(--xt-paper)] pb-28">
-      <RealtimeRefresh
-        channelName={`factory-detail-${machine.id}`}
-        tables={["machine_stages", "colors", "work_sessions"]}
-      />
       <header className="xt-machine-detail-header mb-3 border-b border-[var(--xt-black)]">
         <div
           className="xt-planta-worker-bar px-5 py-3 text-[var(--xt-white)]"
