@@ -523,19 +523,20 @@ async function completeStageOnMachines(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   input: { machineIds: string[]; stageId: number; workerId: string },
 ): Promise<{ finishedMachineIds: string[] }> {
-  const changedMachineIds: string[] = [];
-
-  for (const machineId of input.machineIds) {
-    const result = await updateStageProgress({
-      machineId,
-      stageId: input.stageId,
-      completion: 100,
-      workerId: input.workerId,
-    });
-    if (result.log) {
-      changedMachineIds.push(machineId);
-    }
-  }
+  // Cada máquina toca solo sus propias filas: se marcan en paralelo para que
+  // «Terminar» sobre un grupo no espere ~6 consultas en fila por máquina.
+  const machineIds = [...new Set(input.machineIds)];
+  const results = await Promise.all(
+    machineIds.map((machineId) =>
+      updateStageProgress({
+        machineId,
+        stageId: input.stageId,
+        completion: 100,
+        workerId: input.workerId,
+      }),
+    ),
+  );
+  const changedMachineIds = machineIds.filter((_, index) => Boolean(results[index].log));
 
   if (changedMachineIds.length === 0) {
     return { finishedMachineIds: [] };
@@ -607,29 +608,36 @@ export async function listSessionsForMachines(machineIds: string[]): Promise<Lab
   const supabase = createSupabaseAdminClient();
   const sessionIds = new Set<string>();
 
-  for (const chunk of chunked(ids)) {
-    const links = await fetchAllPages<{ session_id: string }>("No se pudieron cargar las sesiones de las máquinas", (from, to) =>
-      supabase
-        .from("work_session_machines")
-        .select("session_id, machine_id")
-        .in("machine_id", chunk)
-        .order("session_id", { ascending: true })
-        .order("machine_id", { ascending: true })
-        .range(from, to),
-    );
+  // Los lotes son independientes: se piden en paralelo (antes iban en fila y
+  // el número de idas y vueltas crecía con el historial de sesiones).
+  const linkChunks = await Promise.all(
+    chunked(ids).map((chunk) =>
+      fetchAllPages<{ session_id: string }>("No se pudieron cargar las sesiones de las máquinas", (from, to) =>
+        supabase
+          .from("work_session_machines")
+          .select("session_id, machine_id")
+          .in("machine_id", chunk)
+          .order("session_id", { ascending: true })
+          .order("machine_id", { ascending: true })
+          .range(from, to),
+      ),
+    ),
+  );
+  for (const links of linkChunks) {
     for (const link of links) sessionIds.add(link.session_id);
   }
 
-  const sessions: LaborSessionInput[] = [];
-  for (const chunk of chunked([...sessionIds])) {
-    const { data, error } = await supabase.from("work_sessions").select(LABOR_SESSION_SELECT).in("id", chunk);
-    if (error) {
-      throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
-    }
-    sessions.push(...((data ?? []) as unknown as SessionWithMachineIdsRow[]).map(mapLaborSessionRow));
-  }
+  const sessionChunks = await Promise.all(
+    chunked([...sessionIds]).map(async (chunk) => {
+      const { data, error } = await supabase.from("work_sessions").select(LABOR_SESSION_SELECT).in("id", chunk);
+      if (error) {
+        throw new Error(`No se pudieron cargar las sesiones: ${error.message}`);
+      }
+      return ((data ?? []) as unknown as SessionWithMachineIdsRow[]).map(mapLaborSessionRow);
+    }),
+  );
 
-  return sessions;
+  return sessionChunks.flat();
 }
 
 /** Inicio del primer cronómetro registrado (ISO) o null si todavía no hay ninguno. */
