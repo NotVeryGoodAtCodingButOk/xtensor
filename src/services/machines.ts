@@ -9,7 +9,7 @@ import {
   resolveLaborFactor,
 } from "@/services/calculations";
 import { createMachinePreviosFromEquipment } from "@/services/previos";
-import { addClientBuffer, estimateDeliveryDate, type Holiday } from "@/services/schedule";
+import { addClientBuffer, createDeliveryDateEstimator, type Holiday } from "@/services/schedule";
 import { listHolidays } from "@/services/catalog";
 import { getSettings, mapSettings } from "@/services/settings";
 
@@ -160,6 +160,7 @@ export function calculateMachines(
     DEFAULT_STAGES,
   );
   const calculationsById = new Map(queue.map((calculation) => [calculation.machineId, calculation]));
+  const estimateDate = createDeliveryDateEstimator(startDate, settings, holidays);
 
   return machines.map<CalculatedMachineView>((machine) => {
     const calculation = calculationsById.get(machine.id) ?? {
@@ -173,7 +174,7 @@ export function calculateMachines(
     const estimatedDate =
       machine.status === "shipped" && machine.shippedAt
         ? machine.shippedAt.slice(0, 10)
-        : estimateDeliveryDate(calculation.accumulatedHours, startDate, settings, holidays);
+        : estimateDate(calculation.accumulatedHours);
     const lastCompletedStageAt = machine.stages
       .filter((stage) => stage.completion === 100 && stage.lastUpdatedAt)
       .sort((a, b) => b.id - a.id)[0]?.lastUpdatedAt ?? null;

@@ -1,6 +1,5 @@
 import { addDays, format, isSameDay, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import Holidays from "date-holidays";
 import type { ProductionSettings } from "@/services/calculations";
 
 export type Holiday = {
@@ -57,22 +56,42 @@ export function estimateDeliveryDate(
   settings: ProductionSettings,
   holidays: Holiday[] = [],
 ) {
-  if (accumulatedHours <= 0) {
-    return toDateKey(startDate);
-  }
+  return createDeliveryDateEstimator(startDate, settings, holidays)(accumulatedHours);
+}
 
-  let days = 180;
+const MAX_CALENDAR_DAYS = 730;
 
-  while (days <= 730) {
-    const calendar = buildLaborCalendar(startDate, settings, holidays, days);
-    const deliveryDay = calendar.find((day) => day.cumulativeHours >= accumulatedHours);
-    if (deliveryDay) {
-      return deliveryDay.date;
+/**
+ * Same result as estimateDeliveryDate, but the labor calendar is built once
+ * and reused for every call. Use it when estimating a whole queue: before,
+ * each machine rebuilt its own 180–720-day calendar.
+ */
+export function createDeliveryDateEstimator(
+  startDate: Date,
+  settings: ProductionSettings,
+  holidays: Holiday[] = [],
+) {
+  let calendar: CapacityDay[] = [];
+
+  return (accumulatedHours: number) => {
+    if (accumulatedHours <= 0) {
+      return toDateKey(startDate);
     }
-    days *= 2;
-  }
 
-  throw new Error("No se pudo calcular la fecha actualizada con el calendario disponible.");
+    // 180 → 360 → 720 days, like the original loop. The calendar only grows
+    // and its first days never change, so the first match is the same.
+    for (let days = 180; days <= MAX_CALENDAR_DAYS; days *= 2) {
+      if (calendar.length < days) {
+        calendar = buildLaborCalendar(startDate, settings, holidays, days);
+      }
+      const deliveryDay = calendar.find((day) => day.cumulativeHours >= accumulatedHours);
+      if (deliveryDay) {
+        return deliveryDay.date;
+      }
+    }
+
+    throw new Error("No se pudo calcular la fecha actualizada con el calendario disponible.");
+  };
 }
 
 export function addClientBuffer(internalDate: string, bufferDays: number) {
@@ -88,16 +107,6 @@ export function formatDateEsNoYear(date: string | Date) {
   const parsed = typeof date === "string" ? parseISO(date) : date;
   const str = format(parsed, "d MMM", { locale: es });
   return str.replace(/\b([a-z])/, (c) => c.toUpperCase());
-}
-
-export function seedColombiaHolidays(year: number) {
-  const holidays = new Holidays("CO");
-
-  return holidays.getHolidays(year).map<Holiday>((holiday) => ({
-    date: toDateKey(new Date(holiday.date)),
-    name: holiday.name,
-    isCustom: false,
-  }));
 }
 
 export function toDateKey(date: Date) {

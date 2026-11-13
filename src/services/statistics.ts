@@ -2,7 +2,7 @@ import { formatInTimeZone, fromZonedTime } from "date-fns-tz";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { normalizeMachineLine } from "@/lib/machine-lines";
 import { calculateQueue, DEFAULT_STAGES, type ProductionSettings } from "@/services/calculations";
-import { estimateDeliveryDate, type Holiday } from "@/services/schedule";
+import { createDeliveryDateEstimator, type Holiday } from "@/services/schedule";
 import type { Database, MachineStatus } from "@/types/database";
 
 export const FACTORY_TIME_ZONE = "America/Bogota";
@@ -1189,8 +1189,9 @@ function calculateMonthEndShipmentForecast({
   let forecastCount = 0;
   let forecastCop = 0;
 
+  const estimateDate = createDeliveryDateEstimator(now, settings, holidays);
   for (const calc of queue) {
-    const estimatedDate = estimateDeliveryDate(calc.accumulatedHours, now, settings, holidays);
+    const estimatedDate = estimateDate(calc.accumulatedHours);
 
     if (estimatedDate >= todayKey && estimatedDate >= currentMonthStart && estimatedDate < nextMonthStart) {
       const sourceMachine = inProductionMachines.find((machine) => machine.id === calc.machineId);
