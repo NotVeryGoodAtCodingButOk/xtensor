@@ -81,7 +81,17 @@ Services map from database rows → domain types. UI consumes domain types only.
 
 ### Realtime
 
-`src/components/realtime-refresh.tsx` subscribes to Supabase Realtime channels and triggers a `router.refresh()` (Next.js soft refresh) when changes arrive on the specified tables. Used on the client portal and factory floor.
+`src/components/realtime-refresh.tsx` subscribes to Supabase Realtime channels and triggers a `router.refresh()` (Next.js soft refresh) when changes arrive on the specified tables. Used on admin and the client portal.
+
+The factory floor does NOT use Realtime: the tablet has no admin session and RLS is `is_admin()`-only, so it never received events. Cartelera and Almacén use `src/components/poll-refresh.tsx` (30 s, no supabase-js).
+
+### Factory iPad performance rules
+
+The floor runs on a 2016 iPad (iPadOS 16.7, Chrome 103). Keep `/planta` light:
+- Functions run in `pdx1` (`vercel.json`), next to Supabase (us-west-2). Don't remove it.
+- Worker selection goes through `selectWorkerAction` (sets the `xt_worker` cookie, then redirects). The cookie is the only source of the active worker; no `?workerId=`, no `router.prefetch` per worker.
+- Server actions that call `revalidatePath` already return the fresh page: don't add `router.refresh()` after them.
+- Planta `<Link>`s use `prefetch={false}`. Don't serialize large lists into page props (load them on demand, like the Actividades machine list).
 
 ### UI components
 
