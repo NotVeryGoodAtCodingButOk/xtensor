@@ -85,7 +85,7 @@ export function MachineMultiSelect({
 
       <div className="xt-multi-select-bar">
         {selectedIds.length > 0 ? (
-          <Link href={continueHref} className="xt-multi-select-continue">
+          <Link prefetch={false} href={continueHref} className="xt-multi-select-continue">
             Continuar con {selectedIds.length} {selectedIds.length === 1 ? "máquina" : "máquinas"} →
           </Link>
         ) : (

@@ -160,6 +160,7 @@ export function AlmacenManager({ machines }: { machines: MachinePrevioListRow[] 
                       <div className="flex items-center gap-1">
                         <span className="font-semibold tabular-nums">{machine.serialNumber}</span>
                         <Link
+                          prefetch={false}
                           href={`/planta/maquinas/${machine.machineId}`}
                           className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
                           title="Ver máquina"

@@ -80,10 +80,10 @@ export default async function FactoryMachineGroupPage({
             </div>
             <nav className="xt-planta-worker-nav flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
               <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
-                <Link href="/planta/operarios">Operarios</Link>
+                <Link prefetch={false} href="/planta/operarios">Operarios</Link>
               </Button>
               <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
-                <Link href="/planta/tablero">Cartelera</Link>
+                <Link prefetch={false} href="/planta/tablero">Cartelera</Link>
               </Button>
               <Button
                 asChild
@@ -91,7 +91,7 @@ export default async function FactoryMachineGroupPage({
                 size="sm"
                 className="xt-planta-back-button min-h-11 border-[var(--xt-black)] bg-[var(--xt-yellow)] px-4 text-sm text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)]"
               >
-                <Link href={continueHref}>Volver a máquinas</Link>
+                <Link prefetch={false} href={continueHref}>Volver a máquinas</Link>
               </Button>
             </nav>
           </div>

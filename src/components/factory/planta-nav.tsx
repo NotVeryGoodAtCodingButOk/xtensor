@@ -16,7 +16,7 @@ export function PlantaNav({ active }: { active?: "operarios" | "tablero" | "alma
           size="sm"
           className={`xt-planta-nav-button ${navButtonClass}`}
         >
-          <Link href="/planta/operarios">Operarios</Link>
+          <Link prefetch={false} href="/planta/operarios">Operarios</Link>
         </Button>
         <Button
           asChild
@@ -24,7 +24,7 @@ export function PlantaNav({ active }: { active?: "operarios" | "tablero" | "alma
           size="sm"
           className={`xt-planta-nav-button ${navButtonClass}`}
         >
-          <Link href="/planta/tablero">Cartelera</Link>
+          <Link prefetch={false} href="/planta/tablero">Cartelera</Link>
         </Button>
         <Button
           asChild
@@ -32,7 +32,7 @@ export function PlantaNav({ active }: { active?: "operarios" | "tablero" | "alma
           size="sm"
           className={`xt-planta-nav-button ${navButtonClass}`}
         >
-          <Link href="/planta/almacen">Almacén</Link>
+          <Link prefetch={false} href="/planta/almacen">Almacén</Link>
         </Button>
         <form action={lockFactoryAction}>
           <Button

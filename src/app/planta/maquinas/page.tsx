@@ -81,10 +81,10 @@ export default async function FactoryMachinesPage({
           </div>
           <nav className="xt-planta-worker-nav flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
             <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
-              <Link href="/planta/operarios">Operarios</Link>
+              <Link prefetch={false} href="/planta/operarios">Operarios</Link>
             </Button>
             <Button asChild variant="ghost" size="sm" className={`xt-planta-nav-button ${navButtonClass}`}>
-              <Link href="/planta/tablero">Cartelera</Link>
+              <Link prefetch={false} href="/planta/tablero">Cartelera</Link>
             </Button>
             <ActivityPanel
               activityTypes={activityTypes}
@@ -131,6 +131,7 @@ export default async function FactoryMachinesPage({
         <>
           <div className="xt-mode-toggle" role="group" aria-label="Modo de selección de máquinas">
             <Link
+              prefetch={false}
               href={unaHref}
               aria-pressed={!isMultiMode}
               className={`xt-mode-toggle-option ${!isMultiMode ? "xt-mode-toggle-option-active" : ""}`}
@@ -138,6 +139,7 @@ export default async function FactoryMachinesPage({
               Una
             </Link>
             <Link
+              prefetch={false}
               href={variasHref}
               aria-pressed={isMultiMode}
               className={`xt-mode-toggle-option ${isMultiMode ? "xt-mode-toggle-option-active" : ""}`}
@@ -168,6 +170,7 @@ export default async function FactoryMachinesPage({
               {orderedMachines.map((machine) => {
                 return (
                   <Link
+                    prefetch={false}
                     key={machine.id}
                     href={`/planta/maquinas/${machine.id}`}
                     className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
