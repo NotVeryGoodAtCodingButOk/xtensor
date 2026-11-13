@@ -1,14 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ChevronRight } from "lucide-react";
 import { changeWorkerAction, lockFactoryAction } from "@/app/planta/actions";
 import { BrandLogo } from "@/components/brand";
 import { ConfigWarning } from "@/components/config-warning";
 import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { ActivityPanel } from "@/components/factory/activity-panel";
+import { MachineCardGrid, type MachineCardData } from "@/components/factory/machine-card-grid";
 import { MachineMultiSelect } from "@/components/factory/machine-multi-select";
 import { PausedActivitiesBar } from "@/components/factory/paused-activities-bar";
-import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
@@ -161,37 +160,19 @@ export default async function FactoryMachinesPage({
               groupHrefBase={groupHrefBase}
             />
           ) : (
-            <div className="xt-machine-grid">
-              {orderedMachines.map((machine) => {
-                return (
-                  <Link
-                    prefetch={false}
-                    key={machine.id}
-                    href={`/planta/maquinas/${machine.id}`}
-                    className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
-                  >
-                    <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">
-                      <div className="xt-machine-card-heading flex items-start justify-between gap-3">
-                        <div className="xt-machine-card-fields grid gap-1 min-w-0 flex-1">
-                          <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentCode ?? "Personalizado"}</p>
-                          <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.equipmentName}</p>
-                          <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.clientName}</p>
-                          <p className="flex min-w-0 items-baseline gap-1.5 text-sm font-bold text-[var(--xt-black)]">
-                            <span className="xt-eyebrow shrink-0 text-[0.625rem] leading-none">Cotización</span>
-                            <span className="truncate">{machine.serialNumber}</span>
-                          </p>
-                        </div>
-                        <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
-                      </div>
-                    </div>
-
-                    <div className="xt-machine-stage-strip border-t border-[var(--xt-cement)] px-4 py-2">
-                      <StageStrip stages={machine.stages} />
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
+            <MachineCardGrid
+              stageNames={Object.fromEntries(
+                orderedMachines.flatMap((machine) => machine.stages.map((stage) => [stage.id, stage.name])),
+              )}
+              machines={orderedMachines.map<MachineCardData>((machine) => ({
+                id: machine.id,
+                code: machine.equipmentCode,
+                name: machine.equipmentName,
+                client: machine.clientName,
+                serial: machine.serialNumber,
+                stages: machine.stages.map((stage) => [stage.id, stage.completion === 100 ? 1 : 0]),
+              }))}
+            />
           )}
         </>
       )}
