@@ -11,16 +11,17 @@ import { PausedActivitiesBar } from "@/components/factory/paused-activities-bar"
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { StageStrip } from "@/components/factory/stage-strip";
 import { Button } from "@/components/ui/button";
-import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
 import { listActivityTypes } from "@/services/activity-types";
+import { getActiveWorker } from "@/services/catalog";
+import { listMachines } from "@/services/machines";
 import { getOpenSession, listMachinesForActivities, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachinesPage({
   searchParams,
 }: {
-  searchParams: Promise<{ workerId?: string; modo?: string }>;
+  searchParams: Promise<{ modo?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -34,39 +35,34 @@ export default async function FactoryMachinesPage({
     redirect("/planta");
   }
 
-  const [{ workerId: workerIdFromQuery, modo }, cookieWorkerId, shared] = await Promise.all([
-    searchParams,
-    getActiveWorkerId(),
-    getFactorySharedData(),
-  ]);
-  const workerId = cookieWorkerId ?? workerIdFromQuery ?? null;
+  // La cookie (firmada) es la única fuente del operario: la fija selectWorkerAction antes de llegar aquí.
+  const [{ modo }, workerId] = await Promise.all([searchParams, getActiveWorkerId()]);
   if (!workerId) {
     redirect("/planta/operarios");
   }
 
-  const worker = shared.workers.find((item) => item.id === workerId);
-  if (!worker) {
-    redirect("/planta/operarios?error=operario");
-  }
-
-  const [openSession, pausedActivities, activityTypes, activityMachines] = await Promise.all([
+  // Una sola ola en paralelo: la planta no usa fechas ni la cola calculada, solo etapas y datos de la tarjeta.
+  const [worker, machines, openSession, pausedActivities, activityTypes, activityMachines] = await Promise.all([
+    getActiveWorker(workerId),
+    listMachines("in_production"),
     getOpenSession(workerId),
     listPausedActivities(workerId),
     listActivityTypes(true),
     // Las actividades (carga, instalación, garantías) también van sobre terminadas y despachadas.
     listMachinesForActivities(),
   ]);
-  const machines = shared.machines;
+  if (!worker) {
+    redirect("/planta/operarios?error=operario");
+  }
+
   const orderedMachines = [...machines].sort((a, b) => a.orderPosition - b.orderPosition);
-  const workerColor = worker?.display_color ?? "var(--xt-black)";
+  const workerColor = worker.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
-  const workerQuery = cookieWorkerId ? "" : `?workerId=${workerId}`;
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
   const isMultiMode = modo === "varias";
-  const modeQuerySuffix = cookieWorkerId ? "" : `workerId=${workerId}`;
-  const unaHref = modeQuerySuffix ? `/planta/maquinas?${modeQuerySuffix}` : "/planta/maquinas";
-  const variasHref = `/planta/maquinas?${[modeQuerySuffix, "modo=varias"].filter(Boolean).join("&")}`;
-  const groupHrefBase = `/planta/maquinas/grupo${workerQuery}`;
+  const unaHref = "/planta/maquinas";
+  const variasHref = "/planta/maquinas?modo=varias";
+  const groupHrefBase = "/planta/maquinas/grupo";
 
   return (
     <main className="xt-planta xt-planta-page min-h-screen bg-[var(--xt-paper)]">
@@ -80,7 +76,7 @@ export default async function FactoryMachinesPage({
             <BrandLogo inverse />
             <div className="xt-planta-worker-name-wrap min-w-0 border-l border-white/40 pl-4">
               <p className="xt-eyebrow xt-eyebrow-light leading-none mb-0.5">Operario activo</p>
-              <h1 className="xt-planta-worker-name truncate text-lg font-bold leading-none">{worker?.full_name ?? "Operario"}</h1>
+              <h1 className="xt-planta-worker-name truncate text-lg font-bold leading-none">{worker.full_name}</h1>
             </div>
           </div>
           <nav className="xt-planta-worker-nav flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
@@ -173,7 +169,7 @@ export default async function FactoryMachinesPage({
                 return (
                   <Link
                     key={machine.id}
-                    href={`/planta/maquinas/${machine.id}${workerQuery}`}
+                    href={`/planta/maquinas/${machine.id}`}
                     className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
                   >
                     <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">

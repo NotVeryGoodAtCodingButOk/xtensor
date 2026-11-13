@@ -6,18 +6,16 @@ import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { TaskGrid } from "@/components/factory/task-grid";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
-import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
+import { getActiveWorker } from "@/services/catalog";
 import { getMachine } from "@/services/machines";
 import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachineDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ workerId?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -31,29 +29,22 @@ export default async function FactoryMachineDetailPage({
     redirect("/planta");
   }
 
-  const [{ id }, query, cookieWorkerId, shared] = await Promise.all([
-    params,
-    searchParams,
-    getActiveWorkerId(),
-    getFactorySharedData(),
-  ]);
-  const resolvedWorkerId = cookieWorkerId ?? query.workerId ?? null;
-  if (!resolvedWorkerId) {
+  const [{ id }, workerId] = await Promise.all([params, getActiveWorkerId()]);
+  if (!workerId) {
     redirect("/planta/operarios");
   }
 
-  const [machine, openSession, pausedActivities] = await Promise.all([
+  const [worker, machine, openSession, pausedActivities] = await Promise.all([
+    getActiveWorker(workerId),
     getMachine(id),
-    getOpenSession(resolvedWorkerId),
-    listPausedActivities(resolvedWorkerId),
+    getOpenSession(workerId),
+    listPausedActivities(workerId),
   ]);
-  const worker = shared.workers.find((item) => item.id === resolvedWorkerId);
   if (!worker) {
     redirect("/planta/operarios?error=operario");
   }
-  const workerColor = worker?.display_color ?? "var(--xt-black)";
+  const workerColor = worker.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
-  const workerQuery = cookieWorkerId ? "" : `?workerId=${resolvedWorkerId}`;
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
 
   return (
@@ -72,7 +63,7 @@ export default async function FactoryMachineDetailPage({
               <BrandLogo inverse />
               <div className="xt-planta-worker-name-wrap min-w-0">
                 <p className="xt-eyebrow xt-eyebrow-light leading-none mb-0.5">Operario activo</p>
-                <p className="xt-planta-worker-name truncate text-lg font-bold leading-none">{worker?.full_name ?? "Operario"}</p>
+                <p className="xt-planta-worker-name truncate text-lg font-bold leading-none">{worker.full_name}</p>
               </div>
             </div>
             <nav className="xt-planta-worker-nav flex w-full flex-wrap items-center gap-2 lg:w-auto lg:justify-end">
@@ -88,7 +79,7 @@ export default async function FactoryMachineDetailPage({
                 size="sm"
                 className="xt-planta-back-button min-h-11 border-[var(--xt-black)] bg-[var(--xt-yellow)] px-4 text-sm text-[var(--xt-black)] hover:bg-[var(--xt-yellow-deep)]"
               >
-                <Link href={`/planta/maquinas${workerQuery}`}>Volver a máquinas</Link>
+                <Link href="/planta/maquinas">Volver a máquinas</Link>
               </Button>
             </nav>
           </div>
@@ -125,7 +116,7 @@ export default async function FactoryMachineDetailPage({
           machineIds: activity.machines.map((item) => item.id),
           accumulatedMs: activity.accumulatedMs,
         }))}
-        continueHref={`/planta/maquinas/${machine.id}${workerQuery}`}
+        continueHref={`/planta/maquinas/${machine.id}`}
       />
     </main>
   );

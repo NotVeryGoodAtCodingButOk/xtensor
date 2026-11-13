@@ -6,15 +6,16 @@ import { ActiveSessionBar } from "@/components/factory/active-session-bar";
 import { TaskGrid } from "@/components/factory/task-grid";
 import { RealtimeRefresh } from "@/components/realtime-refresh";
 import { Button } from "@/components/ui/button";
-import { getFactorySharedData } from "@/lib/factory-cache";
 import { hasFactoryConfig } from "@/lib/env";
 import { getActiveWorkerId, isFactoryUnlocked } from "@/lib/factory-session";
+import { getActiveWorker } from "@/services/catalog";
+import { listMachines } from "@/services/machines";
 import { getOpenSession, listPausedActivities } from "@/services/work-sessions";
 
 export default async function FactoryMachineGroupPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ids?: string; workerId?: string }>;
+  searchParams: Promise<{ ids?: string }>;
 }) {
   if (!hasFactoryConfig()) {
     return (
@@ -28,41 +29,36 @@ export default async function FactoryMachineGroupPage({
     redirect("/planta");
   }
 
-  const [query, cookieWorkerId, shared] = await Promise.all([
-    searchParams,
-    getActiveWorkerId(),
-    getFactorySharedData(),
-  ]);
-  const resolvedWorkerId = cookieWorkerId ?? query.workerId ?? null;
-  if (!resolvedWorkerId) {
+  const [query, workerId] = await Promise.all([searchParams, getActiveWorkerId()]);
+  if (!workerId) {
     redirect("/planta/operarios");
   }
 
-  const worker = shared.workers.find((item) => item.id === resolvedWorkerId);
+  const [worker, machines, openSession, pausedActivities] = await Promise.all([
+    getActiveWorker(workerId),
+    listMachines("in_production"),
+    getOpenSession(workerId),
+    listPausedActivities(workerId),
+  ]);
   if (!worker) {
     redirect("/planta/operarios?error=operario");
   }
 
-  const workerQuery = cookieWorkerId ? "" : `?workerId=${resolvedWorkerId}`;
   const requestedIds = [...new Set((query.ids ?? "").split(",").map((id) => id.trim()).filter(Boolean))];
-  const machinesById = new Map(shared.machines.map((machine) => [machine.id, machine]));
+  const machinesById = new Map(machines.map((machine) => [machine.id, machine]));
   const groupMachines = requestedIds
     .map((id) => machinesById.get(id))
-    .filter((machine): machine is (typeof shared.machines)[number] => Boolean(machine));
+    .filter((machine): machine is (typeof machines)[number] => Boolean(machine));
 
   // No valid machine ids (stale link, or none are in production anymore): bounce back to the list.
   if (groupMachines.length === 0) {
-    redirect(`/planta/maquinas${workerQuery}`);
+    redirect("/planta/maquinas");
   }
 
-  const [openSession, pausedActivities] = await Promise.all([
-    getOpenSession(resolvedWorkerId),
-    listPausedActivities(resolvedWorkerId),
-  ]);
-  const workerColor = worker?.display_color ?? "var(--xt-black)";
+  const workerColor = worker.display_color ?? "var(--xt-black)";
   const workerHeaderBackground = `linear-gradient(rgba(10, 10, 10, 0.42), rgba(10, 10, 10, 0.42)), ${workerColor}`;
   const navButtonClass = "min-h-11 px-4 text-sm text-white hover:text-white hover:bg-white/20";
-  const continueHref = `/planta/maquinas${workerQuery}`;
+  const continueHref = "/planta/maquinas";
 
   return (
     <main className="xt-planta xt-planta-page xt-machine-detail min-h-screen bg-[var(--xt-paper)] pb-28">
@@ -78,7 +74,7 @@ export default async function FactoryMachineGroupPage({
               <div className="xt-planta-worker-name-wrap min-w-0">
                 <p className="xt-eyebrow xt-eyebrow-light leading-none mb-0.5">Operario activo</p>
                 <p className="xt-planta-worker-name truncate text-lg font-bold leading-none">
-                  {worker?.full_name ?? "Operario"}
+                  {worker.full_name}
                 </p>
               </div>
             </div>

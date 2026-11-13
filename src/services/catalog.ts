@@ -81,6 +81,23 @@ export async function listWorkers(activeOnly = false) {
   return data;
 }
 
+/** Un operario activo por id, solo con lo que pinta la planta (sin salario). */
+export async function getActiveWorker(id: string) {
+  const supabase = createSupabaseAdminClient();
+  const { data, error } = await supabase
+    .from("workers")
+    .select("id, full_name, display_color")
+    .eq("id", id)
+    .eq("is_active", true)
+    .maybeSingle();
+
+  if (error) {
+    throw new Error(`No se pudo cargar el operario: ${error.message}`);
+  }
+
+  return data;
+}
+
 export async function listClients() {
   const supabase = createSupabaseAdminClient();
   const { data, error } = await supabase.from("clients").select("*").order("name", { ascending: true });

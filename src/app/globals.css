@@ -510,6 +510,24 @@ select {
   color: var(--xt-white);
   text-align: left;
   box-shadow: var(--shadow-stamp);
+  width: 100%;
+  font: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.xt-worker-card:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.xt-worker-card-pending {
+  opacity: 0.75;
+}
+
+.xt-worker-form {
+  margin: 0;
 }
 
 .xt-worker-card-badge {

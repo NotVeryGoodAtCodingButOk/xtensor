@@ -30,7 +30,7 @@ export function MachineMultiSelect({
   groupHrefBase,
 }: {
   machines: MultiSelectMachine[];
-  /** e.g. "/planta/maquinas/grupo" or "/planta/maquinas/grupo?workerId=…" — "ids" is appended. */
+  /** e.g. "/planta/maquinas/grupo" — "ids" is appended. */
   groupHrefBase: string;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);

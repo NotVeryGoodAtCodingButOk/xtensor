@@ -5,6 +5,9 @@ import { requireEnv } from "@/lib/env";
 const FACTORY_COOKIE = "xt_factory";
 const WORKER_COOKIE = "xt_worker";
 const ONE_DAY_SECONDS = 60 * 60 * 24;
+/** El operario se fija con path "/planta": para borrarlo hay que repetir el mismo path. */
+const WORKER_COOKIE_PATH = "/planta";
+const TWELVE_HOURS_SECONDS = 60 * 60 * 12;
 
 export async function setFactoryUnlocked() {
   const cookieStore = await cookies();
@@ -26,7 +29,7 @@ export async function isFactoryUnlocked() {
 export async function clearFactorySession() {
   const cookieStore = await cookies();
   cookieStore.delete(FACTORY_COOKIE);
-  cookieStore.delete(WORKER_COOKIE);
+  cookieStore.delete({ name: WORKER_COOKIE, path: WORKER_COOKIE_PATH });
 }
 
 export async function setActiveWorker(workerId: string) {
@@ -35,7 +38,8 @@ export async function setActiveWorker(workerId: string) {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
-    path: "/planta",
+    path: WORKER_COOKIE_PATH,
+    maxAge: TWELVE_HOURS_SECONDS,
   });
 }
 
@@ -51,7 +55,8 @@ export async function getActiveWorkerId() {
 
 export async function clearActiveWorker() {
   const cookieStore = await cookies();
-  cookieStore.delete(WORKER_COOKIE);
+  // Sin el path, el navegador borraría otra cookie (path "/") y la del operario anterior seguiría viva.
+  cookieStore.delete({ name: WORKER_COOKIE, path: WORKER_COOKIE_PATH });
 }
 
 function signValue(value: string) {

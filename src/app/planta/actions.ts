@@ -11,10 +11,10 @@ import {
   setActiveWorker,
   setFactoryUnlocked,
 } from "@/lib/factory-session";
-import { listWorkers } from "@/services/catalog";
+import { getActiveWorker } from "@/services/catalog";
 import { getMachine } from "@/services/machines";
 import { toggleMachinePrevio } from "@/services/previos";
-import { undoStageLog, updateStageProgress } from "@/services/stages";
+import { updateStageProgress } from "@/services/stages";
 import { verifyFactoryPassword } from "@/services/settings";
 import {
   finishPausedActivity,
@@ -47,8 +47,7 @@ export async function selectWorkerAction(formData: FormData) {
     redirect("/planta");
   }
 
-  const workers = await listWorkers(true);
-  if (!workers.some((worker) => worker.id === workerId)) {
+  if (!workerId || !(await getActiveWorker(workerId))) {
     redirect("/planta/operarios?error=operario");
   }
 
@@ -287,22 +286,4 @@ export async function finishPausedActivityAction(input: { activityId: string }):
   revalidatePlantaRoutes();
 
   return { ok: true, finishedMachineIds };
-}
-
-export async function undoStageAction(formData: FormData) {
-  const workerId = await getActiveWorkerId();
-  const logId = String(formData.get("logId") ?? "");
-  const machineId = String(formData.get("machineId") ?? "");
-
-  if (!(await isFactoryUnlocked())) {
-    redirect("/planta");
-  }
-
-  if (!workerId) {
-    redirect("/planta/operarios");
-  }
-
-  await undoStageLog({ logId, workerId });
-  revalidateFactoryData();
-  redirect(`/planta/maquinas/${machineId}`);
 }
