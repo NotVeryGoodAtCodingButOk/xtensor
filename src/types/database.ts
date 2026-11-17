@@ -123,6 +123,32 @@ export type Database = {
         };
         Relationships: [];
       };
+      connectivity_events: {
+        Row: {
+          id: number;
+          device_id: string;
+          device: string;
+          kind: "offline" | "fetch_failed" | "slow_request" | "slow_load" | "gap";
+          started_at: string;
+          duration_ms: number | null;
+          path: string | null;
+          detail: string | null;
+          user_agent: string | null;
+          created_at: string;
+        };
+        Insert: {
+          device_id: string;
+          device: string;
+          kind: "offline" | "fetch_failed" | "slow_request" | "slow_load" | "gap";
+          started_at: string;
+          duration_ms?: number | null;
+          path?: string | null;
+          detail?: string | null;
+          user_agent?: string | null;
+        };
+        Update: Record<string, never>;
+        Relationships: [];
+      };
       holidays: {
         Row: {
           date: string;
