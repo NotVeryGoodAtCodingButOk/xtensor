@@ -91,6 +91,7 @@ The floor runs on a 2016 iPad (iPadOS 16.7, Chrome 103). Keep `/planta` light:
 - Functions run in `pdx1` (`vercel.json`), next to Supabase (us-west-2). Don't remove it.
 - Worker selection goes through `selectWorkerAction` (sets the `xt_worker` cookie, then redirects). The cookie is the only source of the active worker; no `?workerId=`, no `router.prefetch` per worker.
 - Server actions that call `revalidatePath` already return the fresh page: don't add `router.refresh()` after them.
+- Connection log: `ConnectionLogger` (in `src/app/planta/layout.tsx`) records offline periods, failed/slow requests, slow page loads and gaps (app not alive while the screen was on) to localStorage, then posts them to `/planta/api/conexion` → `connectivity_events`. Vercel only keeps 1 h of request logs and never sees requests that don't arrive, so query this table to diagnose "connection timed out" reports. It's a route handler (not a server action) so it never queues behind operator actions.
 - Planta `<Link>`s use `prefetch={false}`. Don't serialize large lists into page props (load them on demand, like the Actividades machine list).
 
 ### UI components
@@ -106,6 +107,7 @@ The floor runs on a 2016 iPad (iPadOS 16.7, Chrome 103). Keep `/planta` light:
 4. `0029_equipment_labor_factor.sql` — `equipment_catalog.labor_factor` (labor % per equipment; null = `settings.labor_factor`)
 5. `0030_activity_catalog_5s.sql` — non-machine activities: 5S, Empaque/carga/instalación, Arreglar máquinas; `merge_activity_type` RPC
 6. `0031_reorder_production_queue.sql` — atomic queue order + reestimated date RPC; `0032` drops the old reorder RPC
+7. `0033_connectivity_events.sql` — connection log from the factory devices (see below)
 
 New migrations: add a numbered file AND apply it to the online DB (Management API). Keep them idempotent and compatible with the deployed build until the next deploy.
 
