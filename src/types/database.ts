@@ -128,7 +128,7 @@ export type Database = {
           id: number;
           device_id: string;
           device: string;
-          kind: "offline" | "fetch_failed" | "slow_request" | "slow_load" | "gap";
+          kind: "offline" | "fetch_failed" | "slow_request" | "slow_load" | "gap" | "waiting";
           started_at: string;
           duration_ms: number | null;
           path: string | null;
@@ -139,7 +139,7 @@ export type Database = {
         Insert: {
           device_id: string;
           device: string;
-          kind: "offline" | "fetch_failed" | "slow_request" | "slow_load" | "gap";
+          kind: "offline" | "fetch_failed" | "slow_request" | "slow_load" | "gap" | "waiting";
           started_at: string;
           duration_ms?: number | null;
           path?: string | null;

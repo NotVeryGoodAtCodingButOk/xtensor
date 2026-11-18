@@ -1,9 +1,9 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 
-export const CONNECTIVITY_KINDS = ["offline", "fetch_failed", "slow_request", "slow_load", "gap"] as const;
+export const CONNECTIVITY_KINDS = ["offline", "fetch_failed", "slow_request", "slow_load", "gap", "waiting"] as const;
 export type ConnectivityKind = (typeof CONNECTIVITY_KINDS)[number];
 
-/** Evento que anota el navegador de planta (ver ConnectionLogger). */
+/** Evento que anota el navegador de planta (ver ConnectionGuard). */
 export type ConnectivityEventInput = {
   kind: ConnectivityKind;
   /** Epoch ms del reloj del dispositivo. */
