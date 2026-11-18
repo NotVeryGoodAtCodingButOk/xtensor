@@ -23,6 +23,10 @@ create table if not exists public.floor_commands (
   reviewed_at timestamptz
 );
 
+-- Reintentos por error del servidor: tras varios, el comando se marca rechazado
+-- para que uno dañado no frene la cola del iPad.
+alter table public.floor_commands add column if not exists attempts integer not null default 0;
+
 create index if not exists floor_commands_device_seq_idx on public.floor_commands (device_id, seq);
 create index if not exists floor_commands_review_idx on public.floor_commands (received_at desc)
   where status in ('applied_flagged', 'rejected');

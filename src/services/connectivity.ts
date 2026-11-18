@@ -20,7 +20,7 @@ function clip(value: unknown, max: number) {
   return typeof value === "string" && value ? value.slice(0, max) : null;
 }
 
-function deviceFromUserAgent(userAgent: string) {
+export function deviceFromUserAgent(userAgent: string) {
   if (/iPad/.test(userAgent)) return "iPad";
   if (/Tizen|SMART-TV/i.test(userAgent)) return "TV";
   if (/Windows/.test(userAgent)) return "Windows";

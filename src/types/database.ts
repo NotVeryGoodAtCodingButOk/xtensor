@@ -167,6 +167,7 @@ export type Database = {
           received_at: string;
           finished_at: string | null;
           reviewed_at: string | null;
+          attempts: number;
         };
         Insert: {
           id: string;
@@ -185,9 +186,11 @@ export type Database = {
           received_at?: string;
           finished_at?: string | null;
           reviewed_at?: string | null;
+          attempts?: number;
         };
         Update: {
           status?: "processing" | "applied" | "applied_flagged" | "rejected";
+          attempts?: number;
           flags?: string[];
           error?: string | null;
           claimed_at?: string;
