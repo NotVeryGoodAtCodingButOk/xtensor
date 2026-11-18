@@ -1,6 +1,10 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { FLOOR_COMMAND_LABELS, FLOOR_FLAG_LABELS, type FloorCommandType } from "@/lib/floor/commands";
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** El payload puede ser de un comando inválido (se guarda tal cual): solo se usan ids con forma de UUID. */
+const uuids = (values: unknown[]) => [...new Set(values.filter((value): value is string => typeof value === "string" && UUID.test(value)))];
+
 /** Cuánto atrás se muestran los registros de planta para revisar. */
 const REVIEW_WINDOW_DAYS = 30;
 
@@ -61,32 +65,25 @@ export async function listFloorReviewItems(): Promise<FloorReviewItem[]> {
   if (rows.length === 0) return [];
 
   const payloads = rows.map((row) => (row.payload ?? {}) as Payload);
-  const workerIds = [...new Set(rows.map((row) => row.worker_id).filter((id): id is string => Boolean(id)))];
-  const machineIds = [
-    ...new Set(payloads.flatMap((payload) => [...(payload.machineIds ?? []), ...(payload.machineId ? [payload.machineId] : [])])),
-  ];
+  const workerIds = uuids(rows.map((row) => row.worker_id));
+  const machineIds = uuids(
+    payloads.flatMap((payload) => [...(Array.isArray(payload.machineIds) ? payload.machineIds : []), payload.machineId]),
+  );
 
   // Pausar/terminar/reanudar solo traen la sesión o la actividad: la etapa y las
   // máquinas se buscan en la sesión que quedó guardada.
-  const sessionIds = [...new Set(payloads.map((payload) => payload.sessionId).filter((id): id is string => Boolean(id)))];
-  const activityIds = [...new Set(payloads.map((payload) => payload.activityId).filter((id): id is string => Boolean(id)))];
+  const sessionIds = uuids(payloads.map((payload) => payload.sessionId));
+  const activityIds = uuids(payloads.map((payload) => payload.activityId));
+  const sessionSelect =
+    "id, activity_id, stage_id, work_session_machines(machines(serial_number)), work_session_activity_types(activity_types(name))";
 
-  const [workers, machines, stages, sessions] = await Promise.all([
+  const [workers, machines, stages, bySessionId, byActivityId] = await Promise.all([
     workerIds.length ? supabase.from("workers").select("id, full_name").in("id", workerIds) : Promise.resolve({ data: [] }),
     machineIds.length ? supabase.from("machines").select("id, serial_number").in("id", machineIds) : Promise.resolve({ data: [] }),
     supabase.from("stages").select("id, name"),
-    sessionIds.length || activityIds.length
-      ? supabase
-          .from("work_sessions")
-          .select("id, activity_id, stage_id, work_session_machines(machines(serial_number)), work_session_activity_types(activity_types(name))")
-          .or(
-            [
-              sessionIds.length ? `id.in.(${sessionIds.join(",")})` : null,
-              activityIds.length ? `activity_id.in.(${activityIds.join(",")})` : null,
-            ]
-              .filter(Boolean)
-              .join(","),
-          )
+    sessionIds.length ? supabase.from("work_sessions").select(sessionSelect).in("id", sessionIds) : Promise.resolve({ data: [] }),
+    activityIds.length
+      ? supabase.from("work_sessions").select(sessionSelect).in("activity_id", activityIds)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -109,15 +106,15 @@ export async function listFloorReviewItems(): Promise<FloorReviewItem[]> {
     const serials = session.work_session_machines.map((entry) => `#${entry.machines?.serial_number ?? "?"}`).join(", ");
     return [activity || null, serials || null];
   };
-  const sessionRows = (sessions.data ?? []) as unknown as SessionInfo[];
+  const sessionRows = [...(bySessionId.data ?? []), ...(byActivityId.data ?? [])] as unknown as SessionInfo[];
   const bySession = new Map(sessionRows.map((session) => [session.id, session]));
   const byActivity = new Map(sessionRows.map((session) => [session.activity_id, session]));
 
   return rows.map((row, index) => {
     const payload = payloads[index];
-    const ids = payload.machineIds ?? (payload.machineId ? [payload.machineId] : []);
+    const ids = uuids([...(Array.isArray(payload.machineIds) ? payload.machineIds : []), payload.machineId]);
     const fromSession =
-      ids.length === 0 && !payload.stageId
+      ids.length === 0 && typeof payload.stageId !== "number"
         ? describeSession(
             (payload.sessionId ? bySession.get(payload.sessionId) : undefined) ??
               (payload.activityId ? byActivity.get(payload.activityId) : undefined),
@@ -125,7 +122,7 @@ export async function listFloorReviewItems(): Promise<FloorReviewItem[]> {
         : [];
     const parts = [
       ...fromSession,
-      payload.stageId ? stageName.get(payload.stageId) ?? `Etapa ${payload.stageId}` : null,
+      typeof payload.stageId === "number" ? stageName.get(payload.stageId) ?? `Etapa ${payload.stageId}` : null,
       ids.length ? ids.map((id) => `#${serial.get(id) ?? "?"}`).join(", ") : null,
       row.type === "stage.set" ? (payload.completion === 100 ? "hecha" : "pendiente") : null,
       row.type === "previo.set_received" ? (payload.received ? "recibido" : "no recibido") : null,
