@@ -149,6 +149,82 @@ export type Database = {
         Update: Record<string, never>;
         Relationships: [];
       };
+      floor_commands: {
+        Row: {
+          id: string;
+          device_id: string;
+          seq: number;
+          worker_id: string | null;
+          type: string;
+          payload: Json;
+          occurred_at: string;
+          device_at: string;
+          clock_offset_ms: number;
+          status: "processing" | "applied" | "applied_flagged" | "rejected";
+          flags: string[];
+          error: string | null;
+          claimed_at: string;
+          received_at: string;
+          finished_at: string | null;
+          reviewed_at: string | null;
+        };
+        Insert: {
+          id: string;
+          device_id: string;
+          seq: number;
+          worker_id?: string | null;
+          type: string;
+          payload: Json;
+          occurred_at: string;
+          device_at: string;
+          clock_offset_ms?: number;
+          status: "processing" | "applied" | "applied_flagged" | "rejected";
+          flags?: string[];
+          error?: string | null;
+          claimed_at?: string;
+          received_at?: string;
+          finished_at?: string | null;
+          reviewed_at?: string | null;
+        };
+        Update: {
+          status?: "processing" | "applied" | "applied_flagged" | "rejected";
+          flags?: string[];
+          error?: string | null;
+          claimed_at?: string;
+          finished_at?: string | null;
+          reviewed_at?: string | null;
+        };
+        Relationships: [];
+      };
+      floor_devices: {
+        Row: {
+          device_id: string;
+          device: string;
+          user_agent: string | null;
+          app_version: string | null;
+          sw_supported: boolean | null;
+          pending_count: number;
+          last_sync_at: string;
+        };
+        Insert: {
+          device_id: string;
+          device: string;
+          user_agent?: string | null;
+          app_version?: string | null;
+          sw_supported?: boolean | null;
+          pending_count?: number;
+          last_sync_at?: string;
+        };
+        Update: {
+          device?: string;
+          user_agent?: string | null;
+          app_version?: string | null;
+          sw_supported?: boolean | null;
+          pending_count?: number;
+          last_sync_at?: string;
+        };
+        Relationships: [];
+      };
       holidays: {
         Row: {
           date: string;
@@ -203,6 +279,7 @@ export type Database = {
           event_type: "ordered_checked" | "ordered_unchecked" | "received_checked" | "received_unchecked";
           actor_profile_id: string | null;
           created_at: string;
+          command_id: string | null;
         };
         Insert: {
           id?: string;
@@ -212,6 +289,7 @@ export type Database = {
           event_type: "ordered_checked" | "ordered_unchecked" | "received_checked" | "received_unchecked";
           actor_profile_id?: string | null;
           created_at?: string;
+          command_id?: string | null;
         };
         Update: {
           id?: string;
@@ -221,6 +299,7 @@ export type Database = {
           event_type?: "ordered_checked" | "ordered_unchecked" | "received_checked" | "received_unchecked";
           actor_profile_id?: string | null;
           created_at?: string;
+          command_id?: string | null;
         };
         Relationships: [];
       };
@@ -466,6 +545,7 @@ export type Database = {
           is_reprocess: boolean;
           is_undone: boolean;
           created_at: string;
+          command_id: string | null;
         };
         Insert: {
           id?: string;
@@ -477,6 +557,7 @@ export type Database = {
           is_reprocess?: boolean;
           is_undone?: boolean;
           created_at?: string;
+          command_id?: string | null;
         };
         Update: {
           id?: string;
@@ -488,6 +569,7 @@ export type Database = {
           is_reprocess?: boolean;
           is_undone?: boolean;
           created_at?: string;
+          command_id?: string | null;
         };
         Relationships: [];
       };

@@ -11,7 +11,14 @@ export async function updateStageProgress(input: {
   stageId: number;
   completion: number;
   workerId: string;
+  /** Hora real del cambio. La planta sin conexión la manda al sincronizar; por defecto, ahora. */
+  at?: Date;
+  /** Comando de planta que origina el cambio: al reenviarlo no se duplica la bitácora. */
+  commandId?: string;
 }) {
+  const at = input.at ?? new Date();
+  const atIso = at.toISOString();
+
   if (!VALID_COMPLETIONS.has(input.completion)) {
     throw new Error("La tarea debe estar pendiente o hecha.");
   }
@@ -50,7 +57,7 @@ export async function updateStageProgress(input: {
       throw new Error(`No se pudo verificar el historial de la etapa: ${lastLogError.message}`);
     }
 
-    const revert = classifyStageRevert(lastLog?.created_at ?? null, new Date(), REPROCESS_GRACE_MINUTES);
+    const revert = classifyStageRevert(lastLog?.created_at ?? null, at, REPROCESS_GRACE_MINUTES);
 
     if (revert === "undo" && lastLog) {
       const { error: undoLogError } = await supabase
@@ -67,7 +74,7 @@ export async function updateStageProgress(input: {
         .update({
           completion: lastLog.previous_completion,
           last_worker_id: input.workerId,
-          last_updated_at: new Date().toISOString(),
+          last_updated_at: atIso,
         })
         .eq("id", current.id)
         .select("*")
@@ -77,7 +84,7 @@ export async function updateStageProgress(input: {
         throw new Error(`No se pudo actualizar la etapa: ${updateError.message}`);
       }
 
-      await syncMachineCompletion(supabase, input.machineId);
+      await syncMachineCompletion(supabase, input.machineId, at);
 
       return { stage, log: null, revert: "undo" as const };
     }
@@ -90,9 +97,11 @@ export async function updateStageProgress(input: {
       previousCompletion: current.completion,
       newCompletion: input.completion,
       isReprocess: true,
+      at: atIso,
+      commandId: input.commandId,
     });
 
-    await syncMachineCompletion(supabase, input.machineId);
+    await syncMachineCompletion(supabase, input.machineId, at);
 
     return { stage, log, revert: "reprocess" as const };
   }
@@ -105,9 +114,11 @@ export async function updateStageProgress(input: {
     previousCompletion: current.completion,
     newCompletion: input.completion,
     isReprocess: false,
+    at: atIso,
+    commandId: input.commandId,
   });
 
-  await syncMachineCompletion(supabase, input.machineId);
+  await syncMachineCompletion(supabase, input.machineId, at);
 
   return { stage, log, revert: null };
 }
@@ -122,20 +133,29 @@ async function insertStageLogAndUpdateStage(
     previousCompletion: number;
     newCompletion: number;
     isReprocess: boolean;
+    at: string;
+    commandId?: string;
   },
 ) {
-  const { data: log, error: logError } = await supabase
-    .from("stage_logs")
-    .insert({
-      machine_id: input.machineId,
-      stage_id: input.stageId,
-      worker_id: input.workerId,
-      previous_completion: input.previousCompletion,
-      new_completion: input.newCompletion,
-      is_reprocess: input.isReprocess,
-    })
-    .select("*")
-    .single();
+  const row = {
+    machine_id: input.machineId,
+    stage_id: input.stageId,
+    worker_id: input.workerId,
+    previous_completion: input.previousCompletion,
+    new_completion: input.newCompletion,
+    is_reprocess: input.isReprocess,
+    created_at: input.at,
+    command_id: input.commandId ?? null,
+  };
+
+  // Con commandId, un reenvío del mismo comando reutiliza la bitácora que ya existe.
+  const { data: log, error: logError } = input.commandId
+    ? await supabase
+        .from("stage_logs")
+        .upsert(row, { onConflict: "command_id,machine_id" })
+        .select("*")
+        .single()
+    : await supabase.from("stage_logs").insert(row).select("*").single();
 
   if (logError) {
     throw new Error(`No se pudo registrar la bitácora: ${logError.message}`);
@@ -146,7 +166,7 @@ async function insertStageLogAndUpdateStage(
     .update({
       completion: input.newCompletion,
       last_worker_id: input.workerId,
-      last_updated_at: new Date().toISOString(),
+      last_updated_at: input.at,
     })
     .eq("id", input.currentId)
     .select("*")
@@ -166,6 +186,7 @@ async function insertStageLogAndUpdateStage(
 async function syncMachineCompletion(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   machineId: string,
+  at: Date = new Date(),
 ) {
   const { data: stages, error: stagesError } = await supabase
     .from("machine_stages")
@@ -188,16 +209,18 @@ async function syncMachineCompletion(
     throw new Error(`No se pudo cargar la máquina: ${machineError.message}`);
   }
 
+  let update: { status: "finished" | "in_production"; completed_at: string | null } | null = null;
   if (allDone && machine.status === "in_production") {
-    await supabase
-      .from("machines")
-      .update({ status: "finished", completed_at: new Date().toISOString() })
-      .eq("id", machineId);
+    update = { status: "finished", completed_at: at.toISOString() };
   } else if (!allDone && machine.status === "finished") {
-    await supabase
-      .from("machines")
-      .update({ status: "in_production", completed_at: null })
-      .eq("id", machineId);
+    update = { status: "in_production", completed_at: null };
+  }
+
+  if (update) {
+    const { error: updateError } = await supabase.from("machines").update(update).eq("id", machineId);
+    if (updateError) {
+      throw new Error(`No se pudo actualizar el estado de la máquina: ${updateError.message}`);
+    }
   }
 }
 

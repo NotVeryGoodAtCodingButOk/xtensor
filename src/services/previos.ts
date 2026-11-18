@@ -336,6 +336,10 @@ export async function toggleMachinePrevio(input: {
   // Nullable: factory-floor toggles (Almacén) don't have an admin profile to
   // attribute the change to, so they record the event with a null actor.
   actorProfileId: string | null;
+  /** Hora real del cambio (planta sin conexión); por defecto, ahora. */
+  at?: Date;
+  /** Comando de planta que origina el cambio: al reenviarlo no se duplica el evento. */
+  commandId?: string;
 }) {
   const supabase = createSupabaseAdminClient();
   // Ensure a machine_previos row exists for this (machine, previo) pair before
@@ -354,7 +358,7 @@ export async function toggleMachinePrevio(input: {
     throw new Error(`No se pudo cargar el previo de la máquina: ${currentError?.message ?? "No existe."}`);
   }
 
-  const now = new Date().toISOString();
+  const now = (input.at ?? new Date()).toISOString();
   const patch =
     input.field === "ordered"
       ? {
@@ -374,14 +378,18 @@ export async function toggleMachinePrevio(input: {
   }
 
   const eventType = buildPrevioEventType(input.field, input.checked);
-  const { error: eventError } = await supabase.from("machine_previo_events").insert({
+  const event = {
     machine_previo_id: current.id,
     machine_id: current.machine_id,
     previo_catalog_id: current.previo_catalog_id,
     event_type: eventType,
     actor_profile_id: input.actorProfileId,
     created_at: now,
-  });
+    command_id: input.commandId ?? null,
+  };
+  const { error: eventError } = input.commandId
+    ? await supabase.from("machine_previo_events").upsert(event, { onConflict: "command_id", ignoreDuplicates: true })
+    : await supabase.from("machine_previo_events").insert(event);
 
   if (eventError) {
     throw new Error(`No se pudo registrar el evento del previo: ${eventError.message}`);

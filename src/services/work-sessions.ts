@@ -519,9 +519,9 @@ export async function finishSession(input: {
  * Marks a stage done (100%) on every machine and reports which of them had
  * their LAST pending stage closed by it (status flipped to finished).
  */
-async function completeStageOnMachines(
+export async function completeStageOnMachines(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
-  input: { machineIds: string[]; stageId: number; workerId: string },
+  input: { machineIds: string[]; stageId: number; workerId: string; at?: Date; commandId?: string },
 ): Promise<{ finishedMachineIds: string[] }> {
   // Cada máquina toca solo sus propias filas: se marcan en paralelo para que
   // «Terminar» sobre un grupo no espere ~6 consultas en fila por máquina.
@@ -533,6 +533,8 @@ async function completeStageOnMachines(
         stageId: input.stageId,
         completion: 100,
         workerId: input.workerId,
+        at: input.at,
+        commandId: input.commandId,
       }),
     ),
   );
@@ -952,7 +954,7 @@ function friendlyOpenSessionMessage(error: { code?: string; message: string }) {
  * that stage was itself a reprocess — i.e. the worker is redoing a stage that
  * was already sent back once, not doing it for the first time.
  */
-async function computeSessionIsReprocess(
+export async function computeSessionIsReprocess(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
   machineIds: string[],
   stageId: number,
