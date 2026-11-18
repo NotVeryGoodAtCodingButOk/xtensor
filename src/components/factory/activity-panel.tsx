@@ -1,14 +1,14 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useState } from "react";
 import { Check } from "lucide-react";
-import { listActivityMachinesAction, startOtherSessionAction } from "@/app/planta/actions";
 import { Button } from "@/components/ui/button";
-import type { ActivityTypeView } from "@/services/activity-types";
-import type { ActivityMachineStatus, ActivityPanelMachineOption } from "@/services/work-sessions";
+import type { DispatchResult } from "@/lib/floor/client";
+import type { FloorIntent } from "@/lib/floor/commands";
+import type { FloorActivityMachine, FloorActivityMachineStatus, FloorActivityType } from "@/lib/floor/types";
 
 /** Etiqueta del estado en el selector: carga, instalación y garantías van sobre máquinas ya terminadas o despachadas. */
-const MACHINE_STATUS_LABEL: Record<ActivityMachineStatus, string> = {
+const MACHINE_STATUS_LABEL: Record<FloorActivityMachineStatus, string> = {
   in_production: "En producción",
   finished: "Terminada",
   shipped: "Despachada",
@@ -23,26 +23,27 @@ const MACHINE_STATUS_LABEL: Record<ActivityMachineStatus, string> = {
  * open.
  */
 export function ActivityPanel({
+  workerId,
   activityTypes,
+  machines,
   hasOpenSession,
   navButtonClass,
+  dispatch,
+  onStarted,
 }: {
-  activityTypes: ActivityTypeView[];
+  workerId: string;
+  activityTypes: FloorActivityType[];
+  /** En producción, terminadas y despachadas recientes (vienen en el snapshot: sirven sin red). */
+  machines: FloorActivityMachine[];
   hasOpenSession: boolean;
   navButtonClass: string;
+  dispatch: (intent: FloorIntent) => DispatchResult;
+  onStarted?: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  /**
-   * En producción, terminadas y despachadas recientes (~130). Se piden al abrir
-   * el panel y no en cada render de la página: así no viajan ni se procesan en
-   * el iPad cada vez que se pinta la lista de máquinas.
-   */
-  const [machines, setMachines] = useState<ActivityPanelMachineOption[] | null>(null);
-  const [machinesError, setMachinesError] = useState(false);
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [selectedMachineIds, setSelectedMachineIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
 
   const allowsMachine = useMemo(
     () => activityTypes.some((type) => selectedTypeIds.includes(type.id) && type.allowsMachine),
@@ -51,18 +52,10 @@ export function ActivityPanel({
 
   function open() {
     setIsOpen(true);
-    if (machines === null) {
-      setMachinesError(false);
-      listActivityMachinesAction()
-        .then(setMachines)
-        .catch(() => setMachinesError(true));
-    }
   }
 
   function close() {
     setIsOpen(false);
-    // La lista se vuelve a pedir la próxima vez (puede haber cambiado de estado alguna máquina).
-    setMachines(null);
     setSelectedTypeIds([]);
     setSelectedMachineIds([]);
     setError(null);
@@ -92,17 +85,22 @@ export function ActivityPanel({
       return;
     }
 
-    startTransition(async () => {
-      const result = await startOtherSessionAction({
+    const result = dispatch({
+      type: "session.start_other",
+      payload: {
+        workerId,
+        sessionId: crypto.randomUUID(),
+        activityId: crypto.randomUUID(),
         activityTypeIds: selectedTypeIds,
         machineIds: allowsMachine ? selectedMachineIds : [],
-      });
-      if (!result.ok) {
-        setError(result.error ?? "No se pudo iniciar la actividad.");
-        return;
-      }
-      close();
+      },
     });
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    close();
+    onStarted?.();
   }
 
   return (
@@ -162,11 +160,7 @@ export function ActivityPanel({
             {allowsMachine ? (
               <div className="xt-activity-machines">
                 <p className="xt-eyebrow">Máquina (opcional)</p>
-                {machinesError ? (
-                  <p className="xt-activity-error">No se pudieron cargar las máquinas. Cierra y abre de nuevo.</p>
-                ) : machines === null ? (
-                  <p className="xt-activity-note">Cargando máquinas…</p>
-                ) : machines.length === 0 ? (
+                {machines.length === 0 ? (
                   <p className="xt-activity-note">No hay máquinas en producción, terminadas ni despachadas.</p>
                 ) : (
                   <ul className="xt-activity-machine-list">
@@ -184,7 +178,7 @@ export function ActivityPanel({
                               {isSelected ? <Check className="h-4 w-4" /> : null}
                             </span>
                             <span className="xt-activity-option-name">
-                              #{machine.serialNumber} · {machine.equipmentName} · {machine.clientName}
+                              #{machine.serial} · {machine.name} · {machine.client}
                             </span>
                             <span className={`xt-activity-machine-status xt-activity-machine-status-${machine.status}`}>
                               {MACHINE_STATUS_LABEL[machine.status]}
@@ -208,7 +202,7 @@ export function ActivityPanel({
               <button
                 type="button"
                 className="xt-activity-submit"
-                disabled={hasOpenSession || isPending || selectedTypeIds.length === 0}
+                disabled={hasOpenSession || selectedTypeIds.length === 0}
                 onClick={handleSubmit}
               >
                 Iniciar cronómetro

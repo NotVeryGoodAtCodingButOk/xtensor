@@ -1,39 +1,41 @@
 "use client";
 
 import { useState } from "react";
-import { resumeActivityAction } from "@/app/planta/actions";
+import type { DispatchResult } from "@/lib/floor/client";
+import type { FloorIntent } from "@/lib/floor/commands";
+import type { FloorPausedView } from "@/lib/floor/views";
 import { formatElapsedTime, formatMachineList } from "@/lib/work-session-ui";
-import type { PausedActivityView } from "@/services/work-sessions";
 
 /**
  * Strip on the machine list showing what the active worker left paused, so a
  * cronómetro paused yesterday is picked up again without hunting for the
- * machine. On the detail and group pages the stage card carries Reanudar
+ * machine. On the detail and group views the stage card carries Reanudar
  * itself, so this bar is not rendered there.
  */
 export function PausedActivitiesBar({
+  workerId,
   activities,
   hasOpenSession,
+  dispatch,
 }: {
-  activities: PausedActivityView[];
+  workerId: string;
+  activities: FloorPausedView[];
   hasOpenSession: boolean;
+  dispatch: (intent: FloorIntent) => DispatchResult;
 }) {
-  const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   if (activities.length === 0) {
     return null;
   }
 
-  async function resume(activityId: string) {
-    setPendingId(activityId);
+  function resume(activityId: string) {
     setError(null);
-    const result = await resumeActivityAction({ activityId });
-    setPendingId(null);
-    if (!result.ok) {
-      setError(result.error ?? "No se pudo reanudar la actividad.");
-      return;
-    }
+    const result = dispatch({
+      type: "session.resume",
+      payload: { workerId, sessionId: crypto.randomUUID(), activityId },
+    });
+    if (!result.ok) setError(result.error);
   }
 
   return (
@@ -48,7 +50,7 @@ export function PausedActivitiesBar({
           <button
             type="button"
             className="xt-paused-bar-btn"
-            disabled={hasOpenSession || pendingId === activity.activityId}
+            disabled={hasOpenSession}
             onClick={() => resume(activity.activityId)}
           >
             Reanudar

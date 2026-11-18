@@ -1,19 +1,13 @@
 "use client";
 
 import type { MouseEvent } from "react";
-import { useEffect, useOptimistic, useState, useTransition } from "react";
-import {
-  finishPausedActivityAction,
-  finishSessionAction,
-  logStageAction,
-  pauseSessionAction,
-  resumeActivityAction,
-  startStageSessionAction,
-} from "@/app/planta/actions";
+import { useEffect, useState } from "react";
 import { ReturnToWorkersBar } from "@/components/factory/return-to-workers-bar";
 import { QueryToast } from "@/components/ui/query-toast";
+import type { DispatchResult } from "@/lib/floor/client";
+import type { FloorIntent } from "@/lib/floor/commands";
+import type { FloorSessionView } from "@/lib/floor/views";
 import { deriveStageCardState, formatElapsedTime, sameMachineSet, totalElapsedMs } from "@/lib/work-session-ui";
-import type { OpenSessionView } from "@/services/work-sessions";
 
 export type TaskStage = {
   id: number;
@@ -37,52 +31,40 @@ export type TaskGridPausedActivity = {
 
 type ToastState = { message: string; description?: string | null } | null;
 
-type CompletionUpdate = { machineId: string; stageId: number; completion: number };
-
 /**
  * Renders one card per stage across one or several machines (group mode).
- * Used by both the single-machine detail page and the multi-machine group
- * page — `machines.length` determines which per-card affordances apply
- * (Reproceso and "Marcar hecha sin tiempo" are single-machine-only).
+ * `machines.length` determines which per-card affordances apply (Reproceso and
+ * "Marcar hecha sin tiempo" are single-machine-only).
+ *
+ * Cada acción se guarda en el iPad al instante (funciona sin red) y se envía
+ * sola cuando hay conexión: ya no hay estados "cargando" ni esperas.
  */
 export function TaskGrid({
+  workerId,
   machines,
   openSession,
   pausedActivities = [],
-  continueHref,
+  dispatch,
+  onReturnToWorkers,
 }: {
+  workerId: string;
   machines: TaskGridMachine[];
-  openSession: OpenSessionView | null;
+  openSession: FloorSessionView | null;
   pausedActivities?: TaskGridPausedActivity[];
-  continueHref: string;
+  dispatch: (intent: FloorIntent) => DispatchResult;
+  onReturnToWorkers: () => void;
 }) {
-  const [optimisticMachines, applyOptimisticCompletion] = useOptimistic(
-    machines,
-    (current: TaskGridMachine[], update: CompletionUpdate) =>
-      current.map((machine) =>
-        machine.id === update.machineId
-          ? {
-              ...machine,
-              stages: machine.stages.map((stage) =>
-                stage.id === update.stageId ? { ...stage, completion: update.completion } : stage,
-              ),
-            }
-          : machine,
-      ),
-  );
-  const [, startTransition] = useTransition();
-  const [pendingStageId, setPendingStageId] = useState<number | null>(null);
   const [showReturnBar, setShowReturnBar] = useState(false);
   const [toast, setToast] = useState<ToastState>(null);
   const [toastKey, setToastKey] = useState(0);
 
-  const machineIds = optimisticMachines.map((machine) => machine.id);
-  const isGroup = optimisticMachines.length > 1;
-  const stageDefinitions = optimisticMachines[0]?.stages ?? [];
+  const machineIds = machines.map((machine) => machine.id);
+  const isGroup = machines.length > 1;
+  const stageDefinitions = machines[0]?.stages ?? [];
 
   const cards = stageDefinitions
     .map((stageDef) => {
-      const completions = optimisticMachines.map(
+      const completions = machines.map(
         (machine) => machine.stages.find((stage) => stage.id === stageDef.id)?.completion ?? 0,
       );
       const state = deriveStageCardState(completions);
@@ -109,73 +91,41 @@ export function TaskGrid({
     setToastKey((key) => key + 1);
   }
 
+  /** Aplica la acción; si no se puede, lo dice. Devuelve el resultado para avisos extra. */
+  function run(intent: FloorIntent, options: { returnBar?: boolean } = {}) {
+    const result = dispatch(intent);
+    if (!result.ok) {
+      notify(result.error);
+      return null;
+    }
+    if (options.returnBar !== false && !result.effects.noop) setShowReturnBar(true);
+    notifyFinishedMachines(result.effects.finishedMachineIds.length);
+    return result;
+  }
+
   function handleStart(stageId: number) {
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      const result = await startStageSessionAction({ machineIds, stageId });
-      setPendingStageId(null);
-      if (!result.ok) {
-        notify(result.error ?? "No se pudo iniciar la actividad.");
-        return;
-      }
-      setShowReturnBar(true);
+    run({
+      type: "session.start_stage",
+      payload: { workerId, sessionId: crypto.randomUUID(), activityId: crypto.randomUUID(), stageId, machineIds },
     });
   }
 
-  function handleFinish(stageId: number) {
+  function handleFinish() {
     if (!openSession) return;
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      const result = await finishSessionAction({ sessionId: openSession.id });
-      setPendingStageId(null);
-      if (!result.ok) {
-        notify(result.error ?? "No se pudo terminar la actividad.");
-        return;
-      }
-      setShowReturnBar(true);
-      notifyFinishedMachines(result.finishedMachineIds?.length ?? 0);
-    });
+    run({ type: "session.finish", payload: { workerId, sessionId: openSession.id } });
   }
 
-  function handlePause(stageId: number) {
+  function handlePause() {
     if (!openSession) return;
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      const result = await pauseSessionAction({ sessionId: openSession.id });
-      setPendingStageId(null);
-      if (!result.ok) {
-        notify(result.error ?? "No se pudo pausar la actividad.");
-        return;
-      }
-      setShowReturnBar(true);
-    });
+    run({ type: "session.pause", payload: { workerId, sessionId: openSession.id } });
   }
 
-  function handleResume(stageId: number, activityId: string) {
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      const result = await resumeActivityAction({ activityId });
-      setPendingStageId(null);
-      if (!result.ok) {
-        notify(result.error ?? "No se pudo reanudar la actividad.");
-        return;
-      }
-      setShowReturnBar(true);
-    });
+  function handleResume(activityId: string) {
+    run({ type: "session.resume", payload: { workerId, sessionId: crypto.randomUUID(), activityId } });
   }
 
-  function handleFinishPaused(stageId: number, activityId: string) {
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      const result = await finishPausedActivityAction({ activityId });
-      setPendingStageId(null);
-      if (!result.ok) {
-        notify(result.error ?? "No se pudo terminar la actividad.");
-        return;
-      }
-      setShowReturnBar(true);
-      notifyFinishedMachines(result.finishedMachineIds?.length ?? 0);
-    });
+  function handleFinishPaused(activityId: string) {
+    run({ type: "activity.finish_paused", payload: { workerId, activityId } });
   }
 
   function notifyFinishedMachines(count: number) {
@@ -188,49 +138,23 @@ export function TaskGrid({
 
   function handleReprocess(stageId: number, machineId: string, event: MouseEvent) {
     event.stopPropagation();
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      applyOptimisticCompletion({ machineId, stageId, completion: 0 });
-      const result = await logStageAction({ machineId, stageId, completion: 0 });
-      setPendingStageId(null);
-      if (!result.ok) {
-        return;
-      }
-      if (result.logged) {
-        setShowReturnBar(true);
-      }
-      if (result.revert === "undo") {
-        notify("Corrección: la etapa volvió a pendiente (sin reproceso)");
-      } else if (result.revert === "reprocess") {
-        notify("Reproceso registrado");
-      }
-    });
+    const result = run({ type: "stage.set", payload: { workerId, machineId, stageId, completion: 0 } });
+    if (result?.effects.revert === "undo") {
+      notify("Corrección: la etapa volvió a pendiente (sin reproceso)");
+    } else if (result?.effects.revert === "reprocess") {
+      notify("Reproceso registrado");
+    }
   }
 
   function handleMarkDone(stageId: number, machineId: string, event: MouseEvent) {
     event.stopPropagation();
-    setPendingStageId(stageId);
-    startTransition(async () => {
-      applyOptimisticCompletion({ machineId, stageId, completion: 100 });
-      const result = await logStageAction({ machineId, stageId, completion: 100 });
-      setPendingStageId(null);
-      if (!result.ok) {
-        return;
-      }
-      if (result.logged) {
-        setShowReturnBar(true);
-      }
-      if (result.finished) {
-        notify("Máquina terminada", "Todas las etapas quedaron hechas.");
-      }
-    });
+    run({ type: "stage.set", payload: { workerId, machineId, stageId, completion: 100 } });
   }
 
   return (
     <>
       <div className="xt-task-grid grid gap-4 px-5 2xl:grid-cols-2">
         {cards.map((card) => {
-          const cardIsPending = pendingStageId === card.stageId;
           const hasOtherOpenSession = Boolean(openSession) && !card.isCurrentSession;
 
           // A stage the worker paused, unless it is already running again or
@@ -274,16 +198,15 @@ export function TaskGrid({
                       <button
                         type="button"
                         className="xt-task-card-btn xt-task-card-btn-start"
-                        disabled={cardIsPending || hasOtherOpenSession}
-                        onClick={() => handleResume(card.stageId, paused.activityId)}
+                        disabled={hasOtherOpenSession}
+                        onClick={() => handleResume(paused.activityId)}
                       >
                         Reanudar
                       </button>
                       <button
                         type="button"
                         className="xt-task-card-btn"
-                        disabled={cardIsPending}
-                        onClick={() => handleFinishPaused(card.stageId, paused.activityId)}
+                        onClick={() => handleFinishPaused(paused.activityId)}
                       >
                         Terminar
                       </button>
@@ -297,16 +220,14 @@ export function TaskGrid({
                     <button
                       type="button"
                       className="xt-task-card-btn xt-task-card-btn-pause"
-                      disabled={cardIsPending}
-                      onClick={() => handlePause(card.stageId)}
+                      onClick={handlePause}
                     >
                       Pausar
                     </button>
                     <button
                       type="button"
                       className="xt-task-card-btn xt-task-card-btn-finish"
-                      disabled={cardIsPending}
-                      onClick={() => handleFinish(card.stageId)}
+                      onClick={handleFinish}
                     >
                       Terminar
                     </button>
@@ -316,8 +237,7 @@ export function TaskGrid({
                     <button
                       type="button"
                       className="xt-task-action"
-                      disabled={cardIsPending}
-                      onClick={(event) => handleReprocess(card.stageId, optimisticMachines[0].id, event)}
+                      onClick={(event) => handleReprocess(card.stageId, machines[0].id, event)}
                     >
                       Reproceso
                     </button>
@@ -327,7 +247,7 @@ export function TaskGrid({
                     <button
                       type="button"
                       className="xt-task-card-btn xt-task-card-btn-start"
-                      disabled={cardIsPending || hasOtherOpenSession}
+                      disabled={hasOtherOpenSession}
                       onClick={() => handleStart(card.stageId)}
                     >
                       Iniciar cronómetro
@@ -339,8 +259,7 @@ export function TaskGrid({
                       <button
                         type="button"
                         className="xt-task-card-mark-done"
-                        disabled={cardIsPending}
-                        onClick={(event) => handleMarkDone(card.stageId, optimisticMachines[0].id, event)}
+                        onClick={(event) => handleMarkDone(card.stageId, machines[0].id, event)}
                       >
                         Marcar hecha sin tiempo
                       </button>
@@ -356,7 +275,7 @@ export function TaskGrid({
       <QueryToast key={toastKey} message={toast?.message ?? null} description={toast?.description ?? null} />
 
       {showReturnBar ? (
-        <ReturnToWorkersBar continueHref={continueHref} onContinue={() => setShowReturnBar(false)} />
+        <ReturnToWorkersBar onTimeout={onReturnToWorkers} onContinue={() => setShowReturnBar(false)} />
       ) : null}
     </>
   );

@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { StageStrip } from "@/components/factory/stage-strip";
 
@@ -23,19 +22,21 @@ export type MachineCardData = {
 export function MachineCardGrid({
   machines,
   stageNames,
+  onOpen,
 }: {
   machines: MachineCardData[];
   /** Nombre de cada etapa por id (se envía una vez, no por máquina). */
   stageNames: Record<number, string>;
+  onOpen: (machineId: string) => void;
 }) {
   return (
     <div className="xt-machine-grid">
       {machines.map((machine) => (
-        <Link
-          prefetch={false}
+        <button
+          type="button"
           key={machine.id}
-          href={`/planta/maquinas/${machine.id}`}
-          className="xt-machine-card flex min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
+          onClick={() => onOpen(machine.id)}
+          className="xt-machine-card xt-machine-card-button flex w-full text-left min-h-[170px] flex-col border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)] transition-colors hover:bg-[var(--xt-yellow-soft)]"
         >
           <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">
             <div className="xt-machine-card-heading flex items-start justify-between gap-3">
@@ -61,7 +62,7 @@ export function MachineCardGrid({
               }))}
             />
           </div>
-        </Link>
+        </button>
       ))}
     </div>
   );

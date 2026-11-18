@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { Check } from "lucide-react";
 import { StageStrip } from "@/components/factory/stage-strip";
@@ -22,16 +21,15 @@ export type MultiSelectMachine = {
 
 /**
  * "Varias" mode for the machine list: cards become tap-to-select instead of
- * navigating, and a sticky bottom bar continues to the group page with the
+ * navigating, and a sticky bottom bar continues to the group view with the
  * selected ids once at least one machine is picked.
  */
 export function MachineMultiSelect({
   machines,
-  groupHrefBase,
+  onContinue,
 }: {
   machines: MultiSelectMachine[];
-  /** e.g. "/planta/maquinas/grupo" — "ids" is appended. */
-  groupHrefBase: string;
+  onContinue: (machineIds: string[]) => void;
 }) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
@@ -40,8 +38,6 @@ export function MachineMultiSelect({
       current.includes(id) ? current.filter((existing) => existing !== id) : [...current, id],
     );
   }
-
-  const continueHref = `${groupHrefBase}${groupHrefBase.includes("?") ? "&" : "?"}ids=${selectedIds.join(",")}`;
 
   return (
     <>
@@ -85,9 +81,9 @@ export function MachineMultiSelect({
 
       <div className="xt-multi-select-bar">
         {selectedIds.length > 0 ? (
-          <Link prefetch={false} href={continueHref} className="xt-multi-select-continue">
+          <button type="button" onClick={() => onContinue(selectedIds)} className="xt-multi-select-continue">
             Continuar con {selectedIds.length} {selectedIds.length === 1 ? "máquina" : "máquinas"} →
-          </Link>
+          </button>
         ) : (
           <span className="xt-multi-select-continue xt-multi-select-continue-disabled" aria-disabled="true">
             Selecciona al menos una máquina

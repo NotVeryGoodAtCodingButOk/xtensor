@@ -752,6 +752,11 @@ select {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  -webkit-appearance: none;
+  appearance: none;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
 }
 
 .xt-mode-toggle-option-active {
@@ -818,6 +823,9 @@ select {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
 }
 
 .xt-multi-select-continue-disabled {
@@ -2113,67 +2121,132 @@ select {
   }
 }
 
-/* ConnectionGuard: aviso "Sin conexión / Conexión lenta". Tapa la pantalla para
-   que no se repitan toques mientras la petición pendiente se reintenta sola. */
-.xt-conn-overlay {
+/* Planta sin conexión: aviso pequeño en la esquina. Nunca tapa la pantalla:
+   el operario sigue trabajando y el iPad envía todo cuando vuelve la señal. */
+.xt-floor-status {
   position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 60;
+  left: 1rem;
+  bottom: 1rem;
+  z-index: 40;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1.25rem;
-  background: rgba(17, 17, 17, 0.45);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  max-width: calc(100vw - 2rem);
+  pointer-events: none;
 }
 
-.xt-conn-card {
-  width: 100%;
-  max-width: 30rem;
+.xt-floor-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.xt-floor-pill {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--xt-black);
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1.1;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+  pointer-events: auto;
+}
+
+.xt-floor-pill-warn {
+  background: var(--xt-yellow);
+  color: var(--xt-black);
+}
+
+.xt-floor-pill-info {
+  background: var(--xt-white);
+  color: var(--xt-black);
+}
+
+.xt-floor-pill-error {
+  border-color: var(--line-pro-red);
+  background: var(--line-pro-red);
+  color: var(--xt-white);
+}
+
+.xt-floor-pill-button {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.xt-floor-issues {
+  width: 26rem;
+  max-width: 100%;
+  max-height: 60vh;
+  overflow-y: auto;
   border: 1px solid var(--xt-black);
   background: var(--xt-white);
   color: var(--xt-black);
-  padding: 1.25rem 1.5rem 1.5rem;
+  padding: 1rem;
   box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+  pointer-events: auto;
 }
 
-.xt-conn-bar {
-  height: 0.5rem;
-  margin-bottom: 1rem;
-  overflow: hidden;
-  background: var(--xt-cement);
-}
-
-.xt-conn-bar-fill {
-  width: 40%;
-  height: 100%;
-  background: var(--xt-yellow);
-  animation: xt-conn-slide 1.4s ease-in-out infinite;
-}
-
-.xt-conn-title {
+.xt-floor-issues-title {
   margin: 0;
   font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
-  font-size: 2rem;
+  font-size: 1.4rem;
   font-weight: 700;
-  line-height: 1;
   text-transform: uppercase;
 }
 
-.xt-conn-text {
-  margin: 0.5rem 0 0;
-  font-size: 1.05rem;
-  line-height: 1.35;
+.xt-floor-issues-note {
+  margin: 0.25rem 0 0.75rem;
+  font-size: 0.8rem;
+  color: var(--xt-steel);
 }
 
-@keyframes xt-conn-slide {
-  from {
-    transform: translateX(-100%);
-  }
+.xt-floor-issues-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
 
-  to {
-    transform: translateX(250%);
-  }
+.xt-floor-issue {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-top: 1px solid var(--xt-cement);
+  padding: 0.6rem 0;
+}
+
+.xt-floor-issue-head {
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.xt-floor-issue-body {
+  font-size: 0.85rem;
+  line-height: 1.3;
+}
+
+.xt-floor-issues-dismiss {
+  -webkit-appearance: none;
+  appearance: none;
+  margin-top: 0.5rem;
+  cursor: pointer;
+  border: 1px solid var(--xt-black);
+  background: var(--xt-yellow);
+  color: var(--xt-black);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  padding: 0.6rem 1.2rem;
+}
+
+/* Las tarjetas de máquina ahora son botones (navegan dentro de la app, sin red). */
+.xt-machine-card-button {
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
 }

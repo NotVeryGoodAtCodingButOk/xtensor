@@ -1,29 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
 
-export function ReturnToWorkersBar({
-  continueHref,
-  onContinue,
-}: {
-  continueHref: string;
-  /** When provided, "Continuar registrando" dismisses the bar in place
-   *  instead of navigating — keeps the factory tablet snappy. */
-  onContinue?: () => void;
-}) {
-  const router = useRouter();
+/**
+ * Tras registrar algo, vuelve solo al selector de operario en 20 s (la tablet
+ * es compartida). Todo es local: no depende de la red.
+ */
+export function ReturnToWorkersBar({ onTimeout, onContinue }: { onTimeout: () => void; onContinue: () => void }) {
   const [isVisible, setIsVisible] = useState(true);
+  const onTimeoutRef = useRef(onTimeout);
+  onTimeoutRef.current = onTimeout;
 
-  // Navegación dentro de la app (no carga completa): si se cae el Wi-Fi justo
-  // ahora, ConnectionGuard la reintenta en vez de dejar la página de error.
   useEffect(() => {
-    const timeout = window.setTimeout(() => {
-      router.push("/planta/operarios");
-    }, 20_000);
-
+    const timeout = window.setTimeout(() => onTimeoutRef.current(), 20_000);
     return () => window.clearTimeout(timeout);
-  }, [router]);
+  }, []);
 
   if (!isVisible) {
     return null;
@@ -43,11 +34,7 @@ export function ReturnToWorkersBar({
           className="xt-return-continue xt-return-continue-btn"
           onClick={() => {
             setIsVisible(false);
-            if (onContinue) {
-              onContinue();
-              return;
-            }
-            router.push(continueHref);
+            onContinue();
           }}
         >
           Continuar registrando

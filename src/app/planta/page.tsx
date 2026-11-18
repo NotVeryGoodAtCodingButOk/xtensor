@@ -22,7 +22,7 @@ export default async function FactoryLockPage({
   }
 
   if (await isFactoryUnlocked()) {
-    redirect("/planta/operarios");
+    redirect("/planta/piso");
   }
 
   const params = await searchParams;

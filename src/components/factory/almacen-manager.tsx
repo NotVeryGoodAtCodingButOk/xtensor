@@ -1,14 +1,14 @@
 "use client";
 
-import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
-import { toggleMachinePrevioFactoryAction } from "@/app/planta/actions";
+import { useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { CellTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import type { DispatchResult } from "@/lib/floor/client";
+import type { FloorIntent } from "@/lib/floor/commands";
+import type { FloorPrevio, FloorPrevioRow } from "@/lib/floor/types";
 import { formatDateEs } from "@/services/schedule";
-import type { MachinePrevioListRow, MachinePrevioView } from "@/types/domain";
 
 // Normalize a previo name so it matches regardless of the abbreviated,
 // punctuated, or accented variants stored in `previo_catalog` (e.g. "Torno A.",
@@ -34,7 +34,7 @@ const ALMACEN_PREVIO_KEYS = new Set(ALMACEN_PREVIO_ORDER);
 
 type PrevioColumn = { id: string; label: string };
 
-function buildPrevioColumns(machines: MachinePrevioListRow[]): PrevioColumn[] {
+function buildPrevioColumns(machines: FloorPrevioRow[]): PrevioColumn[] {
   const byKey = new Map<string, string>(); // key -> previoCatalogId
   for (const machine of machines) {
     for (const previo of machine.previos) {
@@ -50,38 +50,48 @@ function buildPrevioColumns(machines: MachinePrevioListRow[]): PrevioColumn[] {
   }));
 }
 
-function ReceivedChip({ machineId, previo }: { machineId: string; previo: MachinePrevioView }) {
-  const checkedRef = useRef<HTMLInputElement>(null);
-
+function ReceivedChip({
+  machineId,
+  previo,
+  dispatch,
+}: {
+  machineId: string;
+  previo: FloorPrevio;
+  dispatch: (intent: FloorIntent) => DispatchResult;
+}) {
   return (
-    <form action={toggleMachinePrevioFactoryAction} className="inline-flex">
-      <input type="hidden" name="machineId" value={machineId} />
-      <input type="hidden" name="previoCatalogId" value={previo.previoCatalogId} />
-      <input ref={checkedRef} type="hidden" name="checked" value={String(!previo.received)} />
-      <label
-        className={cn(
-          "inline-flex cursor-pointer items-center gap-1.5 border px-2.5 py-1.5 text-xs font-semibold leading-none transition-colors",
-          previo.received
-            ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/12 text-[var(--line-bio-green)]"
-            : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)]",
-        )}
-      >
-        <input
-          type="checkbox"
-          defaultChecked={previo.received}
-          className="h-5 w-5 accent-[var(--line-bio-green)]"
-          onChange={(e) => {
-            if (checkedRef.current) checkedRef.current.value = String(e.currentTarget.checked);
-            e.currentTarget.form?.requestSubmit();
-          }}
-        />
-        Recibido
-      </label>
-    </form>
+    <label
+      className={cn(
+        "inline-flex cursor-pointer items-center gap-1.5 border px-2.5 py-1.5 text-xs font-semibold leading-none transition-colors",
+        previo.received
+          ? "border-[var(--line-bio-green)] bg-[var(--line-bio-green)]/12 text-[var(--line-bio-green)]"
+          : "border-[var(--xt-cement)] bg-[var(--xt-white)] text-[var(--xt-steel)]",
+      )}
+    >
+      <input
+        type="checkbox"
+        checked={previo.received}
+        className="h-5 w-5 accent-[var(--line-bio-green)]"
+        onChange={(event) =>
+          dispatch({
+            type: "previo.set_received",
+            payload: { machineId, previoCatalogId: previo.previoCatalogId, received: event.currentTarget.checked },
+          })
+        }
+      />
+      Recibido
+    </label>
   );
 }
 
-export function AlmacenManager({ machines }: { machines: MachinePrevioListRow[] }) {
+/** Recibido de material. Cada marca se guarda en el iPad al instante y se envía sola (funciona sin red). */
+export function AlmacenManager({
+  machines,
+  dispatch,
+}: {
+  machines: FloorPrevioRow[];
+  dispatch: (intent: FloorIntent) => DispatchResult;
+}) {
   const previoColumns = useMemo(() => buildPrevioColumns(machines), [machines]);
   const columnIds = useMemo(() => new Set(previoColumns.map((col) => col.id)), [previoColumns]);
   const [search, setSearch] = useState("");
@@ -102,9 +112,9 @@ export function AlmacenManager({ machines }: { machines: MachinePrevioListRow[] 
       }
       if (!term) return true;
       return (
-        String(machine.serialNumber).includes(term) ||
-        machine.clientName.toLowerCase().includes(term) ||
-        machine.equipmentName.toLowerCase().includes(term)
+        String(machine.serial).includes(term) ||
+        machine.client.toLowerCase().includes(term) ||
+        machine.equipment.toLowerCase().includes(term)
       );
     });
   }, [relevantMachines, columnIds, pendingOnly, search]);
@@ -157,30 +167,20 @@ export function AlmacenManager({ machines }: { machines: MachinePrevioListRow[] 
                 filtered.map((machine) => (
                   <TableRow key={machine.machineId}>
                     <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="font-semibold tabular-nums">{machine.serialNumber}</span>
-                        <Link
-                          prefetch={false}
-                          href={`/planta/maquinas/${machine.machineId}`}
-                          className="text-[var(--xt-steel)] hover:text-[var(--xt-black)]"
-                          title="Ver máquina"
-                        >
-                          ↗
-                        </Link>
-                      </div>
+                      <span className="font-semibold tabular-nums">{machine.serial}</span>
                     </TableCell>
                     <TableCell className="max-w-[160px]">
-                      <CellTooltip text={machine.clientName}>
-                        <span className="line-clamp-1">{machine.clientName}</span>
+                      <CellTooltip text={machine.client}>
+                        <span className="line-clamp-1">{machine.client}</span>
                       </CellTooltip>
                     </TableCell>
                     <TableCell className="max-w-[200px]">
-                      <CellTooltip text={machine.equipmentName}>
-                        <span className="line-clamp-1">{machine.equipmentName}</span>
+                      <CellTooltip text={machine.equipment}>
+                        <span className="line-clamp-1">{machine.equipment}</span>
                       </CellTooltip>
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
-                      {machine.colorName ?? <span className="text-[var(--xt-aluminum)]">—</span>}
+                      {machine.color ?? <span className="text-[var(--xt-aluminum)]">—</span>}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">{formatDateEs(machine.promisedDate)}</TableCell>
                     {previoColumns.map((col) => {
@@ -188,7 +188,7 @@ export function AlmacenManager({ machines }: { machines: MachinePrevioListRow[] 
                       return (
                         <TableCell key={col.id} className="text-center">
                           {previo ? (
-                            <ReceivedChip machineId={machine.machineId} previo={previo} />
+                            <ReceivedChip machineId={machine.machineId} previo={previo} dispatch={dispatch} />
                           ) : (
                             <span className="text-[var(--xt-aluminum)]">—</span>
                           )}

@@ -1,18 +1,29 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { finishSessionAction, pauseSessionAction } from "@/app/planta/actions";
+import type { DispatchResult } from "@/lib/floor/client";
+import type { FloorIntent } from "@/lib/floor/commands";
+import type { FloorSessionView } from "@/lib/floor/views";
 import { formatElapsedTime, formatMachineList, isStartedBeforeToday, totalElapsedMs } from "@/lib/work-session-ui";
-import type { OpenSessionView } from "@/services/work-sessions";
 
 /**
- * Sticky bar shown on the machine list, detail and group pages whenever the
+ * Sticky bar shown on the machine list, detail and group views whenever the
  * active worker has an open time-capture session. Lets them Terminar/Pausar
- * without hunting for the matching stage card.
+ * without hunting for the matching stage card. Funciona sin red.
  */
-export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
+export function ActiveSessionBar({
+  workerId,
+  session,
+  dispatch,
+  onDone,
+}: {
+  workerId: string;
+  session: FloorSessionView;
+  dispatch: (intent: FloorIntent) => DispatchResult;
+  /** Después de pausar o terminar (para mostrar la barra de volver a operarios). */
+  onDone?: (result: Extract<DispatchResult, { ok: true }>) => void;
+}) {
   const [now, setNow] = useState(() => Date.now());
-  const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -31,15 +42,14 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
   const label = [activityLabel, machinesLabel, elapsed].filter(Boolean).join(" · ");
   const startedBeforeToday = isStartedBeforeToday(session.startedAt, new Date(now));
 
-  async function runClose(action: (input: { sessionId: string }) => Promise<{ ok: boolean; error?: string }>) {
-    setIsPending(true);
+  function close(type: "session.pause" | "session.finish") {
     setError(null);
-    const result = await action({ sessionId: session.id });
-    setIsPending(false);
+    const result = dispatch({ type, payload: { workerId, sessionId: session.id } });
     if (!result.ok) {
-      setError(result.error ?? "No se pudo completar la acción.");
+      setError(result.error);
       return;
     }
+    onDone?.(result);
   }
 
   return (
@@ -50,21 +60,11 @@ export function ActiveSessionBar({ session }: { session: OpenSessionView }) {
         </p>
         <div className="xt-active-bar-actions">
           {session.kind === "stage" ? (
-            <button
-              type="button"
-              className="xt-active-bar-btn xt-active-bar-btn-pause"
-              disabled={isPending}
-              onClick={() => runClose(pauseSessionAction)}
-            >
+            <button type="button" className="xt-active-bar-btn xt-active-bar-btn-pause" onClick={() => close("session.pause")}>
               Pausar
             </button>
           ) : null}
-          <button
-            type="button"
-            className="xt-active-bar-btn xt-active-bar-btn-finish"
-            disabled={isPending}
-            onClick={() => runClose(finishSessionAction)}
-          >
+          <button type="button" className="xt-active-bar-btn xt-active-bar-btn-finish" onClick={() => close("session.finish")}>
             Terminar
           </button>
         </div>

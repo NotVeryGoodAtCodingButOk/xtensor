@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 /**
@@ -10,10 +10,9 @@ import { useRouter } from "next/navigation";
  * falla por red o no responde en 20 s, Next haría una carga completa de página
  * y, sin señal, Chrome se queda en su página de error hasta que alguien recarga.
  * Aquí esas peticiones no fallan: esperan a que vuelva la conexión (sondeando
- * /planta/api/conexion) y se reenvían solas, con un aviso que bloquea los toques
- * mientras tanto. Reenviar una acción es seguro: iniciar/terminar/pausar se
- * niegan a duplicarse ("ya fue cerrada"), y tras un reintento se refresca la
- * página para mostrar el estado real.
+ * /planta/api/conexion) y se reenvían solas, sin bloquear nada. Lo usa sobre
+ * todo la cartelera (TV); el registro del operario no pasa por aquí sino por la
+ * bandeja de salida del iPad (src/lib/floor), que funciona sin red.
  *
  * Bitácora (Vercel solo guarda 1 h de logs y nunca ve lo que no llega):
  * - offline: el sistema dijo que no había red (desde → hasta).
@@ -28,7 +27,6 @@ import { useRouter } from "next/navigation";
 
 type ConnEvent = { kind: string; at: number; ms?: number; path?: string; detail?: string };
 type Alive = { at: number; path: string; state: "visible" | "hidden" | "unloading" };
-type Status = "ok" | "slow" | "waiting";
 
 const QUEUE_KEY = "xt_conn_queue";
 const ALIVE_KEY = "xt_conn_alive";
@@ -41,8 +39,6 @@ const GAP_MS = 45_000;
 const MAX_QUEUE = 100;
 /** Sin respuesta en este tiempo, la petición se da por perdida y se reintenta. */
 const ATTEMPT_TIMEOUT_MS = 20_000;
-/** Tras este tiempo esperando una respuesta se avisa "Conexión lenta". */
-const SLOW_NOTICE_MS = 5_000;
 const PROBE_TIMEOUT_MS = 5_000;
 const MAX_PROBE_DELAY_MS = 10_000;
 
@@ -100,21 +96,17 @@ function isNetworkError(error: unknown) {
 
 export function ConnectionGuard() {
   const router = useRouter();
-  const [status, setStatus] = useState<Status>("ok");
 
   useEffect(() => {
     const originalFetch = window.fetch;
     let flushing = false;
     let disposed = false;
-    let slowCount = 0;
     let waitPromise: Promise<void> | null = null;
     let refreshTimer: number | undefined;
 
     const syncStatus = () => {
-      const next: Status = waitPromise ? "waiting" : slowCount > 0 ? "slow" : "ok";
-      setStatus(next);
       // PollRefresh no apila refrescos mientras se espera la conexión.
-      if (next === "waiting") document.documentElement.dataset.xtConn = "waiting";
+      if (waitPromise) document.documentElement.dataset.xtConn = "waiting";
       else delete document.documentElement.dataset.xtConn;
     };
 
@@ -284,16 +276,10 @@ export function ConnectionGuard() {
         callerSignal?.addEventListener("abort", onCallerAbort);
         const started = Date.now();
         let timedOut = false;
-        let slowNoticed = false;
         const timeout = window.setTimeout(() => {
           timedOut = true;
           controller.abort();
         }, ATTEMPT_TIMEOUT_MS);
-        const slowNotice = window.setTimeout(() => {
-          slowNoticed = true;
-          slowCount += 1;
-          syncStatus();
-        }, SLOW_NOTICE_MS);
 
         let retry = false;
         try {
@@ -326,12 +312,7 @@ export function ConnectionGuard() {
           retry = true;
         } finally {
           window.clearTimeout(timeout);
-          window.clearTimeout(slowNotice);
           callerSignal?.removeEventListener("abort", onCallerAbort);
-          if (slowNoticed) {
-            slowCount -= 1;
-            syncStatus();
-          }
         }
 
         if (retry) {
@@ -380,21 +361,5 @@ export function ConnectionGuard() {
     };
   }, [router]);
 
-  if (status === "ok") return null;
-
-  return (
-    <div className="xt-conn-overlay" role="status" aria-live="polite">
-      <div className="xt-conn-card">
-        <div className="xt-conn-bar">
-          <div className="xt-conn-bar-fill" />
-        </div>
-        <p className="xt-conn-title">{status === "waiting" ? "Sin conexión" : "Conexión lenta"}</p>
-        <p className="xt-conn-text">
-          {status === "waiting"
-            ? "Reintentando solo. No hace falta tocar nada: el registro se envía cuando vuelva la señal."
-            : "Esperando respuesta del servidor…"}
-        </p>
-      </div>
-    </div>
-  );
+  return null;
 }
