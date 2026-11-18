@@ -276,7 +276,7 @@ async function loadActivities(
       note: first.note,
       isReprocess: first.is_reprocess,
       machineIds: [...machines.keys()],
-      machineSerials: [...machines.values()].sort((a, b) => a - b),
+      machineSerials: [...machines.values()],
       segments: segments.map((segment) => ({
         id: segment.id,
         startedAt: new Date(segment.started_at).getTime(),

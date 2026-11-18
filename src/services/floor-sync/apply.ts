@@ -226,6 +226,14 @@ async function setStage(supabase: Supabase, context: ApplyContext, command: Floo
   if (error) throw new Error(`No se pudo cargar la etapa: ${error.message}`);
   if (!stage) throw new FloorRejection("Esa etapa no existe en la máquina.");
 
+  // Si la sacaron de producción mientras tanto (terminada, despachada…), marcar la
+  // etapa la devolvería a producción: el cambio se salta y se deja para revisión.
+  const [status] = await machineStatuses(supabase, [machineId]);
+  if (status !== "in_production") {
+    context.flags.push("stage_not_marked");
+    return;
+  }
+
   if (await stageChangedAfter(supabase, machineId, stageId, context)) {
     context.flags.push("superseded");
     return;
@@ -288,15 +296,23 @@ async function setPrevioReceived(
 
 // ── Utilidades ───────────────────────────────────────────────────────────────
 
-/** Marca la etapa hecha en cada máquina, salvo donde alguien la cambió después de este toque. */
+/**
+ * Marca la etapa hecha en cada máquina, salvo donde ya no está en producción
+ * (marcarla la devolvería a producción) o alguien la cambió después de este toque.
+ * El tiempo de la sesión ya quedó guardado en ambos casos.
+ */
 async function completeStage(
   supabase: Supabase,
   context: ApplyContext,
   input: { machineIds: string[]; stageId: number; workerId: string },
 ) {
+  const unique = [...new Set(input.machineIds)];
+  const statuses = await machineStatuses(supabase, unique);
   const machineIds: string[] = [];
-  for (const machineId of [...new Set(input.machineIds)]) {
-    if (await stageChangedAfter(supabase, machineId, input.stageId, context)) {
+  for (const [index, machineId] of unique.entries()) {
+    if (statuses[index] !== "in_production") {
+      context.flags.push("stage_not_marked");
+    } else if (await stageChangedAfter(supabase, machineId, input.stageId, context)) {
       context.flags.push("superseded");
     } else {
       machineIds.push(machineId);
@@ -412,7 +428,8 @@ async function machineStatuses(supabase: Supabase, machineIds: string[]) {
   const { data, error } = await supabase.from("machines").select("id, status").in("id", machineIds);
   if (error) throw new Error(`No se pudieron verificar las máquinas: ${error.message}`);
   if ((data ?? []).length !== machineIds.length) throw new FloorRejection("Alguna de las máquinas ya no existe.");
-  return (data ?? []).map((row) => row.status);
+  const byId = new Map((data ?? []).map((row) => [row.id, row.status]));
+  return machineIds.map((id) => byId.get(id) as string);
 }
 
 /** La hora del comando, pero nunca antes de `floorIso` (la base exige fin ≥ inicio). */

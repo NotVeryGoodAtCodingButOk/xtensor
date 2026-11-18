@@ -97,6 +97,8 @@ export const FLOOR_COMMAND_LABELS: Record<FloorCommandType, string> = {
 /** Motivo legible de cada marca que deja el servidor al aplicar un comando con conflicto. */
 export const FLOOR_FLAG_LABELS: Record<string, string> = {
   machine_not_in_production: "La máquina ya no estaba en producción; el tiempo se guardó igual.",
+  stage_not_marked:
+    "La máquina ya no estaba en producción: la etapa no se marcó para no devolverla a producción.",
   already_closed: "La sesión ya estaba cerrada; se dejó la hora de cierre que tenía.",
   superseded: "Alguien cambió esto después desde otro equipo; se dejó el cambio más reciente.",
   closed_unknown_open_session: "El operario tenía otra sesión abierta; se pausó a la hora de este inicio.",

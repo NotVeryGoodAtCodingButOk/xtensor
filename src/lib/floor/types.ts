@@ -69,6 +69,7 @@ export type FloorActivity = {
   note: string | null;
   isReprocess: boolean;
   machineIds: string[];
+  /** Serial de cada máquina, en el mismo orden que machineIds. */
   machineSerials: number[];
   segments: FloorSegment[];
 };
