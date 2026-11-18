@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function ReturnToWorkersBar({
   continueHref,
@@ -8,18 +9,21 @@ export function ReturnToWorkersBar({
 }: {
   continueHref: string;
   /** When provided, "Continuar registrando" dismisses the bar in place
-   *  instead of reloading the page — keeps the factory tablet snappy. */
+   *  instead of navigating — keeps the factory tablet snappy. */
   onContinue?: () => void;
 }) {
+  const router = useRouter();
   const [isVisible, setIsVisible] = useState(true);
 
+  // Navegación dentro de la app (no carga completa): si se cae el Wi-Fi justo
+  // ahora, ConnectionGuard la reintenta en vez de dejar la página de error.
   useEffect(() => {
     const timeout = window.setTimeout(() => {
-      window.location.assign("/planta/operarios");
+      router.push("/planta/operarios");
     }, 20_000);
 
     return () => window.clearTimeout(timeout);
-  }, []);
+  }, [router]);
 
   if (!isVisible) {
     return null;
@@ -43,7 +47,7 @@ export function ReturnToWorkersBar({
               onContinue();
               return;
             }
-            window.location.assign(continueHref);
+            router.push(continueHref);
           }}
         >
           Continuar registrando

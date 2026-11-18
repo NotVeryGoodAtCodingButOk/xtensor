@@ -2112,3 +2112,68 @@ select {
     transform: scaleX(0);
   }
 }
+
+/* ConnectionGuard: aviso "Sin conexión / Conexión lenta". Tapa la pantalla para
+   que no se repitan toques mientras la petición pendiente se reintenta sola. */
+.xt-conn-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: rgba(17, 17, 17, 0.45);
+}
+
+.xt-conn-card {
+  width: 100%;
+  max-width: 30rem;
+  border: 1px solid var(--xt-black);
+  background: var(--xt-white);
+  color: var(--xt-black);
+  padding: 1.25rem 1.5rem 1.5rem;
+  box-shadow: 0 20px 25px rgba(0, 0, 0, 0.2);
+}
+
+.xt-conn-bar {
+  height: 0.5rem;
+  margin-bottom: 1rem;
+  overflow: hidden;
+  background: var(--xt-cement);
+}
+
+.xt-conn-bar-fill {
+  width: 40%;
+  height: 100%;
+  background: var(--xt-yellow);
+  animation: xt-conn-slide 1.4s ease-in-out infinite;
+}
+
+.xt-conn-title {
+  margin: 0;
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  text-transform: uppercase;
+}
+
+.xt-conn-text {
+  margin: 0.5rem 0 0;
+  font-size: 1.05rem;
+  line-height: 1.35;
+}
+
+@keyframes xt-conn-slide {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(250%);
+  }
+}

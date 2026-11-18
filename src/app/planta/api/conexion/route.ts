@@ -3,7 +3,7 @@ import { isFactoryUnlocked } from "@/lib/factory-session";
 import { saveConnectivityEvents } from "@/services/connectivity";
 
 /**
- * Recibe los eventos de conexión que anota ConnectionLogger. Es una ruta y no
+ * Recibe los eventos de conexión que anota ConnectionGuard. Es una ruta y no
  * una server action para no hacer fila con las acciones de los operarios en el
  * router de Next cuando la red está lenta.
  */
@@ -19,4 +19,9 @@ export async function POST(request: Request) {
 
   await saveConnectivityEvents(body.deviceId, request.headers.get("user-agent") ?? "", body.events);
   return new NextResponse(null, { status: 204 });
+}
+
+/** Sonda de ConnectionGuard: cualquier respuesta significa que hay conexión con el servidor. */
+export function GET() {
+  return new NextResponse(null, { status: 204, headers: { "Cache-Control": "no-store" } });
 }

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ConnectionLogger } from "@/components/factory/connection-logger";
+import { ConnectionGuard } from "@/components/factory/connection-guard";
 
 export const metadata: Metadata = {
   title: "Planta XTENSOR",
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 export default function PlantaLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <ConnectionLogger />
+      <ConnectionGuard />
       {children}
     </>
   );

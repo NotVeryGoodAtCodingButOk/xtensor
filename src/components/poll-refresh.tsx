@@ -23,7 +23,8 @@ export function PollRefresh({ pollMs }: { pollMs: number }) {
     };
 
     const interval = setInterval(() => {
-      if (!document.hidden) {
+      // Sin conexión (ConnectionGuard) no se apilan refrescos: el pendiente se reenvía solo.
+      if (!document.hidden && !document.documentElement.dataset.xtConn) {
         refresh();
       }
     }, pollMs);
