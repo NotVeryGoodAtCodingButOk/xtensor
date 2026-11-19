@@ -120,6 +120,27 @@ export function openActivityOf(state: FloorState, workerId: string): FloorActivi
   return state.activities.find((activity) => activity.workerId === workerId && isOpen(activity)) ?? null;
 }
 
+/**
+ * Otros operarios con cronómetro corriendo en la misma etapa y alguna de las
+ * mismas máquinas. Los pausados no cuentan. Mientras haya alguno, terminar no
+ * cierra la etapa: la cierra el último.
+ */
+export function otherActiveOnStage(
+  state: FloorState,
+  workerId: string,
+  stageId: number,
+  machineIds: string[],
+): FloorActivity[] {
+  return state.activities.filter(
+    (activity) =>
+      activity.workerId !== workerId &&
+      activity.kind === "stage" &&
+      activity.stageId === stageId &&
+      isOpen(activity) &&
+      activity.machineIds.some((id) => machineIds.includes(id)),
+  );
+}
+
 /** Tiempo de los tramos ya cerrados. */
 export function closedSegmentsMs(activity: FloorActivity): number {
   let total = 0;
@@ -290,9 +311,13 @@ function closeOpenSegment(
     return ok(replaceActivity(state, { ...activity, segments }));
   }
 
-  // Terminar: la actividad sale de la lista y la etapa queda hecha en sus máquinas.
+  // Terminar: la actividad sale de la lista. La etapa queda hecha en sus máquinas
+  // solo si no hay otro operario trabajando en ella (el último en terminar la cierra).
   const withoutActivity = removeActivity(state, activity.activityId);
   if (activity.kind !== "stage" || activity.stageId === null) return ok(withoutActivity);
+  if (otherActiveOnStage(withoutActivity, workerId, activity.stageId, activity.machineIds).length > 0) {
+    return ok(withoutActivity);
+  }
   return completeStage(withoutActivity, activity.machineIds, activity.stageId, command.at);
 }
 
@@ -328,7 +353,11 @@ function finishPaused(state: FloorState, command: FloorCommandOf<"activity.finis
     return fail("Esta actividad ya fue cerrada.");
   }
 
-  return completeStage(removeActivity(state, activityId), activity.machineIds, activity.stageId, command.at);
+  const withoutActivity = removeActivity(state, activityId);
+  if (otherActiveOnStage(withoutActivity, workerId, activity.stageId, activity.machineIds).length > 0) {
+    return ok(withoutActivity);
+  }
+  return completeStage(withoutActivity, activity.machineIds, activity.stageId, command.at);
 }
 
 function setStage(state: FloorState, command: FloorCommandOf<"stage.set">): ApplyResult {

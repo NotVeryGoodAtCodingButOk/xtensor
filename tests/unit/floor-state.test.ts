@@ -137,6 +137,53 @@ describe("floor state: stage sessions", () => {
   });
 });
 
+describe("floor state: varios operarios en la misma etapa", () => {
+  const start = (workerId: string, sessionId: string, activityId: string, machineIds: string[], at: number, state: FloorState) =>
+    run(state, { type: "session.start_stage", payload: { workerId, sessionId, activityId, stageId: 1, machineIds } }, at).state;
+
+  it("both can run a timer; the stage closes only when the last one finishes", () => {
+    let state = stateFromSnapshot(snapshot());
+    state = start("w1", "s1", "a1", ["m1"], T0, state);
+    state = start("w2", "s2", "a2", ["m1"], T0 + MIN, state);
+
+    const first = run(state, { type: "session.finish", payload: { workerId: "w1", sessionId: "s1" } }, T0 + 10 * MIN);
+    expect(first.state.machines.m1.stages[1].completion).toBe(0);
+    expect(openActivityOf(first.state, "w1")).toBeNull();
+    expect(openActivityOf(first.state, "w2")?.activityId).toBe("a2");
+
+    const last = run(first.state, { type: "session.finish", payload: { workerId: "w2", sessionId: "s2" } }, T0 + 20 * MIN);
+    expect(last.state.machines.m1.stages[1].completion).toBe(100);
+  });
+
+  it("a paused worker does not hold the stage open", () => {
+    let state = stateFromSnapshot(snapshot());
+    state = start("w1", "s1", "a1", ["m1"], T0, state);
+    state = start("w2", "s2", "a2", ["m1"], T0, state);
+    state = run(state, { type: "session.pause", payload: { workerId: "w1", sessionId: "s1" } }, T0 + 5 * MIN).state;
+    state = run(state, { type: "session.finish", payload: { workerId: "w2", sessionId: "s2" } }, T0 + 10 * MIN).state;
+    expect(state.machines.m1.stages[1].completion).toBe(100);
+  });
+
+  it("only overlapping machines and the same stage count", () => {
+    let state = stateFromSnapshot(snapshot());
+    state = start("w1", "s1", "a1", ["m1"], T0, state);
+    state = run(state, { type: "session.start_stage", payload: { workerId: "w2", sessionId: "s2", activityId: "a2", stageId: 2, machineIds: ["m1"] } }, T0).state;
+    state = run(state, { type: "session.finish", payload: { workerId: "w1", sessionId: "s1" } }, T0 + MIN).state;
+    expect(state.machines.m1.stages[1].completion).toBe(100);
+  });
+
+  it("finishing a paused activity waits for the other worker too", () => {
+    let state = stateFromSnapshot(snapshot());
+    state = start("w1", "s1", "a1", ["m1"], T0, state);
+    state = run(state, { type: "session.pause", payload: { workerId: "w1", sessionId: "s1" } }, T0 + MIN).state;
+    state = start("w2", "s2", "a2", ["m1"], T0 + 2 * MIN, state);
+    state = run(state, { type: "activity.finish_paused", payload: { workerId: "w1", activityId: "a1" } }, T0 + 3 * MIN).state;
+    expect(state.machines.m1.stages[1].completion).toBe(0);
+    state = run(state, { type: "session.finish", payload: { workerId: "w2", sessionId: "s2" } }, T0 + 4 * MIN).state;
+    expect(state.machines.m1.stages[1].completion).toBe(100);
+  });
+});
+
 describe("floor state: other activities", () => {
   it("validates the catalog and the machine rule", () => {
     const state = stateFromSnapshot(snapshot());
