@@ -64,7 +64,7 @@ export function StatsTable({
   }
 
   return (
-    <div className="overflow-x-auto border border-[var(--xt-cement)]">
+    <div className="overflow-auto max-h-[calc(100vh-4.5rem)] border border-[var(--xt-cement)]">
       <Table>
         <TableHeader>
           <TableRow>

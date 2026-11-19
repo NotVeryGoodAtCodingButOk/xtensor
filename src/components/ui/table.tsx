@@ -21,7 +21,7 @@ export function TableHead({ className, ...props }: React.ThHTMLAttributes<HTMLTa
   return (
     <th
       className={cn(
-        "h-10 px-3 text-left align-middle [font-family:var(--font-barlow-condensed)] text-xs font-bold uppercase tracking-[0.12em] text-[var(--xt-black)]",
+        "sticky top-0 z-10 h-10 bg-[var(--xt-yellow)] px-3 text-left align-middle shadow-[inset_0_-1px_0_var(--xt-black)] [font-family:var(--font-barlow-condensed)] text-xs font-bold uppercase tracking-[0.12em] text-[var(--xt-black)]",
         className,
       )}
       {...props}

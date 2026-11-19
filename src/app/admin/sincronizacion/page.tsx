@@ -45,7 +45,7 @@ export default async function FloorSyncPage() {
       </div>
 
       <section className="mb-8 border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
           <Table className="min-w-[900px] text-sm">
             <TableHeader>
               <TableRow>
@@ -97,7 +97,7 @@ export default async function FloorSyncPage() {
 
       <h2 className="mb-3 text-xl font-bold">Dispositivos de planta</h2>
       <section className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
           <Table className="min-w-[700px] text-sm">
             <TableHeader>
               <TableRow>

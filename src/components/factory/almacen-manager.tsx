@@ -140,7 +140,7 @@ export function AlmacenManager({
       </div>
 
       <div className="border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
           <Table className="min-w-[900px] text-sm">
             <TableHeader>
               <TableRow>

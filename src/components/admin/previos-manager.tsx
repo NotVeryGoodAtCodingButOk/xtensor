@@ -442,7 +442,7 @@ export function PreviosManager({
             </div>
           )}
         </div>
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
           <Table className="min-w-[2100px] text-xs">
             <TableHeader>
               <TableRow>
@@ -583,7 +583,7 @@ export function PreviosManager({
               {filteredProduction.length} máquina{filteredProduction.length === 1 ? "" : "s"} ya en producción · seguimiento de previos
             </p>
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
             <Table className="min-w-[2040px] text-xs">
               <TableHeader>
                 <TableRow>

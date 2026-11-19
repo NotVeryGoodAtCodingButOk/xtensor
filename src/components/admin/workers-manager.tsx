@@ -107,7 +107,8 @@ export function WorkersManager({ workers }: { workers: Worker[] }) {
         </Button>
       </div>
 
-      <Table>
+      <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
+<Table>
         <TableHeader>
           <TableRow>
             <TableHead>Nombre</TableHead>
@@ -177,6 +178,7 @@ export function WorkersManager({ workers }: { workers: Worker[] }) {
           )}
         </TableBody>
       </Table>
+</div>
     </div>
   );
 }

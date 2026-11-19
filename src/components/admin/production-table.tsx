@@ -487,7 +487,7 @@ export function ProductionTable({
     );
 
   return (
-    <div className="overflow-x-auto border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
+    <div className="overflow-auto max-h-[calc(100vh-4.5rem)] border border-[var(--xt-black)] bg-[var(--xt-white)] shadow-[var(--shadow-sm)]">
       <Table className="min-w-[1440px] text-xs">
         <TableHeader>
           <TableRow>

@@ -401,7 +401,7 @@ export function ExcelImportManager({
                 </div>
               ) : null}
 
-              <div className="overflow-x-auto">
+              <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
                 <Table className="min-w-[1060px]">
                   <TableHeader>
                     <TableRow>

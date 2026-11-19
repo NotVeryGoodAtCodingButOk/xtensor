@@ -20,7 +20,8 @@ export function ClientsManager({ clients }: { clients: ClientWithUrl[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   return (
-    <Table>
+    <div className="overflow-auto max-h-[calc(100vh-4.5rem)]">
+<Table>
       <TableHeader>
         <TableRow>
           <TableHead>Cliente</TableHead>
@@ -125,5 +126,6 @@ export function ClientsManager({ clients }: { clients: ClientWithUrl[] }) {
         )}
       </TableBody>
     </Table>
+</div>
   );
 }
