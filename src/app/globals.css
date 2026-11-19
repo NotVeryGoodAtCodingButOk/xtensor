@@ -2242,6 +2242,37 @@ select {
   padding: 0.6rem 1.2rem;
 }
 
+/* Tablero de máquinas: nombre y cotización son lo que el operario busca, van grandes. */
+.xt-machine-card-quote {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+.xt-machine-card-quote-number,
+.xt-machine-card-name {
+  font-family: var(--font-barlow-condensed), "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-weight: 700;
+  color: var(--xt-black);
+}
+
+.xt-machine-card-quote-number {
+  font-size: 2.5rem;
+  line-height: 1;
+}
+
+.xt-machine-card-name {
+  display: -webkit-box;
+  margin: 0;
+  overflow: hidden;
+  font-size: 2rem;
+  line-height: 1.05;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 /* Las tarjetas de máquina ahora son botones (navegan dentro de la app, sin red). */
 .xt-machine-card-button {
   -webkit-appearance: none;

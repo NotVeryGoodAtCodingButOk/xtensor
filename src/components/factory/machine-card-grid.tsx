@@ -41,12 +41,13 @@ export function MachineCardGrid({
           <div className="xt-machine-card-body flex flex-1 flex-col gap-2 p-4">
             <div className="xt-machine-card-heading flex items-start justify-between gap-3">
               <div className="xt-machine-card-fields grid gap-1 min-w-0 flex-1">
-                <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.code ?? "Personalizado"}</p>
-                <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.name}</p>
-                <p className="truncate text-sm font-bold text-[var(--xt-black)]">{machine.client}</p>
-                <p className="flex min-w-0 items-baseline gap-1.5 text-sm font-bold text-[var(--xt-black)]">
-                  <span className="xt-eyebrow shrink-0 text-[0.625rem] leading-none">Cotización</span>
-                  <span className="truncate">{machine.serial}</span>
+                <p className="xt-machine-card-quote">
+                  <span className="xt-eyebrow shrink-0">Cotización</span>
+                  <span className="xt-machine-card-quote-number">{machine.serial}</span>
+                </p>
+                <p className="xt-machine-card-name">{machine.name}</p>
+                <p className="truncate text-sm font-bold text-[var(--xt-steel)]">
+                  {machine.code ?? "Personalizado"} · {machine.client}
                 </p>
               </div>
               <ChevronRight className="xt-machine-chevron mt-1 h-6 w-6 shrink-0 text-[var(--xt-steel)]" />
