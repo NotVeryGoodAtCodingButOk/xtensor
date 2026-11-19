@@ -16,7 +16,7 @@ import type { FloorIntent } from "@/lib/floor/commands";
 import { machinesInProduction, type FloorState } from "@/lib/floor/state";
 import type { FloorMachine } from "@/lib/floor/types";
 import { getFloorClient, useFloor } from "@/lib/floor/use-floor";
-import { openSessionView, pausedViews, workerBadges } from "@/lib/floor/views";
+import { openSessionView, othersWorkingByStage, pausedViews, workerBadges } from "@/lib/floor/views";
 import { registerFloorServiceWorker } from "@/lib/floor/service-worker";
 
 export type FloorView =
@@ -372,6 +372,7 @@ function WorkerViews({
           stages: stageList(state, machine),
         }))}
         openSession={openSession}
+        othersWorking={othersWorkingByStage(state, workerId, ids)}
         pausedActivities={paused.map((activity) => ({
           activityId: activity.activityId,
           stageId: activity.stageId,

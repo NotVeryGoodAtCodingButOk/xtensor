@@ -7,6 +7,7 @@ import {
   activityTypeNames,
   closedSegmentsMs,
   openActivityOf,
+  otherActiveOnStage,
   pausedActivitiesOf,
   stageName,
   type FloorState,
@@ -97,4 +98,19 @@ function sessionMachines(activity: FloorActivity): FloorSessionMachine[] {
   return activity.machineIds
     .map((id, index) => ({ id, serialNumber: activity.machineSerials[index] ?? 0 }))
     .sort((a, b) => a.serialNumber - b.serialNumber);
+}
+
+/**
+ * Operarios con el cronómetro corriendo en una etapa de estas máquinas, por etapa.
+ * Sirve para avisar en la tarjeta que la etapa la cierra el último en terminar.
+ */
+export function othersWorkingByStage(state: FloorState, workerId: string, machineIds: string[]): Map<number, string[]> {
+  const byStage = new Map<number, string[]>();
+  for (const stage of state.stages) {
+    const names = otherActiveOnStage(state, workerId, stage.id, machineIds)
+      .map((activity) => state.workers.find((worker) => worker.id === activity.workerId)?.name ?? "Otro operario")
+      .sort((a, b) => a.localeCompare(b));
+    if (names.length > 0) byStage.set(stage.id, names);
+  }
+  return byStage;
 }

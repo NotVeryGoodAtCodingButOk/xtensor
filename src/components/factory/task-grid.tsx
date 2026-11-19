@@ -43,6 +43,7 @@ export function TaskGrid({
   workerId,
   machines,
   openSession,
+  othersWorking,
   pausedActivities = [],
   dispatch,
   onReturnToWorkers,
@@ -50,6 +51,8 @@ export function TaskGrid({
   workerId: string;
   machines: TaskGridMachine[];
   openSession: FloorSessionView | null;
+  /** Otros operarios con cronómetro corriendo, por etapa. */
+  othersWorking?: Map<number, string[]>;
   pausedActivities?: TaskGridPausedActivity[];
   dispatch: (intent: FloorIntent) => DispatchResult;
   onReturnToWorkers: () => void;
@@ -190,6 +193,12 @@ export function TaskGrid({
                     <CardTimer startedAt={openSession.startedAt} accumulatedMs={openSession.accumulatedMs} />
                   ) : null}
                   {paused ? <p className="xt-task-card-timer">{formatElapsedTime(paused.accumulatedMs)}</p> : null}
+                  {!card.state.allDone && othersWorking?.get(card.stageId) ? (
+                    <p className="xt-task-card-hint">
+                      También trabajando: {othersWorking.get(card.stageId)?.join(", ")}
+                      {card.isCurrentSession ? ". La etapa se cierra cuando termine el último." : ""}
+                    </p>
+                  ) : null}
                 </div>
 
                 {paused ? (
