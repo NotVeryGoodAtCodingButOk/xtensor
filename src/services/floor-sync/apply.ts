@@ -145,6 +145,10 @@ async function closeSegment(
   }
 
   if (reason === "completed" && segment.kind === "stage" && segment.stage_id !== null) {
+    const machineIds = segment.work_session_machines.map((entry) => entry.machine_id);
+    // Otro operario sigue con el cronómetro corriendo: su tiempo ya quedó guardado
+    // y la etapa la cierra el último en terminar.
+    if (await othersActiveOnStage(supabase, { machineIds, stageId: segment.stage_id, workerId })) return;
     await completeStage(supabase, context, {
       machineIds: segment.work_session_machines.map((entry) => entry.machine_id),
       stageId: segment.stage_id,
@@ -205,12 +209,30 @@ async function finishPaused(supabase: Supabase, context: ApplyContext, command: 
   }
 
   if (last.kind === "stage" && last.stage_id !== null) {
-    await completeStage(supabase, context, {
-      machineIds: segments[0].work_session_machines.map((entry) => entry.machine_id),
-      stageId: last.stage_id,
-      workerId,
-    });
+    const machineIds = segments[0].work_session_machines.map((entry) => entry.machine_id);
+    if (await othersActiveOnStage(supabase, { machineIds, stageId: last.stage_id, workerId })) return;
+    await completeStage(supabase, context, { machineIds, stageId: last.stage_id, workerId });
   }
+}
+
+/** Otro operario tiene una sesión abierta en esta etapa y alguna de estas máquinas. */
+async function othersActiveOnStage(
+  supabase: Supabase,
+  input: { machineIds: string[]; stageId: number; workerId: string },
+): Promise<boolean> {
+  const machineIds = [...new Set(input.machineIds)];
+  if (machineIds.length === 0) return false;
+  const { data, error } = await supabase
+    .from("work_sessions")
+    .select("id, work_session_machines!inner(machine_id)")
+    .eq("kind", "stage")
+    .eq("stage_id", input.stageId)
+    .is("ended_at", null)
+    .neq("worker_id", input.workerId)
+    .in("work_session_machines.machine_id", machineIds)
+    .limit(1);
+  if (error) throw new Error(`No se pudo verificar a los demás operarios: ${error.message}`);
+  return (data ?? []).length > 0;
 }
 
 async function setStage(supabase: Supabase, context: ApplyContext, command: FloorCommandOf<"stage.set">) {
