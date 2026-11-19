@@ -1,7 +1,7 @@
 import "server-only";
 import ExcelJS from "exceljs";
 
-import type { CalculatedMachineView } from "@/types/domain";
+import type { CalculatedMachineView, MachinePrevioListRow } from "@/types/domain";
 import { parseLaborPct } from "@/services/calculations";
 import { formatDateEs } from "@/services/schedule";
 import { normalizePrevioName } from "@/services/previos";
@@ -562,6 +562,66 @@ export async function buildShippedWorkbook(machines: CalculatedMachineView[]): P
     });
     row.getCell("punit").numFmt = "#,##0";
     row.getCell("importe").numFmt = "#,##0";
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  return Buffer.from(buffer);
+}
+
+/** Respaldo de previos: una fila por máquina y previo, con su estado de pedido y recepción. */
+export async function buildPreviosWorkbook(rows: MachinePrevioListRow[]): Promise<Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  workbook.creator = "XTENSOR";
+  workbook.created = new Date();
+  const sheet = workbook.addWorksheet("Previos");
+
+  const columns = [
+    { header: "SERIAL", key: "serial", width: 10 },
+    { header: "Cliente", key: "client", width: 26 },
+    { header: "Producto", key: "product", width: 30 },
+    { header: "Clave", key: "code", width: 12 },
+    { header: "Color", key: "color", width: 14 },
+    { header: "Estado máquina", key: "status", width: 16 },
+    { header: "Fecha prometida", key: "promised", width: 16 },
+    { header: "Previo", key: "previo", width: 30 },
+    { header: "Pedido", key: "ordered", width: 10 },
+    { header: "Fecha pedido", key: "orderedAt", width: 16 },
+    { header: "Recibido", key: "received", width: 10 },
+    { header: "Fecha recibido", key: "receivedAt", width: 16 },
+  ];
+  sheet.columns = columns.map(({ key, width }) => ({ key, width }));
+  const headerRow = sheet.addRow(Object.fromEntries(columns.map((c) => [c.key, c.header])));
+  headerRow.font = { bold: true, color: { argb: "FF111111" } };
+  headerRow.eachCell((cell) => {
+    cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF2C200" } };
+  });
+
+  const statusLabel: Record<string, string> = {
+    pending: "Previos",
+    in_production: "En producción",
+    finished: "Terminada",
+    shipped: "Despachada",
+    on_hold: "Propia en espera",
+  };
+  const dateOrEmpty = (value: string | null) => (value ? formatDateEs(value.slice(0, 10)) : "");
+
+  for (const machine of rows) {
+    for (const previo of machine.previos) {
+      sheet.addRow({
+        serial: machine.serialNumber,
+        client: machine.clientName,
+        product: machine.equipmentName,
+        code: machine.equipmentCode ?? "",
+        color: machine.colorName ?? "",
+        status: statusLabel[machine.status] ?? machine.status,
+        promised: dateOrEmpty(machine.promisedDate),
+        previo: previo.name,
+        ordered: previo.ordered ? "Sí" : "No",
+        orderedAt: dateOrEmpty(previo.orderedAt),
+        received: previo.received ? "Sí" : "No",
+        receivedAt: dateOrEmpty(previo.receivedAt),
+      });
+    }
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
