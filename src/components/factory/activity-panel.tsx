@@ -33,7 +33,7 @@ export function ActivityPanel({
 }: {
   workerId: string;
   activityTypes: FloorActivityType[];
-  /** En producción, terminadas y despachadas recientes (vienen en el snapshot: sirven sin red). */
+  /** Vienen en el snapshot (sirven sin red); el selector muestra solo las terminadas. */
   machines: FloorActivityMachine[];
   hasOpenSession: boolean;
   navButtonClass: string;
@@ -44,6 +44,9 @@ export function ActivityPanel({
   const [selectedTypeIds, setSelectedTypeIds] = useState<string[]>([]);
   const [selectedMachineIds, setSelectedMachineIds] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
+
+  // Las actividades con máquina (carga, instalación, arreglos) solo aplican a las ya terminadas.
+  const finishedMachines = useMemo(() => machines.filter((machine) => machine.status === "finished"), [machines]);
 
   const allowsMachine = useMemo(
     () => activityTypes.some((type) => selectedTypeIds.includes(type.id) && type.allowsMachine),
@@ -160,11 +163,11 @@ export function ActivityPanel({
             {allowsMachine ? (
               <div className="xt-activity-machines">
                 <p className="xt-eyebrow">Máquina (opcional)</p>
-                {machines.length === 0 ? (
-                  <p className="xt-activity-note">No hay máquinas en producción, terminadas ni despachadas.</p>
+                {finishedMachines.length === 0 ? (
+                  <p className="xt-activity-note">No hay máquinas terminadas.</p>
                 ) : (
                   <ul className="xt-activity-machine-list">
-                    {machines.map((machine) => {
+                    {finishedMachines.map((machine) => {
                       const isSelected = selectedMachineIds.includes(machine.id);
                       return (
                         <li key={machine.id}>
