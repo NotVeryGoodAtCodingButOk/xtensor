@@ -128,6 +128,7 @@ export type MachinePrevioListRow = {
   colorName: string | null;
   promisedDate: string;
   status: MachineStatus;
+  salePriceCop: number;
   previos: MachinePrevioView[];
   summary: MachinePrevioSummary;
 };

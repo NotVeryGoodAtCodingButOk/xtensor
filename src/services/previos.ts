@@ -66,6 +66,7 @@ const MACHINE_PREVIOS_SELECT = `
   status,
   color_id,
   custom_equipment_name,
+  sale_price_cop,
   clients(name),
   colors(id, name),
   equipment_catalog(code, name, equipment_previos(previo_catalog_id, previo_catalog(name))),
@@ -545,6 +546,7 @@ function mapMachinePrevioListRow(row: MachinePrevioSelectRow): MachinePrevioList
     colorName: row.colors?.name ?? null,
     promisedDate: row.promised_date,
     status: row.status,
+    salePriceCop: Number(row.sale_price_cop) || 0,
     previos,
     summary: buildMachinePrevioSummary(previos, row.status),
   };

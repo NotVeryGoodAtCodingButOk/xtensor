@@ -3,6 +3,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { ChevronDown, CheckCircle, Palette, PauseCircle, Search, X } from "lucide-react";
 import { bulkMarkFinishedAction, bulkSendToHoldAction } from "@/app/admin/actions";
+import { ListTotals } from "@/components/admin/list-totals";
 import { machineSortValue, ProductionTable } from "@/components/admin/production-table";
 import type { SortConfig, SortKey } from "@/components/admin/production-table";
 import { Button } from "@/components/ui/button";
@@ -198,6 +199,15 @@ export function ProductionTablePanel({ machines, colors = [] }: { machines: Calc
 
   return (
     <div className="grid gap-2">
+      {/* Cuántas máquinas hay en la lista y cuánto suman (sigue a los filtros) */}
+      <div className="mb-2 flex flex-wrap items-end justify-between gap-3 border border-[var(--xt-black)] bg-[var(--xt-white)] px-4 py-3 shadow-[var(--shadow-sm)]">
+        <div>
+          <h2 className="font-semibold">En producción</h2>
+          <p className="text-xs text-[var(--xt-steel)]">{filtered ? "Con los filtros aplicados" : "Toda la cola de producción"}</p>
+        </div>
+        <ListTotals machines={displayed} totalCount={machines.length} />
+      </div>
+
       {/* Filter bar */}
       <div className="flex flex-wrap items-center gap-2">
         {/* Search */}
@@ -260,14 +270,6 @@ export function ProductionTablePanel({ machines, colors = [] }: { machines: Calc
         </label>
       </div>
 
-      {/* Result count when filtered */}
-      {filtered && (
-        <p className="text-xs text-[var(--xt-steel)]">
-          {displayed.length === machines.length
-            ? `${machines.length} máquinas`
-            : `${displayed.length} de ${machines.length} máquinas`}
-        </p>
-      )}
 
       {selectedIds.size > 0 && (
         <div className="flex items-center gap-3 rounded-[2px] border border-[var(--xt-black)] bg-[var(--xt-yellow-soft)] px-3 py-2">

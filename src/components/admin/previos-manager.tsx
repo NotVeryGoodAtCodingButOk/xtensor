@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { ArrowRight, Trash2 } from "lucide-react";
+import { ListTotals } from "@/components/admin/list-totals";
 import { deleteMachinesFromPreviosAction, sendToProductionAction, toggleMachinePrevioAction, updateMachineSerialAction, updateMachineClientAction, updateMachineColorAction } from "@/app/admin/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -401,9 +402,10 @@ export function PreviosManager({
         <div className="flex items-center justify-between gap-3 border-b border-[var(--xt-aluminum)] px-4 py-3">
           <div>
             <h2 className="font-semibold">En previos</h2>
-            <p className="text-xs text-[var(--xt-steel)]">
-              {filteredPending.length} máquina{filteredPending.length === 1 ? "" : "s"} antes de producción
-            </p>
+            <p className="text-xs text-[var(--xt-steel)]">Máquinas antes de producción</p>
+          </div>
+          <div className="ml-auto">
+            <ListTotals machines={filteredPending} totalCount={pendingMachines.length} />
           </div>
           {selected.size > 0 && (
             <div className="flex items-center gap-2">
