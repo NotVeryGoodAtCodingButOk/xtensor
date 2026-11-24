@@ -169,7 +169,7 @@ export async function getMachineLaborReport(filters: MachineLaborFilters): Promi
 }
 
 /** Menos de un minuto de cronómetro = toques de prueba, no trabajo: no se grafica. */
-export const MIN_VISIBLE_HOURS = 1 / 60;
+const MIN_VISIBLE_HOURS = 1 / 60;
 
 /** Estadísticas → Tiempo: horas por etapa de cada cotización (mismos filtros que Máquinas). */
 export async function getMachineTimeReport(filters: MachineLaborFilters): Promise<MachineTimeReport> {
