@@ -240,14 +240,17 @@ const filterSelectCls =
 export function MachineLaborFiltersForm({
   filters,
   equipmentOptions,
+  action = MACHINE_LABOR_PATH,
 }: {
   filters: MachineLaborFilters;
   equipmentOptions: Array<{ id: string; name: string }>;
+  /** Página a la que apunta el formulario (Máquinas o Tiempo). */
+  action?: string;
 }) {
   const filtered = filters.estado !== "todas" || filters.linea !== null || filters.equipo !== null;
 
   return (
-    <form method="get" action={MACHINE_LABOR_PATH} className="flex flex-wrap items-end gap-3">
+    <form method="get" action={action} className="flex flex-wrap items-end gap-3">
       <label className="grid gap-1 text-xs font-semibold uppercase tracking-wide text-[var(--xt-steel)]">
         Estado
         <select name="estado" defaultValue={filters.estado} className={filterSelectCls}>
@@ -285,7 +288,7 @@ export function MachineLaborFiltersForm({
       </Button>
       {filtered ? (
         <Button asChild size="sm" variant="ghost">
-          <Link href={MACHINE_LABOR_PATH}>Quitar filtros</Link>
+          <Link href={action}>Quitar filtros</Link>
         </Button>
       ) : null}
     </form>
