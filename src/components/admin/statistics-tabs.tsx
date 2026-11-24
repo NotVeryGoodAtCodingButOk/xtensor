@@ -6,9 +6,10 @@ const TABS = [
   { key: "horas" as const, href: "/admin/estadisticas/horas", label: "Horas-hombre" },
   { key: "maquinas" as const, href: "/admin/estadisticas/maquinas", label: "Máquinas" },
   { key: "tiempos-maquinas" as const, href: "/admin/estadisticas/tiempos-maquinas", label: "Tiempos máquinas" },
+  { key: "tiempos-operarios" as const, href: "/admin/estadisticas/tiempos-operarios", label: "Tiempos operarios" },
 ];
 
-/** Shared tab strip for the admin Estadísticas pages (Resumen / Horas-hombre / Máquinas / Tiempos máquinas). */
+/** Shared tab strip for the admin Estadísticas pages (Resumen / Horas-hombre / Máquinas / Tiempos máquinas / Tiempos operarios). */
 export function StatisticsTabs({ active }: { active: (typeof TABS)[number]["key"] }) {
   return (
     <div className="mb-5 flex gap-1 border-b border-[var(--xt-black)]">
