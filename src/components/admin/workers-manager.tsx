@@ -17,6 +17,7 @@ type Worker = {
   is_active: boolean;
   display_color: string | null;
   created_at: string;
+  deleted_at: string | null;
 };
 
 const selectCls =
@@ -159,7 +160,7 @@ export function WorkersManager({ workers }: { workers: Worker[] }) {
                       onSubmit={(e) => {
                         if (
                           !confirm(
-                            `¿Eliminar a "${worker.full_name}"?\n\nEsta acción es permanente y no se puede deshacer. El historial de etapas atribuido a este operario quedará sin referencia.`,
+                            `¿Eliminar a "${worker.full_name}"?\n\nDejará de aparecer en la lista y en planta. Sus horas y etapas ya registradas se conservan en las estadísticas.`,
                           )
                         )
                           e.preventDefault();

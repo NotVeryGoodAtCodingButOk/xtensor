@@ -558,7 +558,7 @@ async function loadLaborContext(known: { settings?: ProductionSettings; holidays
   const [settings, holidays, workerRows] = await Promise.all([
     known.settings ?? getSettings().then(mapSettings),
     known.holidays ?? listHolidays(),
-    listWorkers(),
+    listWorkers(false, true),
   ]);
   return {
     settings,

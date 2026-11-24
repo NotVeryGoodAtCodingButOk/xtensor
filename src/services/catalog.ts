@@ -64,9 +64,17 @@ export async function listColors() {
   return data;
 }
 
-export async function listWorkers(activeOnly = false) {
+/**
+ * Operarios eliminados (`deleted_at`) quedan ocultos salvo `includeDeleted`,
+ * que usan las estadísticas para resolver nombres y costos del historial.
+ */
+export async function listWorkers(activeOnly = false, includeDeleted = false) {
   const supabase = createSupabaseAdminClient();
   let query = supabase.from("workers").select("*").order("full_name", { ascending: true });
+
+  if (!includeDeleted) {
+    query = query.is("deleted_at", null);
+  }
 
   if (activeOnly) {
     query = query.eq("is_active", true);
@@ -89,6 +97,7 @@ export async function getActiveWorker(id: string) {
     .select("id, full_name, display_color")
     .eq("id", id)
     .eq("is_active", true)
+    .is("deleted_at", null)
     .maybeSingle();
 
   if (error) {
@@ -167,10 +176,26 @@ export async function updateWorker(
   return data;
 }
 
-export async function deleteWorker(id: string) {
+/**
+ * Elimina al operario de las listas sin borrar la fila: su historial de horas,
+ * etapas y costos sigue intacto. No se puede si tiene un cronómetro abierto.
+ */
+export async function deleteWorker(id: string): Promise<"deleted" | "in-progress"> {
   const supabase = createSupabaseAdminClient();
-  const { error } = await supabase.from("workers").delete().eq("id", id);
+  const { count, error: openError } = await supabase
+    .from("work_sessions")
+    .select("id", { count: "exact", head: true })
+    .eq("worker_id", id)
+    .is("ended_at", null);
+  if (openError) throw new Error(`No se pudo eliminar el operario: ${openError.message}`);
+  if (count) return "in-progress";
+
+  const { error } = await supabase
+    .from("workers")
+    .update({ deleted_at: new Date().toISOString(), is_active: false })
+    .eq("id", id);
   if (error) throw new Error(`No se pudo eliminar el operario: ${error.message}`);
+  return "deleted";
 }
 
 export async function createCatalogItem(input: {

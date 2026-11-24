@@ -711,6 +711,7 @@ export type Database = {
           is_active: boolean;
           display_color: string | null;
           created_at: string;
+          deleted_at: string | null;
         };
         Insert: {
           id?: string;
@@ -720,6 +721,7 @@ export type Database = {
           is_active?: boolean;
           display_color?: string | null;
           created_at?: string;
+          deleted_at?: string | null;
         };
         Update: {
           id?: string;
@@ -729,6 +731,7 @@ export type Database = {
           is_active?: boolean;
           display_color?: string | null;
           created_at?: string;
+          deleted_at?: string | null;
         };
         Relationships: [];
       };

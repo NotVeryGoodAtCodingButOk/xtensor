@@ -464,9 +464,9 @@ export async function updateWorkerAction(formData: FormData) {
 export async function deleteWorkerAction(formData: FormData) {
   await requireAdmin();
   const id = String(formData.get("id") ?? "");
-  if (id) await deleteWorker(id);
+  const result = id ? await deleteWorker(id) : "deleted";
   revalidateFactoryData();
-  redirect("/admin/operarios");
+  redirect(result === "in-progress" ? "/admin/operarios?error=en-curso" : "/admin/operarios");
 }
 
 export async function addCatalogItemAction(formData: FormData) {

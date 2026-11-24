@@ -165,7 +165,7 @@ export async function getLaborDashboard(
     listDoneMarksWithoutSession(range.startIso, range.endIso),
     getSettings(),
     listHolidays(),
-    listWorkers(),
+    listWorkers(false, true),
     listActivityTypes(),
   ]);
 
