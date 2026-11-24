@@ -40,6 +40,9 @@ import type {
   MachineLaborStageRow,
   MachineLaborStatusFilter,
   MachineLaborWorkerRow,
+  MachineTimeReport,
+  MachineTimeRow,
+  MachineTimeStage,
 } from "@/types/labor-report";
 
 // Horas de mano de obra de toda la vida por máquina: presupuesto (horas
@@ -151,19 +154,7 @@ export function resolveMachineLaborFilters(params: { estado?: string; linea?: st
 }
 
 export async function getMachineLaborReport(filters: MachineLaborFilters): Promise<MachineLaborReport> {
-  const [context, trackingSince, machineRows] = await Promise.all([
-    loadLaborContext(),
-    getFirstSessionStartedAt(),
-    fetchReportMachines(filters),
-  ]);
-
-  const sources = machineRows
-    .map(mapReportMachine)
-    .filter((machine) => filters.linea === null || machine.line === filters.linea);
-  const totals = await computeMachineLaborTotals(
-    sources.map((machine) => machine.id),
-    context,
-  );
+  const { sources, totals, context, trackingSince } = await loadReportMachines(filters);
   const rows = sources
     .map((machine) => buildMachineLaborRow(machine, totals.get(machine.id), context.settings, trackingSince))
     .sort((a, b) => b.serialNumber - a.serialNumber);
@@ -173,6 +164,27 @@ export async function getMachineLaborReport(filters: MachineLaborFilters): Promi
     machines: rows,
     byEquipment: buildEquipmentLaborRows(rows),
     totals: summarizeMachineLaborRows(rows),
+    trackingSince,
+  };
+}
+
+/** Menos de un minuto de cronómetro = toques de prueba, no trabajo: no se grafica. */
+export const MIN_VISIBLE_HOURS = 1 / 60;
+
+/** Estadísticas → Tiempo: horas por etapa de cada cotización (mismos filtros que Máquinas). */
+export async function getMachineTimeReport(filters: MachineLaborFilters): Promise<MachineTimeReport> {
+  const { sources, totals, context, trackingSince } = await loadReportMachines(filters);
+  const rows = sources
+    .map((machine) =>
+      buildMachineTimeRow(buildMachineLaborRow(machine, totals.get(machine.id), context.settings, trackingSince), totals.get(machine.id)),
+    )
+    .sort((a, b) => b.serialNumber - a.serialNumber);
+  const machines = rows.filter((row) => row.spentHours >= MIN_VISIBLE_HOURS);
+
+  return {
+    filters,
+    machines,
+    withoutTimersCount: rows.length - machines.length,
     trackingSince,
   };
 }
@@ -427,6 +439,20 @@ export function summarizeMachineLaborRows(rows: MachineLaborRow[]): MachineLabor
   };
 }
 
+/** Horas por etapa de una cotización, en orden de proceso (Material → Empacar). */
+export function buildMachineTimeRow(row: MachineLaborRow, totals: MachineLaborTotals | undefined): MachineTimeRow {
+  const byStage: MachineTimeStage[] = [...DEFAULT_STAGES]
+    .sort((a, b) => a.displayOrder - b.displayOrder)
+    .map((stage) => ({
+      stageId: stage.id,
+      stageName: stage.name,
+      hours: (totals?.minutesByStage[stage.id] ?? 0) / 60,
+      reprocessHours: (totals?.reprocessMinutesByStage[stage.id] ?? 0) / 60,
+    }));
+
+  return { ...row, byStage };
+}
+
 export function buildMachineLaborDetail(input: {
   machine: Pick<MachineLaborSource, "id" | "promisedDate" | "reestimatedDate">;
   row: MachineLaborRow;
@@ -594,6 +620,25 @@ async function getLastWarrantyEventAt(machineIds: string[]): Promise<Map<string,
     }
   }
   return result;
+}
+
+/** Máquinas del filtro (línea incluida) con sus totales de toda la vida. */
+async function loadReportMachines(filters: MachineLaborFilters) {
+  const [context, trackingSince, machineRows] = await Promise.all([
+    loadLaborContext(),
+    getFirstSessionStartedAt(),
+    fetchReportMachines(filters),
+  ]);
+
+  const sources = machineRows
+    .map(mapReportMachine)
+    .filter((machine) => filters.linea === null || machine.line === filters.linea);
+  const totals = await computeMachineLaborTotals(
+    sources.map((machine) => machine.id),
+    context,
+  );
+
+  return { sources, totals, context, trackingSince };
 }
 
 async function computeMachineLaborTotals(machineIds: string[], context: LaborContext) {

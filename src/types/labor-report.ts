@@ -206,3 +206,26 @@ export type LaborPeriodRow = {
   /** activity_type_id → minutos (incluye actividades con y sin máquina). */
   minutesByActivityType: Record<string, number>;
 };
+
+/** Horas de una etapa en la pestaña Estadísticas → Tiempo. */
+export type MachineTimeStage = {
+  stageId: number;
+  stageName: string;
+  /** Horas de cronómetro en la etapa (incluye reproceso). */
+  hours: number;
+  reprocessHours: number;
+};
+
+/** Una fila por cotización en Estadísticas → Tiempo: horas por etapa, en orden de proceso. */
+export type MachineTimeRow = MachineLaborRow & {
+  byStage: MachineTimeStage[];
+};
+
+export type MachineTimeReport = {
+  filters: MachineLaborFilters;
+  /** Solo las cotizaciones con al menos un minuto de producción registrado. */
+  machines: MachineTimeRow[];
+  /** Cotizaciones del filtro sin cronómetros de etapa (o con menos de un minuto). */
+  withoutTimersCount: number;
+  trackingSince: string | null;
+};

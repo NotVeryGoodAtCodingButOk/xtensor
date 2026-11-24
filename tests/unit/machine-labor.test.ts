@@ -7,6 +7,7 @@ import {
   buildMachineLaborDetail,
   buildMachineLaborRow,
   buildMachineLaborSnapshot,
+  buildMachineTimeRow,
   hasPartialLaborData,
   resolveMachineLaborFilters,
   summarizeMachineLaborRows,
@@ -304,5 +305,43 @@ describe("buildAttachedLaborSnapshots", () => {
     expect(snapshots.get("m1")).toEqual(
       buildMachineLaborSnapshot(finished, totalsFor(sessions), settings, TRACKING_SINCE),
     );
+  });
+});
+
+describe("buildMachineTimeRow", () => {
+  it("lists the 7 stages in process order with their hours, including reprocess", () => {
+    const totals = totalsFor([
+      stageSession({ id: "a", stageId: 2, startedAt: "2026-06-02T13:00:00-05:00", endedAt: "2026-06-02T15:00:00-05:00" }),
+      stageSession({
+        id: "b",
+        stageId: 2,
+        isReprocess: true,
+        startedAt: "2026-06-03T13:00:00-05:00",
+        endedAt: "2026-06-03T14:00:00-05:00",
+      }),
+      stageSession({ id: "c", stageId: 5, startedAt: "2026-06-04T13:00:00-05:00", endedAt: "2026-06-04T14:00:00-05:00" }),
+    ]);
+    const row = buildMachineTimeRow(buildMachineLaborRow(machine(), totals, settings, TRACKING_SINCE), totals);
+
+    expect(row.byStage.map((stage) => stage.stageName)).toEqual([
+      "Material",
+      "Armar",
+      "Resoldar",
+      "Pulir",
+      "Pintar",
+      "Ensamblar",
+      "Empacar",
+    ]);
+    const byId = new Map(row.byStage.map((stage) => [stage.stageId, stage]));
+    expect(byId.get(2)?.hours).toBeCloseTo(3);
+    expect(byId.get(2)?.reprocessHours).toBeCloseTo(1);
+    expect(byId.get(5)?.hours).toBeCloseTo(1);
+    expect(row.byStage.reduce((sum, stage) => sum + stage.hours, 0)).toBeCloseTo(row.spentHours);
+  });
+
+  it("returns zero hours per stage when the machine has no timers", () => {
+    const row = buildMachineTimeRow(buildMachineLaborRow(machine(), undefined, settings, TRACKING_SINCE), undefined);
+    expect(row.byStage).toHaveLength(7);
+    expect(row.byStage.every((stage) => stage.hours === 0 && stage.reprocessHours === 0)).toBe(true);
   });
 });
